@@ -5,6 +5,7 @@ needs a `## <version>` section here, or its build fails.
 
 ## Unreleased
 
+- The color theme box opens scrolled to the theme you're using.
 - `Cmd+A` in the editor selects all without scrolling to the end of the file.
 - A branch with a GitHub pull request shows `#123`, its checks and review in Source Control and the status bar.
 - Click the pull request badge to see its changes in a tab; right-click it for **Open on GitHub**.
