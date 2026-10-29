@@ -935,55 +935,57 @@ func cursorDarkPalette() *palette {
 	return p
 }
 
-// purpleGoldPalette is Purple Gold, always dark: a deep purple sidebar,
-// tab strip and status bar around a charcoal editor, champagne gold for
-// the accent and the buttons, with deep purple labels on them. Its code
-// is in muted golds, lavenders, roses and teals.
+// purpleGoldPalette is Purple Gold, always dark: a near-black sidebar,
+// tab strip and panel around a charcoal editor, a royal purple status
+// bar, and classic gold for the accent, the buttons, with deep purple
+// labels on them, and the chosen rows. Its code is in golds, lavenders,
+// roses and teals.
 func purpleGoldPalette() *palette {
 	p := &palette{
-		dark:      true,
-		editor:    ui.Hex("#18181c"),
-		chrome:    ui.Hex("#2a184a"),
-		panel:     ui.Hex("#1f1344"),
-		border:    ui.Hex("#3a2860"),
-		hover:     ui.RGBA(203, 185, 177, 0.06),
-		active:    ui.Hex("#413352"),
-		text:      ui.Hex("#e6ddd6"),
-		muted:     ui.Hex("#a396a8"),
+		dark:   true,
+		editor: ui.Hex("#17141e"),
+		chrome: ui.Hex("#110d18"),
+		panel:  ui.Hex("#110d18"),
+		border: ui.Hex("#2e2440"),
+		hover:  ui.RGBA(212, 175, 55, 0.06),
+		// A tint, not a color: the mark of a chosen row is drawn over it.
+		active:    ui.RGBA(212, 175, 55, 0.16),
+		text:      ui.Hex("#e8e2d4"),
+		muted:     ui.Hex("#a59cae"),
 		faint:     ui.Hex("#6e6380"),
-		accent:    ui.Hex("#cbb9b1"),
-		accentDim: ui.RGBA(203, 185, 177, 0.5),
-		line:      ui.RGBA(203, 185, 177, 0.04),
-		selection: ui.RGBA(100, 88, 119, 0.55),
+		accent:    ui.Hex("#d4af37"),
+		accentDim: ui.RGBA(212, 175, 55, 0.5),
+		line:      ui.RGBA(212, 175, 55, 0.035),
+		selection: ui.RGBA(120, 80, 190, 0.4),
 		gutter:    ui.Hex("#5a5068"),
-		gutterNow: ui.Hex("#cbb9b1"),
-		status:    ui.Hex("#2a184a"),
-		statusFg:  ui.Hex("#cbb9b1"),
+		gutterNow: ui.Hex("#d4af37"),
+		status:    ui.Hex("#2a1650"),
+		statusFg:  ui.Hex("#d4af37"),
 		modified:  ui.Hex("#e0b872"),
 		danger:    ui.Hex("#f0707e"),
-		match:     ui.RGBA(203, 185, 177, 0.22),
-		matchNow:  ui.RGBA(203, 185, 177, 0.38),
-		matchRing: ui.RGBA(203, 185, 177, 0.85),
-		guide:     ui.RGBA(203, 185, 177, 0.07),
-		guideNow:  ui.RGBA(203, 185, 177, 0.2),
-		bracket:   ui.RGBA(203, 185, 177, 0.3),
-		word:      ui.RGBA(203, 185, 177, 0.09),
+		match:     ui.RGBA(212, 175, 55, 0.22),
+		matchNow:  ui.RGBA(212, 175, 55, 0.38),
+		matchRing: ui.RGBA(212, 175, 55, 0.85),
+		guide:     ui.RGBA(212, 175, 55, 0.07),
+		guideNow:  ui.RGBA(212, 175, 55, 0.2),
+		bracket:   ui.RGBA(212, 175, 55, 0.3),
+		word:      ui.RGBA(212, 175, 55, 0.1),
 		shadow:    ui.RGBA(0, 0, 0, 0.5),
 		added:     ui.Hex("#6fbf8e"),
 		changed:   ui.Hex("#e0b872"),
 		removed:   ui.Hex("#f0707e"),
-		// Deep purple on the gold, as the icons' labels are gold on it.
-		fill:           ui.Hex("#cbb9b1"),
-		fillHover:      ui.Hex("#d6c6bf"),
-		fillText:       ui.Hex("#1f0f35"),
+		// Deep purple on the gold, as the status bar is gold on purple.
+		fill:           ui.Hex("#d4af37"),
+		fillHover:      ui.Hex("#dfbd4f"),
+		fillText:       ui.Hex("#1a0f2e"),
 		dangerFill:     ui.Hex("#f0707e"),
-		dangerText:     ui.Hex("#1f0f35"),
-		surface:        ui.Hex("#23252a"),
-		surfaceHover:   ui.Hex("#2e2a38"),
-		surfacePressed: ui.Hex("#3a3348"),
-		scrollbar:      ui.RGBA(203, 185, 177, 0.16),
-		inverse:        ui.Hex("#413352"),
-		inverseText:    ui.Hex("#efe6e0"),
+		dangerText:     ui.Hex("#1a0f2e"),
+		surface:        ui.Hex("#1d1826"),
+		surfaceHover:   ui.Hex("#261f31"),
+		surfacePressed: ui.Hex("#30283d"),
+		scrollbar:      ui.RGBA(212, 175, 55, 0.16),
+		inverse:        ui.Hex("#2a1650"),
+		inverseText:    ui.Hex("#f0e6c8"),
 		ansi: [16]ui.Color{
 			ui.Hex("#2a2438"), ui.Hex("#f0707e"), ui.Hex("#8cc79a"), ui.Hex("#e0b872"),
 			ui.Hex("#8fa8e8"), ui.Hex("#c49be0"), ui.Hex("#7ec4c4"), ui.Hex("#d8cfc9"),
@@ -995,19 +997,19 @@ func purpleGoldPalette() *palette {
 	s := &p.syntax
 	s[highlight.Plain] = ui.Hex("#dcd3cc")
 	s[highlight.Keyword] = ui.Hex("#c9a0e8")
-	s[highlight.Type] = ui.Hex("#e6c48a")
+	s[highlight.Type] = ui.Hex("#e6c068")
 	s[highlight.Function] = ui.Hex("#f0c9a8")
 	s[highlight.String] = ui.Hex("#e8a6b4")
-	s[highlight.Number] = ui.Hex("#e0b872")
+	s[highlight.Number] = ui.Hex("#d4af37")
 	s[highlight.Comment] = ui.Hex("#7a6e8a")
 	s[highlight.Operator] = ui.Hex("#b8acc0")
 	s[highlight.Punctuation] = ui.Hex("#9488a0")
-	s[highlight.Constant] = ui.Hex("#e0b872")
+	s[highlight.Constant] = ui.Hex("#d4af37")
 	s[highlight.Builtin] = ui.Hex("#8ccaca")
 	s[highlight.Tag] = ui.Hex("#c9a0e8")
-	s[highlight.Attribute] = ui.Hex("#e6c48a")
+	s[highlight.Attribute] = ui.Hex("#e6c068")
 	s[highlight.Variable] = ui.Hex("#dcd3cc")
-	s[highlight.Heading] = ui.Hex("#cbb9b1")
+	s[highlight.Heading] = ui.Hex("#d4af37")
 	s[highlight.Deleted] = p.removed
 	s[highlight.Inserted] = p.added
 	return p

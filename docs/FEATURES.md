@@ -625,9 +625,9 @@ and a dark kind, and its code in the warm colors of x.ai's terminal. Grok Bot's 
 eyes, takes the logo's place and the status bar's start as Clawd does, looks up as it hops, and now and then glances
 to one side and the other. Cursor is Cursor's own Cursor Light and Cursor Dark: near-white or near-black greys with
 Cursor's blue for the accent and the buttons, in a light and a dark kind, and its code in Cursor's own colors. It has
-no character, so the welcome page keeps Mayoi's logo. Purple Gold is a deep purple sidebar, tab strip and status bar
-around a charcoal editor, with champagne gold for the accent and the buttons, and its code in muted golds, lavenders,
-roses and teals. It has no character either.
+no character, so the welcome page keeps Mayoi's logo. Purple Gold is a near-black sidebar, tab strip and panel around
+a charcoal editor, with a royal purple status bar, classic gold for the accent, the buttons and the chosen rows, and its
+code in golds, lavenders, roses and teals. It has no character either.
 **View → Theme → Color Theme…** (`workbench.action.selectTheme` in `keybindings.json`, as `cmd+k cmd+t`), or **Color
 Theme…** on the welcome page, opens a box of the themes, each with a little window in its colors and its character: the
 window takes each theme as ↑ and ↓ move to it, and ← and → switch the appearance; Return keeps them, and Escape goes

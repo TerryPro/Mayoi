@@ -156,11 +156,11 @@ func (msgs Messages) ThemeAboutMayoi() string {
 	return Catalog.Format(msgs.locale, "themeAboutMayoi", nil)
 }
 
-// ThemeAboutPurpleGold says "Deep purple and charcoal, with champagne gold"
+// ThemeAboutPurpleGold says "Near-black and royal purple, with classic gold"
 // in the language the app shows.
 func ThemeAboutPurpleGold() string { return In(i18n.Locale()).ThemeAboutPurpleGold() }
 
-// ThemeAboutPurpleGold says "Deep purple and charcoal, with champagne gold"
+// ThemeAboutPurpleGold says "Near-black and royal purple, with classic gold"
 // in the language of msgs.
 func (msgs Messages) ThemeAboutPurpleGold() string {
 	return Catalog.Format(msgs.locale, "themeAboutPurpleGold", nil)
