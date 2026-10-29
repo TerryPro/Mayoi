@@ -76,6 +76,19 @@ func (r *scmRow) file() bool {
 	return r.panel == nil && !r.header && r.commit == nil && !r.more && r.dir == "" && r.under == nil
 }
 
+// choice is the list of rows a row is chosen with: the files, the commits
+// of the history, or those of one panel; "" for a row that is not chosen.
+// The rows chosen are all of one list.
+func (r *scmRow) choice() string {
+	switch {
+	case r.file():
+		return "file"
+	case r.commit != nil:
+		return strings.TrimSuffix(r.key, r.commit.Hash)
+	}
+	return ""
+}
+
 // scmState is the source control view's: its list, the row chosen, and
 // the groups closed.
 type scmState struct {
@@ -503,7 +516,7 @@ func (a *gitContext) scmList(c *ui.Context) {
 	base := c.Theme()
 	quiet := *base
 	quiet.Accent, quiet.AccentText, quiet.SurfaceHover = p.active, p.text, p.hover
-	if s.row >= 0 && s.row < len(rows) && rows[s.row].file() && !s.selection.Has(rows[s.row].key) {
+	if s.row >= 0 && s.row < len(rows) && rows[s.row].choice() != "" && !s.selection.Has(rows[s.row].key) {
 		quiet.Accent = p.chrome
 	}
 	c.SetTheme(&quiet)
@@ -517,7 +530,7 @@ func (a *gitContext) scmList(c *ui.Context) {
 			case r.header:
 				a.scmHeader(c, r, &action)
 			case r.commit != nil:
-				a.scmCommit(c, i, r, &action)
+				a.scmCommit(c, r, &action)
 			case r.under != nil:
 				a.scmCommitFile(c, i, r, &action)
 			case r.more:
@@ -561,12 +574,18 @@ func (a *gitContext) scmListInput(out ui.Element, rows []scmRow, reveal func(int
 		return scmRow{}, false
 	}
 	if out.Changed() {
-		if _, ok := chosen(); ok {
+		if s.row >= 0 && s.row < len(rows) && rows[s.row].choice() != "" {
 			a.selectScmRow(s.row, 0)
 		} else {
 			s.selection.Clear()
 			s.anchor = ""
 		}
+	}
+	// The list of the row chosen, or the files', which Shift and Cmd+A
+	// choose in.
+	list := "file"
+	if s.row >= 0 && s.row < len(rows) && rows[s.row].choice() != "" {
+		list = rows[s.row].choice()
 	}
 	for _, key := range []ui.Key{ui.KeyUp, ui.KeyDown, ui.KeyHome, ui.KeyEnd} {
 		if !out.Shortcut(ui.Shift, key) {
@@ -582,7 +601,7 @@ func (a *gitContext) scmListInput(out ui.Element, rows []scmRow, reveal func(int
 			step, start = -1, len(rows)-1
 		}
 		for i := start; i >= 0 && i < len(rows); i += step {
-			if rows[i].file() {
+			if rows[i].choice() == list {
 				a.selectScmRow(i, ui.Shift)
 				reveal(i)
 				break
@@ -590,19 +609,23 @@ func (a *gitContext) scmListInput(out ui.Element, rows []scmRow, reveal func(int
 		}
 	}
 	if out.Shortcut(ui.Cmd, ui.KeyA) {
-		if _, ok := chosen(); !ok {
+		if s.row < 0 || s.row >= len(rows) || rows[s.row].choice() != list {
 			for i, r := range rows {
-				if r.file() {
+				if r.choice() == list {
 					s.row, s.anchor = i, r.key
 					break
 				}
 			}
 		}
+		s.selection.Clear()
 		for _, r := range rows {
-			if r.file() {
+			if r.choice() == list {
 				s.selection.Add(r.key)
 			}
 		}
+	}
+	if out.Shortcut(ui.Cmd, ui.KeyC) {
+		a.copyChosenCommits(rows)
 	}
 	if s.row >= 0 && s.row < len(rows) && out.Submitted() {
 		switch r := rows[s.row]; {
@@ -1086,28 +1109,35 @@ func (a *gitContext) scmFile(c *ui.Context, r scmRow, action *func()) {
 	}
 }
 
-// selectScmRow keeps a file's range anchor independent of the diff preview
-// and the list's keyboard cursor. File rows also handle dragging, so their
-// pointer clicks do not reach the list's built-in selection handler.
+// selectScmRow keeps a file's or a commit's range anchor independent of
+// the diff preview and the list's keyboard cursor. File rows also handle
+// dragging, so their pointer clicks do not reach the list's built-in
+// selection handler. Rows of another list than row i's are let go.
 func (a *gitContext) selectScmRow(i int, mods ui.Modifiers) {
 	s := a.scm
 	rows := a.scmRows()
-	if i < 0 || i >= len(rows) || !rows[i].file() {
+	if i < 0 || i >= len(rows) || rows[i].choice() == "" {
 		return
 	}
 	r := rows[i]
+	list := r.choice()
 	anchor := -1
 	for j, row := range rows {
-		if row.key == s.anchor && row.file() {
+		if row.key == s.anchor && row.choice() == list {
 			anchor = j
 			break
+		}
+	}
+	for _, row := range rows {
+		if row.choice() != list {
+			s.selection.Remove(row.key)
 		}
 	}
 	switch {
 	case mods&ui.Shift != 0 && anchor >= 0:
 		s.selection.Clear()
 		for j := min(anchor, i); j <= max(anchor, i); j++ {
-			if rows[j].file() {
+			if rows[j].choice() == list {
 				s.selection.Add(rows[j].key)
 			}
 		}
@@ -1126,11 +1156,33 @@ func (a *gitContext) selectScmRow(i int, mods ui.Modifiers) {
 	s.row = i
 }
 
+// copyChosenCommits copies the short hashes of the commits chosen, one a
+// line in the order of the list, or of the commit of the row the cursor
+// is on when none are.
+func (a *gitContext) copyChosenCommits(rows []scmRow) {
+	s := a.scm
+	var hashes []string
+	for _, r := range rows {
+		if r.commit != nil && s.selection.Has(r.key) {
+			hashes = append(hashes, r.commit.Short())
+		}
+	}
+	if len(hashes) == 0 && s.row >= 0 && s.row < len(rows) && rows[s.row].commit != nil {
+		hashes = append(hashes, rows[s.row].commit.Short())
+	}
+	if len(hashes) == 0 {
+		return
+	}
+	a.app.services.WriteClipboard(strings.Join(hashes, "\n"))
+	a.app.tell(note{message: locales.CopiedCommitHashes(len(hashes))})
+}
+
 // scmCommit is the row of a commit of the history: its lanes of the
 // graph, who made it, its branches and tags, its subject, and how long
-// ago it was made. A click chooses row i and shows the commit's changes
-// in the preview tab, which Enter or a double click keeps.
-func (a *gitContext) scmCommit(c *ui.Context, i int, r scmRow, action *func()) {
+// ago it was made. A click chooses its row and shows the commit's changes
+// in the preview tab, which Enter or a double click keeps; Cmd and Shift
+// choose more commits with it.
+func (a *gitContext) scmCommit(c *ui.Context, r scmRow, action *func()) {
 	p := a.app.pal
 	cm := r.commit
 	g := a.git
@@ -1166,6 +1218,9 @@ func (a *gitContext) scmCommit(c *ui.Context, i int, r scmRow, action *func()) {
 		row.Tooltip(tip)
 	}
 	a.scmFade(c, row, r.key)
+	if a.scm.selection.Has(r.key) {
+		row.Background(p.active)
+	}
 	clicked := row.Clicked()
 	row.ContextMenu(func(m *ui.Menu) { a.scmCommitMenu(m, cm, head, action) })
 	open := a.scm.openCommits[cm.Hash]
@@ -1239,11 +1294,17 @@ func (a *gitContext) scmCommit(c *ui.Context, i int, r scmRow, action *func()) {
 		ui.Text(c, shortAgo(cm.Time, time.Now())).FontSize(11).TextColor(p.faint).Shrink(0).Padding(0, 2, 0, 0)
 	})
 	if clicked && *action == nil {
+		mods := row.ClickModifiers()
 		*action = func() {
-			a.scm.selection.Clear()
-			a.scm.anchor = ""
-			a.scm.row = i
-			a.previewCommit(*cm)
+			for i, row := range a.scmRows() {
+				if row.key == r.key {
+					a.selectScmRow(i, mods)
+					break
+				}
+			}
+			if mods&(ui.Cmd|ui.Shift) == 0 {
+				a.previewCommit(*cm)
+			}
 		}
 	}
 }

@@ -308,6 +308,7 @@
   "convertToSpaces": "インデントをスペースに変換",
   "convertToTabs": "インデントをタブに変換",
   "copiedCode": "コードをコピーしました",
+  "copiedCommitHashes": "{count, plural, other {# 件のコミット ハッシュをコピーしました}}",
   "copiedPatchOf": "{commit} のパッチをコピーしました",
   "copiedPermalink": "パーマリンクをコピーしました",
   "copiedText": "{text} をコピーしました",
