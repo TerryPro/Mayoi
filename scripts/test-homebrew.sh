@@ -32,7 +32,7 @@ sed 's/Small, fast code editor/Edited description/; /  app "Mayoi.app"/a\
 sh "$tmp/scripts/update-homebrew.sh" 0.12.9
 grep -Fxq '  version "0.12.9"' "$tmp/Casks/mayoi.rb"
 for arch in arm64 amd64; do
-  sum="$(printf 'Mayoi.0.12.9.%s.dmg\n' "$arch" | shasum -a 256 | cut -d ' ' -f 1)"
+  sum="$(printf 'mayoi-0.12.9-%s.dmg\n' "$arch" | shasum -a 256 | cut -d ' ' -f 1)"
   grep -Fq "\"$sum\"" "$tmp/Casks/mayoi.rb"
 done
 grep -Fq '  desc "Edited description"' "$tmp/Casks/mayoi.rb"
