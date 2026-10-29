@@ -1694,6 +1694,18 @@ func (a *gitContext) scmMenu(m *ui.Menu) {
 		a.app.post(func() { a.discard(append(groups[groupChanges], groups[groupUntracked]...)...) })
 	}
 	m.Separator()
+	if m.Item(locales.CmdGitStash()).Disabled(!a.canStash(false)).Chosen() {
+		a.app.post(func() { a.askStash(false) })
+	}
+	if m.Item(locales.CmdGitStashUntracked()).Disabled(!a.canStash(true)).Chosen() {
+		a.app.post(func() { a.askStash(true) })
+	}
+	if len(g.stashes) == 0 {
+		m.Item(locales.ScmStashes()).Disabled(true)
+	} else {
+		m.Submenu(locales.ScmStashes(), a.stashMenu)
+	}
+	m.Separator()
 	if m.Item(locales.CmdGitFetch()).Disabled(g.busy != "").Chosen() {
 		a.app.post(a.fetch)
 	}

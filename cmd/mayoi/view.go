@@ -165,6 +165,7 @@ func (a *app) view(c *ui.Context) {
 	})
 	a.quickOpenView(c)
 	a.branchPickerView(c)
+	a.stashPickerView(c)
 	a.repositoryPickerView(c)
 	a.recentPickerView(c)
 	a.themePickerView(c)

@@ -1,5 +1,11 @@
 {
   "@@locale": "en",
+  "busyApplyingStash": "Applying the stash…",
+  "busyDroppingStash": "Dropping the stash…",
+  "busyStashing": "Stashing the changes…",
+  "cmdGitStash": "Stash Changes…",
+  "cmdGitStashUntracked": "Stash Including Untracked…",
+  "cmdGitStashes": "Stashes…",
   "cmdViewSelectTheme": "Color Theme…",
   "@diffSummary": {
     "placeholders": {
@@ -168,6 +174,7 @@
       "upstream": {}
     }
   },
+  "scmStashes": "Stashes",
   "@searchFirstResults": {
     "placeholders": {
       "n": {
@@ -195,6 +202,18 @@
       "files": {}
     }
   },
+  "stashApply": "Apply",
+  "stashDrop": "Drop",
+  "stashDropDetail": "Its changes are deleted for good.",
+  "stashDropEllipsis": "Drop…",
+  "stashDropQuestion": "Drop stash {name}?",
+  "stashFind": "Find a stash",
+  "stashMade": "Changes stashed",
+  "stashMessageHint": "Message (optional)",
+  "stashNoMatch": "No stash matches.",
+  "stashNone": "There are no stashes.",
+  "stashNothing": "There are no changes to stash.",
+  "stashPop": "Pop",
   "@statusPos": {
     "placeholders": {
       "line": {

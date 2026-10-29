@@ -294,6 +294,7 @@ type app struct {
 	waits      []docWait         // the mayoi --wait commands waiting for documents to close
 	hints      map[string]string // the keys of the commands, as tooltips show them
 	branches   branchPicker      // the box that switches branches
+	stashes    stashPicker       // the box of the stashes
 	recents    recentPicker      // the box of the recent folders
 	themes     themePicker       // the box of the color themes
 	remotePick remotePicker      // the box that connects to a host

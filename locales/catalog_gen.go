@@ -36,6 +36,66 @@ type Messages struct{ locale string }
 // source language.
 func In(locale string) Messages { return Messages{locale} }
 
+// BusyApplyingStash says "Applying the stash…"
+// in the language the app shows.
+func BusyApplyingStash() string { return In(i18n.Locale()).BusyApplyingStash() }
+
+// BusyApplyingStash says "Applying the stash…"
+// in the language of msgs.
+func (msgs Messages) BusyApplyingStash() string {
+	return Catalog.Format(msgs.locale, "busyApplyingStash", nil)
+}
+
+// BusyDroppingStash says "Dropping the stash…"
+// in the language the app shows.
+func BusyDroppingStash() string { return In(i18n.Locale()).BusyDroppingStash() }
+
+// BusyDroppingStash says "Dropping the stash…"
+// in the language of msgs.
+func (msgs Messages) BusyDroppingStash() string {
+	return Catalog.Format(msgs.locale, "busyDroppingStash", nil)
+}
+
+// BusyStashing says "Stashing the changes…"
+// in the language the app shows.
+func BusyStashing() string { return In(i18n.Locale()).BusyStashing() }
+
+// BusyStashing says "Stashing the changes…"
+// in the language of msgs.
+func (msgs Messages) BusyStashing() string {
+	return Catalog.Format(msgs.locale, "busyStashing", nil)
+}
+
+// CmdGitStash says "Stash Changes…"
+// in the language the app shows.
+func CmdGitStash() string { return In(i18n.Locale()).CmdGitStash() }
+
+// CmdGitStash says "Stash Changes…"
+// in the language of msgs.
+func (msgs Messages) CmdGitStash() string {
+	return Catalog.Format(msgs.locale, "cmdGitStash", nil)
+}
+
+// CmdGitStashUntracked says "Stash Including Untracked…"
+// in the language the app shows.
+func CmdGitStashUntracked() string { return In(i18n.Locale()).CmdGitStashUntracked() }
+
+// CmdGitStashUntracked says "Stash Including Untracked…"
+// in the language of msgs.
+func (msgs Messages) CmdGitStashUntracked() string {
+	return Catalog.Format(msgs.locale, "cmdGitStashUntracked", nil)
+}
+
+// CmdGitStashes says "Stashes…"
+// in the language the app shows.
+func CmdGitStashes() string { return In(i18n.Locale()).CmdGitStashes() }
+
+// CmdGitStashes says "Stashes…"
+// in the language of msgs.
+func (msgs Messages) CmdGitStashes() string {
+	return Catalog.Format(msgs.locale, "cmdGitStashes", nil)
+}
+
 // CmdViewSelectTheme says "Color Theme…"
 // in the language the app shows.
 func CmdViewSelectTheme() string { return In(i18n.Locale()).CmdViewSelectTheme() }
@@ -44,6 +104,136 @@ func CmdViewSelectTheme() string { return In(i18n.Locale()).CmdViewSelectTheme()
 // in the language of msgs.
 func (msgs Messages) CmdViewSelectTheme() string {
 	return Catalog.Format(msgs.locale, "cmdViewSelectTheme", nil)
+}
+
+// ScmStashes says "Stashes"
+// in the language the app shows.
+func ScmStashes() string { return In(i18n.Locale()).ScmStashes() }
+
+// ScmStashes says "Stashes"
+// in the language of msgs.
+func (msgs Messages) ScmStashes() string {
+	return Catalog.Format(msgs.locale, "scmStashes", nil)
+}
+
+// StashApply says "Apply"
+// in the language the app shows.
+func StashApply() string { return In(i18n.Locale()).StashApply() }
+
+// StashApply says "Apply"
+// in the language of msgs.
+func (msgs Messages) StashApply() string {
+	return Catalog.Format(msgs.locale, "stashApply", nil)
+}
+
+// StashDrop says "Drop"
+// in the language the app shows.
+func StashDrop() string { return In(i18n.Locale()).StashDrop() }
+
+// StashDrop says "Drop"
+// in the language of msgs.
+func (msgs Messages) StashDrop() string {
+	return Catalog.Format(msgs.locale, "stashDrop", nil)
+}
+
+// StashDropDetail says "Its changes are deleted for good."
+// in the language the app shows.
+func StashDropDetail() string { return In(i18n.Locale()).StashDropDetail() }
+
+// StashDropDetail says "Its changes are deleted for good."
+// in the language of msgs.
+func (msgs Messages) StashDropDetail() string {
+	return Catalog.Format(msgs.locale, "stashDropDetail", nil)
+}
+
+// StashDropEllipsis says "Drop…"
+// in the language the app shows.
+func StashDropEllipsis() string { return In(i18n.Locale()).StashDropEllipsis() }
+
+// StashDropEllipsis says "Drop…"
+// in the language of msgs.
+func (msgs Messages) StashDropEllipsis() string {
+	return Catalog.Format(msgs.locale, "stashDropEllipsis", nil)
+}
+
+// StashDropQuestion says "Drop stash {name}?"
+// in the language the app shows.
+func StashDropQuestion(name string) string { return In(i18n.Locale()).StashDropQuestion(name) }
+
+// StashDropQuestion says "Drop stash {name}?"
+// in the language of msgs.
+func (msgs Messages) StashDropQuestion(name string) string {
+	return Catalog.Format(msgs.locale, "stashDropQuestion", map[string]any{"name": name})
+}
+
+// StashFind says "Find a stash"
+// in the language the app shows.
+func StashFind() string { return In(i18n.Locale()).StashFind() }
+
+// StashFind says "Find a stash"
+// in the language of msgs.
+func (msgs Messages) StashFind() string {
+	return Catalog.Format(msgs.locale, "stashFind", nil)
+}
+
+// StashMade says "Changes stashed"
+// in the language the app shows.
+func StashMade() string { return In(i18n.Locale()).StashMade() }
+
+// StashMade says "Changes stashed"
+// in the language of msgs.
+func (msgs Messages) StashMade() string {
+	return Catalog.Format(msgs.locale, "stashMade", nil)
+}
+
+// StashMessageHint says "Message (optional)"
+// in the language the app shows.
+func StashMessageHint() string { return In(i18n.Locale()).StashMessageHint() }
+
+// StashMessageHint says "Message (optional)"
+// in the language of msgs.
+func (msgs Messages) StashMessageHint() string {
+	return Catalog.Format(msgs.locale, "stashMessageHint", nil)
+}
+
+// StashNoMatch says "No stash matches."
+// in the language the app shows.
+func StashNoMatch() string { return In(i18n.Locale()).StashNoMatch() }
+
+// StashNoMatch says "No stash matches."
+// in the language of msgs.
+func (msgs Messages) StashNoMatch() string {
+	return Catalog.Format(msgs.locale, "stashNoMatch", nil)
+}
+
+// StashNone says "There are no stashes."
+// in the language the app shows.
+func StashNone() string { return In(i18n.Locale()).StashNone() }
+
+// StashNone says "There are no stashes."
+// in the language of msgs.
+func (msgs Messages) StashNone() string {
+	return Catalog.Format(msgs.locale, "stashNone", nil)
+}
+
+// StashNothing says "There are no changes to stash."
+// in the language the app shows.
+func StashNothing() string { return In(i18n.Locale()).StashNothing() }
+
+// StashNothing says "There are no changes to stash."
+// in the language of msgs.
+func (msgs Messages) StashNothing() string {
+	return Catalog.Format(msgs.locale, "stashNothing", nil)
+}
+
+// StashPop says "Pop"
+// in the language the app shows.
+func StashPop() string { return In(i18n.Locale()).StashPop() }
+
+// StashPop says "Pop"
+// in the language of msgs.
+func (msgs Messages) StashPop() string {
+	return Catalog.Format(msgs.locale, "stashPop", nil)
 }
 
 // ErrMathText says "it uses characters the math font lacks"

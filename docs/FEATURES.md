@@ -159,6 +159,12 @@ tree, with a count of them. Files are grouped as merge changes, staged changes, 
 - The **⋯** menu by the title has the commit commands, stage, unstage and discard all, fetch, pull and push, Refresh,
   and **View as Tree**, which lists each group's files under their folders. A folder with only one folder in it shows as
   one row, as `internal/git`, and a folder's buttons stage, unstage or discard every file in it.
+- **Stash Changes…** in the **⋯** menu puts the changes away, with a message if you give one; **Stash Including
+  Untracked…** takes the untracked files too. Open files save first, and the toast's **Pop** button brings the changes
+  back. The **Stashes** submenu lists the last ten, each with **Apply**, **Pop** (apply, then delete it) and **Drop…**,
+  which asks first. A pop whose changes conflict keeps the stash, and the files show as merge changes.
+- **Git → Stashes…** opens a box of every stash, with its branch and age, to search by message or branch: ⏎ applies the
+  one chosen, ⌘⏎ pops it and ⌘⌫ drops it. The stash commands are in the **Git** menu and the command palette too.
 - A thin bar under the title moves while a Git command runs. A toast says when a commit is made, with an **Undo**
   button, and when a push or a pull is done.
 - A clean work tree says so, and offers to push or pull when the branch is ahead of its upstream or behind it.

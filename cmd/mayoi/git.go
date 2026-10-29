@@ -27,8 +27,9 @@ type gitState struct {
 	lookup          *int // the lookup running, which a reset drops
 
 	status   *git.Status
-	branches []string // the local branches, read with the status
-	remotes  []string // the remotes, read with the status
+	branches []string    // the local branches, read with the status
+	stashes  []git.Stash // the newest stashes, read with the status
+	remotes  []string    // the remotes, read with the status
 	// remotesStale has the next read of the status read the remotes too.
 	remotesStale bool
 	// entries are the files that differ, by path; dirs the folders above
@@ -189,6 +190,7 @@ func (a *gitContext) refreshGit() {
 		defer recoverCrash()
 		st, err := r.Status()
 		branches, _ := r.Branches()
+		stashes, stashesErr := r.StashList(stashListN)
 		var remotes []string
 		var remotesErr error
 		if readRemotes {
@@ -204,6 +206,9 @@ func (a *gitContext) refreshGit() {
 			}
 			a.setStatus(st)
 			g.branches = branches
+			if stashesErr == nil {
+				g.stashes = stashes
+			}
 			if readRemotes && remotesErr == nil {
 				g.remotes = remotes
 			}
