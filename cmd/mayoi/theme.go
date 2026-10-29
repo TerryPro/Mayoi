@@ -774,6 +774,163 @@ func grokBotDarkPalette() *palette {
 	return p
 }
 
+// cursorLightPalette is Cursor in a light window, its Cursor Light: near
+// white and light greys, ink in shades of #141414, and its blue for the
+// accent and the buttons. Its code takes Cursor Light's own colors.
+func cursorLightPalette() *palette {
+	p := &palette{
+		editor:    ui.Hex("#fcfcfc"),
+		chrome:    ui.Hex("#f3f3f3"),
+		panel:     ui.Hex("#f3f3f3"),
+		border:    ui.Hex("#e2e2e2"),
+		hover:     ui.RGBA(20, 20, 20, 0.045),
+		active:    ui.RGBA(20, 20, 20, 0.08),
+		text:      ui.Hex("#141414"),
+		muted:     ui.Hex("#6d6d6d"),
+		faint:     ui.Hex("#848484"),
+		accent:    ui.Hex("#2778c1"),
+		accentDim: ui.RGBA(39, 120, 193, 0.5),
+		line:      ui.RGBA(20, 20, 20, 0.04),
+		// Cursor Light's selection is as faint as its hover, so it is a
+		// little deeper, to show over the caret's line.
+		selection: ui.RGBA(20, 20, 20, 0.12),
+		gutter:    ui.Hex("#a8a8a8"),
+		gutterNow: ui.Hex("#505050"),
+		status:    ui.Hex("#f3f3f3"),
+		statusFg:  ui.Hex("#6d6d6d"),
+		modified:  ui.Hex("#a46700"),
+		danger:    ui.Hex("#be1744"),
+		match:     ui.RGBA(59, 126, 132, 0.16),
+		matchNow:  ui.RGBA(59, 126, 132, 0.30),
+		matchRing: ui.RGBA(59, 126, 132, 0.9),
+		guide:     ui.RGBA(20, 20, 20, 0.08),
+		guideNow:  ui.RGBA(20, 20, 20, 0.2),
+		bracket:   ui.RGBA(20, 20, 20, 0.28),
+		word:      ui.RGBA(20, 20, 20, 0.08),
+		shadow:    ui.RGBA(20, 20, 20, 0.14),
+		added:     ui.Hex("#007041"),
+		changed:   ui.Hex("#a46700"),
+		removed:   ui.Hex("#be1744"),
+		// Cursor Light's button, as it is under the pointer.
+		fill:           ui.Hex("#2778c1"),
+		fillHover:      ui.Hex("#246aab"),
+		fillText:       ui.Hex("#ffffff"),
+		dangerFill:     ui.Hex("#be1744"),
+		dangerText:     ui.Hex("#ffffff"),
+		surface:        ui.Hex("#ffffff"),
+		surfaceHover:   ui.Hex("#f0f0f0"),
+		surfacePressed: ui.Hex("#e6e6e6"),
+		scrollbar:      ui.RGBA(20, 20, 20, 0.16),
+		// Cursor Light's terminal, but for its whites, which would not
+		// show on a light terminal.
+		ansi: [16]ui.Color{
+			ui.Hex("#141414"), ui.Hex("#be1744"), ui.Hex("#007041"), ui.Hex("#8b5700"),
+			ui.Hex("#0064b0"), ui.Hex("#92156a"), ui.Hex("#176c74"), ui.Hex("#a8a8a8"),
+			ui.Hex("#505050"), ui.Hex("#ce405b"), ui.Hex("#00854c"), ui.Hex("#a46700"),
+			ui.Hex("#2778c1"), ui.Hex("#b54e90"), ui.Hex("#3b7e84"), ui.Hex("#d4d4d4"),
+		},
+	}
+	p.fillPressed = p.fill.Mix(black, 0.22)
+	s := &p.syntax
+	s[highlight.Plain] = p.text
+	s[highlight.Keyword] = ui.Hex("#a30034")
+	s[highlight.Type] = ui.Hex("#005293")
+	s[highlight.Function] = ui.Hex("#cd4500")
+	s[highlight.String] = ui.Hex("#7565cc")
+	s[highlight.Number] = ui.Hex("#92156a")
+	s[highlight.Comment] = ui.Hex("#717171")
+	s[highlight.Operator] = p.text
+	s[highlight.Punctuation] = ui.Hex("#505050")
+	s[highlight.Constant] = ui.Hex("#005293")
+	s[highlight.Builtin] = ui.Hex("#3b7e84")
+	s[highlight.Tag] = ui.Hex("#007041")
+	s[highlight.Attribute] = ui.Hex("#481b9c")
+	s[highlight.Variable] = p.text
+	s[highlight.Heading] = ui.Hex("#005293")
+	s[highlight.Deleted] = ui.Hex("#a30034")
+	s[highlight.Inserted] = ui.Hex("#007041")
+	return p
+}
+
+// cursorDarkPalette is Cursor in a dark window, its Cursor Dark: near
+// black greys, light ink faded for what is less, and its Nord blue for
+// the accent, with dark labels on its buttons. Its code takes Cursor
+// Dark's own colors.
+func cursorDarkPalette() *palette {
+	p := &palette{
+		dark:      true,
+		editor:    ui.Hex("#181818"),
+		chrome:    ui.Hex("#141414"),
+		panel:     ui.Hex("#141414"),
+		border:    ui.Hex("#242424"),
+		hover:     ui.RGBA(240, 240, 240, 0.067),
+		active:    ui.RGBA(240, 240, 240, 0.118),
+		text:      ui.Hex("#f0f0f0"),
+		muted:     ui.Hex("#989898"),
+		faint:     ui.Hex("#636363"),
+		accent:    ui.Hex("#81a1c1"),
+		accentDim: ui.RGBA(129, 161, 193, 0.55),
+		line:      ui.RGBA(240, 240, 240, 0.05),
+		selection: ui.RGBA(64, 64, 64, 0.6),
+		gutter:    ui.Hex("#666666"),
+		gutterNow: ui.Hex("#f0f0f0"),
+		status:    ui.Hex("#141414"),
+		statusFg:  ui.Hex("#989898"),
+		modified:  ui.Hex("#f1b467"),
+		danger:    ui.Hex("#e34671"),
+		match:     ui.RGBA(136, 192, 208, 0.27),
+		matchNow:  ui.RGBA(136, 192, 208, 0.40),
+		matchRing: ui.RGBA(136, 192, 208, 0.85),
+		guide:     ui.RGBA(240, 240, 240, 0.075),
+		guideNow:  ui.RGBA(240, 240, 240, 0.19),
+		bracket:   ui.RGBA(240, 240, 240, 0.30),
+		word:      ui.RGBA(240, 240, 240, 0.09),
+		shadow:    ui.RGBA(0, 0, 0, 0.4),
+		added:     ui.Hex("#3fa266"),
+		changed:   ui.Hex("#d2943e"),
+		removed:   ui.Hex("#e34671"),
+		// Cursor Dark's button, as it is under the pointer, with its dark
+		// label; and its red, a button as bright, with the same.
+		fill:           ui.Hex("#81a1c1"),
+		fillHover:      ui.Hex("#87a6c4"),
+		fillText:       ui.Hex("#191c22"),
+		dangerFill:     ui.Hex("#fc6b83"),
+		dangerText:     ui.Hex("#191c22"),
+		surface:        ui.Hex("#1f1f1f"),
+		surfaceHover:   ui.Hex("#262626"),
+		surfacePressed: ui.Hex("#2e2e2e"),
+		scrollbar:      ui.RGBA(240, 240, 240, 0.14),
+		inverse:        ui.Hex("#2a2a2a"),
+		inverseText:    ui.Hex("#f0f0f0"),
+		ansi: [16]ui.Color{
+			ui.Hex("#242424"), ui.Hex("#fc6b83"), ui.Hex("#3fa266"), ui.Hex("#d2943e"),
+			ui.Hex("#81a1c1"), ui.Hex("#b48ead"), ui.Hex("#88c0d0"), ui.Hex("#f0f0f0"),
+			ui.Hex("#9a9a9a"), ui.Hex("#fc6b83"), ui.Hex("#70b489"), ui.Hex("#f1b467"),
+			ui.Hex("#87a6c4"), ui.Hex("#b48ead"), ui.Hex("#88c0d0"), ui.Hex("#ffffff"),
+		},
+	}
+	p.fillPressed = p.fill.Mix(black, 0.15)
+	s := &p.syntax
+	s[highlight.Plain] = ui.Hex("#d6d6dd")
+	s[highlight.Keyword] = ui.Hex("#82d2ce")
+	s[highlight.Type] = ui.Hex("#87c3ff")
+	s[highlight.Function] = ui.Hex("#efb080")
+	s[highlight.String] = ui.Hex("#e394dc")
+	s[highlight.Number] = ui.Hex("#ebc88d")
+	s[highlight.Comment] = ui.Hex("#9a9a9a")
+	s[highlight.Operator] = ui.Hex("#d6d6dd")
+	s[highlight.Punctuation] = ui.Hex("#a4a4a4")
+	s[highlight.Constant] = ui.Hex("#82d2ce")
+	s[highlight.Builtin] = ui.Hex("#82d2ce")
+	s[highlight.Tag] = ui.Hex("#87c3ff")
+	s[highlight.Attribute] = ui.Hex("#aaa0fa")
+	s[highlight.Variable] = ui.Hex("#d6d6dd")
+	s[highlight.Heading] = ui.Hex("#aaa0fa")
+	s[highlight.Deleted] = ui.Hex("#fc6b83")
+	s[highlight.Inserted] = ui.Hex("#70b489")
+	return p
+}
+
 var (
 	black, white = ui.Hex("#000000"), ui.Hex("#ffffff")
 
@@ -789,16 +946,20 @@ var (
 
 	grokBotLightPal = grokBotLightPalette().derive()
 	grokBotDarkPal  = grokBotDarkPalette().derive()
+
+	cursorLightPal = cursorLightPalette().derive()
+	cursorDarkPal  = cursorDarkPalette().derive()
 )
 
 // The Themes of the settings beside Mayoi's own, "": The Matrix, which is
-// always dark, and Claude, Qoder and Grok Bot, light or dark as the
-// Appearance is.
+// always dark, and Claude, Qoder, Grok Bot and Cursor, light or dark as
+// the Appearance is.
 const (
 	themeMatrix  = "matrix"
 	themeClaude  = "claude"
 	themeQoder   = "qoder"
 	themeGrokBot = "grokbot"
+	themeCursor  = "cursor"
 )
 
 // paletteFor returns the palette of a theme of the settings, in a window
@@ -819,6 +980,10 @@ func paletteFor(theme string, dark bool) *palette {
 		return grokBotDarkPal
 	case theme == themeGrokBot:
 		return grokBotLightPal
+	case theme == themeCursor && dark:
+		return cursorDarkPal
+	case theme == themeCursor:
+		return cursorLightPal
 	case dark:
 		return darkPal
 	}

@@ -123,14 +123,14 @@ func themeHarness(t testing.TB, theme string, dark bool) *harness {
 	return hs
 }
 
-// Claude, Qoder and Grok Bot have a light and a dark palette, as the
-// appearance is.
+// Claude, Qoder, Grok Bot and Cursor have a light and a dark palette, as
+// the appearance is.
 func TestLightOrDarkThemes(t *testing.T) {
 	for _, tc := range []struct {
 		name, theme string
 		light, dark *palette
 	}{{"Claude", themeClaude, claudeLightPal, claudeDarkPal}, {"Qoder", themeQoder, qoderLightPal, qoderDarkPal},
-		{"Grok Bot", themeGrokBot, grokBotLightPal, grokBotDarkPal}} {
+		{"Grok Bot", themeGrokBot, grokBotLightPal, grokBotDarkPal}, {"Cursor", themeCursor, cursorLightPal, cursorDarkPal}} {
 		if paletteFor(tc.theme, false) != tc.light || paletteFor(tc.theme, true) != tc.dark {
 			t.Errorf("%s does not follow the window's light or dark", tc.name)
 		}
@@ -266,6 +266,10 @@ func TestShotGrokBot(t *testing.T) {
 	shotTheme(t, themeGrokBot)
 }
 
+func TestShotCursor(t *testing.T) {
+	shotTheme(t, themeCursor)
+}
+
 // shotTheme shoots a theme's welcome page and an editor, light and dark.
 func shotTheme(t *testing.T, theme string) {
 	if os.Getenv("SHOTS") == "" {
@@ -343,6 +347,13 @@ func TestThemeMenu(t *testing.T) {
 	if g := find("Grok Bot"); g == nil || !g.Checked || find("Qoder").Checked || !a.commandOn("view.theme.grokbot") {
 		t.Error("Grok Bot is not the theme checked")
 	}
+	a.setTheme(themeCursor)
+	if c := find("Cursor"); c == nil || !c.Checked || find("Grok Bot").Checked || !a.commandOn("view.theme.cursor") {
+		t.Error("Cursor is not the theme checked")
+	}
+	if a.themeMascot() != nil {
+		t.Error("Cursor has a character")
+	}
 }
 
 // A button's label reads on its face, the accent's and danger's, at the
@@ -350,7 +361,8 @@ func TestThemeMenu(t *testing.T) {
 // least at the 3:1 AA asks of large or bold text.
 func TestButtonContrast(t *testing.T) {
 	pals := map[string]*palette{"light": lightPal, "dark": darkPal, "matrix": matrixPal, "claude light": claudeLightPal, "claude dark": claudeDarkPal,
-		"qoder light": qoderLightPal, "qoder dark": qoderDarkPal, "grok bot light": grokBotLightPal, "grok bot dark": grokBotDarkPal}
+		"qoder light": qoderLightPal, "qoder dark": qoderDarkPal, "grok bot light": grokBotLightPal, "grok bot dark": grokBotDarkPal,
+		"cursor light": cursorLightPal, "cursor dark": cursorDarkPal}
 	for name, p := range pals {
 		for _, pair := range []struct {
 			what     string
@@ -375,7 +387,8 @@ func TestButtonContrast(t *testing.T) {
 // Source Control does on a light window.
 func TestStatusTextContrast(t *testing.T) {
 	pals := map[string]*palette{"light": lightPal, "dark": darkPal, "matrix": matrixPal, "claude light": claudeLightPal, "claude dark": claudeDarkPal,
-		"qoder light": qoderLightPal, "qoder dark": qoderDarkPal, "grok bot light": grokBotLightPal, "grok bot dark": grokBotDarkPal}
+		"qoder light": qoderLightPal, "qoder dark": qoderDarkPal, "grok bot light": grokBotLightPal, "grok bot dark": grokBotDarkPal,
+		"cursor light": cursorLightPal, "cursor dark": cursorDarkPal}
 	for name, p := range pals {
 		for what, fg := range map[string]ui.Color{"modified": p.modifiedFg, "added": p.addedFg, "removed": p.removedFg, "danger": p.dangerFg} {
 			for _, back := range []ui.Color{p.chrome, p.editor, p.panel} {

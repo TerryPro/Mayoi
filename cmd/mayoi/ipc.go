@@ -327,7 +327,7 @@ var commandArgs = map[string]commandArg{
 	"view.selectTheme": {"<theme>", func(a *app, arg, cwd string) (func(), error) {
 		id := "view.theme." + strings.ToLower(strings.ReplaceAll(arg, " ", ""))
 		if !slices.ContainsFunc(a.commands(), func(cmd command) bool { return cmd.id == id }) {
-			return nil, fmt.Errorf("no theme %s: mayoi, matrix, claude, qoder or grokbot", arg)
+			return nil, fmt.Errorf("no theme %s: mayoi, matrix, claude, qoder, grokbot or cursor", arg)
 		}
 		return func() { a.run(id) }, nil
 	}},

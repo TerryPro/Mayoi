@@ -5,6 +5,8 @@ needs a `## <version>` section here, or its build fails.
 
 ## Unreleased
 
+- **View → Theme → Cursor** takes Cursor's own Cursor Light and Cursor Dark, as the Appearance is.
+- The Cursor theme colors the code and the terminal as Cursor does, with its blue for buttons.
 - Press `⌘⏎` in quick open to open the chosen file in the column to the side, splitting one if needed.
 - The Markdown preview shows `[[note]]` and `[[note|label]]` wiki links, and a click opens the note.
 - Wiki links find their note next to the file, at the repository's root, or anywhere in it, as Obsidian does.

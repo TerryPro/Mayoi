@@ -116,6 +116,16 @@ func (msgs Messages) ThemeAboutClaude() string {
 	return Catalog.Format(msgs.locale, "themeAboutClaude", nil)
 }
 
+// ThemeAboutCursor says "Cursor's greys, with its blue"
+// in the language the app shows.
+func ThemeAboutCursor() string { return In(i18n.Locale()).ThemeAboutCursor() }
+
+// ThemeAboutCursor says "Cursor's greys, with its blue"
+// in the language of msgs.
+func (msgs Messages) ThemeAboutCursor() string {
+	return Catalog.Format(msgs.locale, "themeAboutCursor", nil)
+}
+
 // ThemeAboutGrokBot says "Grok Bot's Sand: monochrome, with its blue"
 // in the language the app shows.
 func ThemeAboutGrokBot() string { return In(i18n.Locale()).ThemeAboutGrokBot() }

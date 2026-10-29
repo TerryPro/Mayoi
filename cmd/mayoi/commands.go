@@ -193,6 +193,7 @@ func (a *app) commandsIn(t locales.Messages) []command {
 		{"view.theme.claude", "Claude", "", func() { a.setTheme(themeClaude) }},
 		{"view.theme.qoder", "Qoder", "", func() { a.setTheme(themeQoder) }},
 		{"view.theme.grokbot", "Grok Bot", "", func() { a.setTheme(themeGrokBot) }},
+		{"view.theme.cursor", "Cursor", "", func() { a.setTheme(themeCursor) }},
 		{localeCommand + "system", t.CmdViewLocaleSystem(), "", func() { a.setLocale("") }},
 	}
 	// The languages, each named in itself.
@@ -553,7 +554,7 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 				item("view.selectTheme"), mygo.Separator(),
 				appearance("view.appearance.system", ""), appearance("view.appearance.light", "light"), appearance("view.appearance.dark", "dark"),
 				mygo.Separator(), theme("view.theme.mayoi", ""), theme("view.theme.matrix", themeMatrix), theme("view.theme.claude", themeClaude),
-				theme("view.theme.qoder", themeQoder), theme("view.theme.grokbot", themeGrokBot),
+				theme("view.theme.qoder", themeQoder), theme("view.theme.grokbot", themeGrokBot), theme("view.theme.cursor", themeCursor),
 			}},
 			{Label: locales.MenuLanguage(), Submenu: languages}, mygo.Separator(),
 			{Role: mygo.RoleToggleFullScreen}, {Role: mygo.RoleToggleDevTools},

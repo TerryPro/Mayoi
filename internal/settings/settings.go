@@ -173,8 +173,8 @@ type Prefs struct {
 	// Appearance is "light", "dark", or "" to follow the system.
 	Appearance string `json:"appearance,omitempty"`
 	// Theme is "matrix" for The Matrix, which is always dark, "claude" for
-	// Claude, "qoder" for Qoder or "grokbot" for Grok Bot, light or dark as
-	// Appearance is, or "" for Mayoi's own.
+	// Claude, "qoder" for Qoder, "grokbot" for Grok Bot or "cursor" for
+	// Cursor, light or dark as Appearance is, or "" for Mayoi's own.
 	Theme string `json:"theme,omitempty"`
 	// SidebarRight puts the sidebar right of the editors, rather than left.
 	SidebarRight bool `json:"sidebarRight,omitempty"`

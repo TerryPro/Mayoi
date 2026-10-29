@@ -25,6 +25,7 @@ var themeChoices = []themeChoice{
 	{themeClaude, func() string { return "Claude" }, locales.ThemeAboutClaude},
 	{themeQoder, func() string { return "Qoder" }, locales.ThemeAboutQoder},
 	{themeGrokBot, func() string { return "Grok Bot" }, locales.ThemeAboutGrokBot},
+	{themeCursor, func() string { return "Cursor" }, locales.ThemeAboutCursor},
 }
 
 // themeAppearances are the appearances the box chooses between, as the

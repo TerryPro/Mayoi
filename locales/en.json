@@ -219,6 +219,7 @@
   "mermaidCannotDraw": "Cannot draw the diagram: {err}",
   "showDiagram": "Show Diagram",
   "themeAboutClaude": "Ivory and near-black, with Claude's orange",
+  "themeAboutCursor": "Cursor's greys, with its blue",
   "themeAboutGrokBot": "Grok Bot's Sand: monochrome, with its blue",
   "themeAboutMatrix": "Phosphor green, with digital rain",
   "themeAboutMayoi": "Mayoi's own, in violet",
