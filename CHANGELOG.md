@@ -8,6 +8,7 @@ needs a `## <version>` section here, or its build fails.
 - **View → Theme → Purple Gold** is always dark: a near-black sidebar and a royal purple status bar.
 - The Purple Gold theme uses classic gold for buttons, chosen rows and highlights, and golds and lavenders for code.
 - The Cursor theme's current line, word highlights, find matches and hovered rows now match Cursor's own.
+- Commit tooltips in the history no longer pop up over the rows while you scroll.
 
 ## 0.14.0
 

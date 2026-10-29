@@ -114,7 +114,15 @@ type scmState struct {
 	appear      appearing
 	appearGen   int
 	appearScope [2]int
+	// scrolledAt is when the list last scrolled: commits show no tooltip
+	// until it has rested for scmScrollQuiet.
+	scrolledAt time.Time
 }
+
+// scmScrollQuiet is how long the list rests after scrolling before its
+// commits show their tooltips again, so that none pops up over the rows
+// gliding under a still pointer.
+const scmScrollQuiet = 300 * time.Millisecond
 
 // groupEntries returns the files of each group, by path. They are worked
 // out once for each status read, as the view asks for them every frame.
@@ -520,6 +528,12 @@ func (a *gitContext) scmList(c *ui.Context) {
 				a.scmFile(c, r, &action)
 			}
 		}).Grow(1).Padding(0, 6, 8, 6)
+		out.HandleInput(func(ev ui.InputEvent) bool {
+			if ev.Kind == ui.InputScroll {
+				s.scrolledAt = ev.Time
+			}
+			return false
+		})
 		if s.section == scmChanges {
 			out.Fill()
 		}
@@ -1141,7 +1155,12 @@ func (a *gitContext) scmCommit(c *ui.Context, i int, r scmRow, action *func()) {
 	if r.at < 0 {
 		indent = scmPanelContentIndent(r.depth)
 	}
-	row := ui.Row(c).Grow(1).Gap(6).AlignItems(ui.Center).Height(scmRowHeight).Padding(0, 4, 0, indent).Tooltip(tip)
+	row := ui.Row(c).Grow(1).Gap(6).AlignItems(ui.Center).Height(scmRowHeight).Padding(0, 4, 0, indent)
+	if wait := scmScrollQuiet - c.Now().Sub(a.scm.scrolledAt); wait > 0 {
+		c.After(wait)
+	} else {
+		row.Tooltip(tip)
+	}
 	a.scmFade(c, row, r.key)
 	clicked := row.Clicked()
 	row.ContextMenu(func(m *ui.Menu) { a.scmCommitMenu(m, cm, head, action) })
