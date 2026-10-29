@@ -3,7 +3,7 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
-## Unreleased
+## 0.14.0
 
 - **View → Theme → Cursor** takes Cursor's own Cursor Light and Cursor Dark, as the Appearance is.
 - The Cursor theme colors the code and the terminal as Cursor does, with its blue for buttons.
