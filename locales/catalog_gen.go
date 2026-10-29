@@ -1966,6 +1966,16 @@ func (msgs Messages) CmdEditReplaceInFiles() string {
 	return Catalog.Format(msgs.locale, "cmdEditReplaceInFiles", nil)
 }
 
+// CmdEditSelectAll says "Select All"
+// in the language the app shows.
+func CmdEditSelectAll() string { return In(i18n.Locale()).CmdEditSelectAll() }
+
+// CmdEditSelectAll says "Select All"
+// in the language of msgs.
+func (msgs Messages) CmdEditSelectAll() string {
+	return Catalog.Format(msgs.locale, "cmdEditSelectAll", nil)
+}
+
 // CmdEditUndo says "Undo"
 // in the language the app shows.
 func CmdEditUndo() string { return In(i18n.Locale()).CmdEditUndo() }

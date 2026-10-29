@@ -151,6 +151,9 @@ type editor struct {
 	// set (selectRange).
 	pending *[2]int
 	center  bool
+	// quiet has the next frame make the pending selection without
+	// scrolling to it, as selecting all does.
+	quiet bool
 	// areaInput is whether the text area took input since the frame read
 	// its selection, which may have moved it.
 	areaInput bool

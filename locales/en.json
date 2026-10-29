@@ -420,6 +420,7 @@
   "cmdEditRedo": "Redo",
   "cmdEditReplace": "Replace",
   "cmdEditReplaceInFiles": "Replace in Files",
+  "cmdEditSelectAll": "Select All",
   "cmdEditUndo": "Undo",
   "cmdFileAutoSave": "Auto Save",
   "cmdFileClearRecent": "Clear Recently Opened",

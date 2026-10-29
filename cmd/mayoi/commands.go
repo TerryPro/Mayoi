@@ -67,6 +67,7 @@ func (a *app) commandsIn(t locales.Messages) []command {
 		{"edit.undo", t.CmdEditUndo(), "", a.editActive(func(d *editor) { d.undo() })},
 		{"edit.redo", t.CmdEditRedo(), "", a.editActive(func(d *editor) { d.redo() })},
 		{"edit.cut", t.CmdEditCut(), "CmdOrCtrl+X", a.editActive(a.cut)},
+		{"edit.selectAll", t.CmdEditSelectAll(), "CmdOrCtrl+A", a.editActive(selectAll)},
 		{"edit.find", t.CmdEditFind(), "CmdOrCtrl+F", func() { a.openFind(false) }},
 		{"edit.replace", t.CmdEditReplace(), "Alt+CmdOrCtrl+F", func() { a.openFind(true) }},
 		{"edit.findNext", t.CmdEditFindNext(), "CmdOrCtrl+G", func() { a.findStep(1) }},
@@ -530,16 +531,16 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 		it.Disabled = !a.repository().git.ghOK
 		return it
 	}
-	cut := &mygo.MenuItem{Role: mygo.RoleCut}
+	cut, selectAll := &mygo.MenuItem{Role: mygo.RoleCut}, &mygo.MenuItem{Role: mygo.RoleSelectAll}
 	if a.keyFocus == placeEditor {
-		cut = item("edit.cut")
+		cut, selectAll = item("edit.cut"), item("edit.selectAll")
 	}
 	menus := []*mygo.MenuItem{
 		appMenu,
 		{Label: locales.MenuFile(), Submenu: file},
 		{Label: locales.MenuEdit(), Submenu: []*mygo.MenuItem{
 			item("edit.undo"), item("edit.redo"), mygo.Separator(),
-			cut, {Role: mygo.RoleCopy}, {Role: mygo.RolePaste}, {Role: mygo.RoleSelectAll}, mygo.Separator(),
+			cut, {Role: mygo.RoleCopy}, {Role: mygo.RolePaste}, selectAll, mygo.Separator(),
 			item("edit.find"), item("edit.replace"), item("edit.findNext"), item("edit.findPrev"), mygo.Separator(),
 			item("edit.findInFiles"), item("edit.replaceInFiles"),
 		}},

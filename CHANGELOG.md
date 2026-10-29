@@ -5,6 +5,7 @@ needs a `## <version>` section here, or its build fails.
 
 ## Unreleased
 
+- `Cmd+A` in the editor selects all without scrolling to the end of the file.
 - A branch with a GitHub pull request shows `#123`, its checks and review in Source Control and the status bar.
 - Click the pull request badge to see its changes in a tab; right-click it for **Open on GitHub**.
 - **Git → Open Pull Request…** lists open pull requests, or opens any one by its number; it needs `gh` signed in.

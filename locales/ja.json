@@ -156,6 +156,7 @@
   "cmdEditRedo": "やり直し",
   "cmdEditReplace": "置換",
   "cmdEditReplaceInFiles": "ファイル内で置換",
+  "cmdEditSelectAll": "すべてを選択",
   "cmdEditUndo": "元に戻す",
   "cmdFileAutoSave": "自動保存",
   "cmdFileClearRecent": "最近開いた項目をクリア",

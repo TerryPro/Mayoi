@@ -222,11 +222,17 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 		// A new area puts the caret at the end: at the editor's selection,
 		// which is the start for a file just opened.
 		d.resync = d.resync || !d.caretSeen
-		jump := d.pending != nil
+		quiet := d.pending != nil && d.quiet
+		jump := d.pending != nil && !quiet
 		// A jump asked for goes a third of the way down from an edge of
 		// the view too; an edit's selection only from out of view.
 		center := jump && (d.center || !a.inView(d, g, snap, d.pending[1], view.H))
-		if r := d.pending; r != nil {
+		if r := d.pending; quiet {
+			// The view stays where it is: a pin puts it back.
+			d.sel = *r
+			a.setSelection(d, area)
+			d.pending, d.quiet, d.resync, d.parked = nil, false, false, -1
+		} else if r != nil {
 			// A jump asked for goes where it goes: no pin puts it back.
 			area.SetTextSelection(r[0], r[1])
 			d.pending, d.resync, d.parked, d.pinFrame = nil, false, -1, 0
@@ -283,6 +289,9 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 		// The view follows the caret of the editor typed in, not one that
 		// an edit made in another column moved.
 		follows := focused || jump
+		if quiet {
+			d.caret = caret
+		}
 		caretMoved := caret != d.caret && d.caretSeen && follows
 
 		if caret != d.caret || !d.caretSeen {

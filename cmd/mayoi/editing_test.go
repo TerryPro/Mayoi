@@ -615,3 +615,72 @@ func TestEditsKeepTheView(t *testing.T) {
 		}
 	}
 }
+
+// menuItem runs the item of the Edit menu labeled label.
+func menuItem(t *testing.T, hs *harness, label string) {
+	t.Helper()
+	a := hs.a
+	m := a.menu(false, func(id string, _ *mygo.Window) { a.run(id) })
+	for _, menu := range m.Items() {
+		if menu.Label != locales.MenuEdit() {
+			continue
+		}
+		for _, item := range menu.Submenu {
+			if item.Label == label && item.Click != nil {
+				item.Click(item, nil)
+				return
+			}
+		}
+	}
+	t.Fatalf("no Edit menu item %q", label)
+}
+
+func TestSelectAllKeepsView(t *testing.T) {
+	var b strings.Builder
+	for i := range 400 {
+		fmt.Fprintf(&b, "line %03d\n", i)
+	}
+	b.WriteString(strings.Repeat("wide ", 400))
+	text := b.String()
+	for _, menu := range []bool{false, true} {
+		t.Run(fmt.Sprintf("menu=%v", menu), func(t *testing.T) {
+			hs, d := editHarness(t, "all.txt", text)
+			hs.place(d, 200*9, 200*9)
+			y := d.vscroll.Y
+			if y == 0 {
+				t.Fatal("the caret's line did not scroll into view")
+			}
+			if menu {
+				menuItem(t, hs, locales.CmdEditSelectAll())
+				hs.settle()
+			} else {
+				hs.key(ui.Cmd, ui.KeyA)
+			}
+			expectSel(t, d, 0, d.buf.Snapshot().Len())
+			if d.vscroll.Y != y || d.hscroll.X != 0 {
+				t.Fatalf("scrolled to %v, %v; want %v, 0", d.hscroll.X, d.vscroll.Y, y)
+			}
+			// The caret is the selection's end: an arrow goes there.
+			hs.key(0, ui.KeyRight)
+			expectSel(t, d, d.buf.Snapshot().Len(), d.buf.Snapshot().Len())
+		})
+	}
+}
+
+func TestCutLineKeepsView(t *testing.T) {
+	var b strings.Builder
+	for i := range 400 {
+		fmt.Fprintf(&b, "line %03d\n", i)
+	}
+	hs, d := editHarness(t, "cut.txt", b.String())
+	hs.place(d, 200*9, 200*9)
+	first, last := hs.a.linesInView(hs.a.geometry(d, d.buf.Snapshot().LineCount()), d.vscroll.Y, d.vim.viewH)
+	for _, line := range []int{first + 1, (first + last) / 2, last - 1} {
+		hs.place(d, line*9+2, line*9+2)
+		y := d.vscroll.Y
+		hs.key(ui.Cmd, ui.KeyX)
+		if d.vscroll.Y != y {
+			t.Fatalf("cutting line %d scrolled from %v to %v", line, y, d.vscroll.Y)
+		}
+	}
+}

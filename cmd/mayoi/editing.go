@@ -427,6 +427,13 @@ func (a *app) cut(d *editor) {
 	deleteLines(d)
 }
 
+// selectAll selects the whole text, leaving the view where it is, as in
+// VS Code.
+func selectAll(d *editor) {
+	d.selectRange(0, d.buf.Snapshot().Len(), false)
+	d.quiet = true
+}
+
 // insertLine opens a line below the caret's, or above, with its indent.
 func insertLine(d *editor, above bool) {
 	snap := d.buf.Snapshot()
@@ -546,6 +553,8 @@ func (a *app) editorKey(d *editor, ev ui.InputEvent) bool {
 	switch m := ev.Mods; {
 	case ev.Key == ui.KeyX && m == cmdKey:
 		cmd = a.cut
+	case ev.Key == ui.KeyA && m == cmdKey:
+		cmd = selectAll
 	case ev.Key == ui.KeyTab && (m == 0 || m == ui.Shift):
 		outdent := m == ui.Shift
 		cmd = func(d *editor) { tab(d, outdent) }

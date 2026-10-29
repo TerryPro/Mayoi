@@ -156,6 +156,7 @@
   "cmdEditRedo": "重做",
   "cmdEditReplace": "替换",
   "cmdEditReplaceInFiles": "在文件中替换",
+  "cmdEditSelectAll": "全选",
   "cmdEditUndo": "撤销",
   "cmdFileAutoSave": "自动保存",
   "cmdFileClearRecent": "清除最近打开记录",
