@@ -123,6 +123,21 @@ func TestSearchFilesAndEdits(t *testing.T) {
 	s.include, s.exclude = "", ""
 	hs.settleSearch()
 
+	// Find in Folder searches the folder at the root only.
+	a.searchInFolder("web")
+	hs.settleSearch()
+	if !s.details || s.include != "/web/**" {
+		t.Errorf("find in folder: details %v, include %q", s.details, s.include)
+	}
+	if got := strings.Join(resultFiles(s), " "); got != "web/index.html" {
+		t.Errorf("find in folder: %q", got)
+	}
+	if s.includes.Match("app/web/index.html") {
+		t.Error("find in folder matches a nested folder of the same name")
+	}
+	s.include, s.details = "", false
+	hs.settleSearch()
+
 	// An open file is searched as it is, unsaved edits and all.
 	a.openFile(hs.path("internal/b/b.ts"), true)
 	hs.settle()

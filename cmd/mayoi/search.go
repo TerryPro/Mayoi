@@ -140,6 +140,17 @@ func (a *app) showSearch(replace bool) {
 	s.input.Focus()
 }
 
+// searchInFolder shows search with its files to include set to a folder,
+// rel to the root, and searches it again for the query.
+func (a *app) searchInFolder(rel string) {
+	s := &a.inFiles
+	s.include, s.details = "/"+rel+"/**", true
+	a.showSearch(false)
+	if s.query != "" {
+		a.startSearch()
+	}
+}
+
 // resetSearch forgets the results, as for another folder, keeping the
 // query to search it again.
 func (a *app) resetSearch() {

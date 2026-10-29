@@ -682,6 +682,7 @@
   "filesCount": "{count, plural, one {# file} other {# files}}",
   "findCount": "{cur} of {total}",
   "findCountMore": "{cur} of {total}+",
+  "findInFolderEllipsis": "Find in Folder…",
   "findInvalid": "Invalid expression",
   "findLabel": "Find",
   "findMatchCase": "Match Case",

@@ -438,6 +438,7 @@
   "filesCount": "{count} 個のファイル",
   "findCount": "{cur}/{total}",
   "findCountMore": "{cur}/{total}+",
+  "findInFolderEllipsis": "フォルダー内を検索…",
   "findInvalid": "無効な式",
   "findLabel": "検索",
   "findMatchCase": "大文字と小文字を区別する",

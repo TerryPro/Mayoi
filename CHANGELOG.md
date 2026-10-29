@@ -9,6 +9,7 @@ needs a `## <version>` section here, or its build fails.
 - The Purple Gold theme uses classic gold for buttons, chosen rows and highlights, and golds and lavenders for code.
 - The Cursor theme's current line, word highlights, find matches and hovered rows now match Cursor's own.
 - Commit tooltips in the history no longer pop up over the rows while you scroll.
+- Right-click a folder in **Explorer** and choose **Find in Folder…** to search only that folder.
 
 ## 0.14.0
 

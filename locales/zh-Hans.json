@@ -438,6 +438,7 @@
   "filesCount": "{count} 个文件",
   "findCount": "{cur}/{total}",
   "findCountMore": "{cur}/{total}+",
+  "findInFolderEllipsis": "在文件夹中查找…",
   "findInvalid": "无效的表达式",
   "findLabel": "查找",
   "findMatchCase": "区分大小写",

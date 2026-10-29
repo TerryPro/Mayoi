@@ -4608,6 +4608,16 @@ func (msgs Messages) FindCountMore(cur int, total int) string {
 	return Catalog.Format(msgs.locale, "findCountMore", map[string]any{"cur": cur, "total": total})
 }
 
+// FindInFolderEllipsis says "Find in Folder…"
+// in the language the app shows.
+func FindInFolderEllipsis() string { return In(i18n.Locale()).FindInFolderEllipsis() }
+
+// FindInFolderEllipsis says "Find in Folder…"
+// in the language of msgs.
+func (msgs Messages) FindInFolderEllipsis() string {
+	return Catalog.Format(msgs.locale, "findInFolderEllipsis", nil)
+}
+
 // FindInvalid says "Invalid expression"
 // in the language the app shows.
 func FindInvalid() string { return In(i18n.Locale()).FindInvalid() }

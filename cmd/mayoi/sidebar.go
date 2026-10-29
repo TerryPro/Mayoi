@@ -345,6 +345,9 @@ func (a *app) fileTree(c *ui.Context) {
 			if isDir && m.Item(locales.OpenInTerminal()).Chosen() {
 				action = func() { a.openTerminal(path) }
 			}
+			if isDir && m.Item(locales.FindInFolderEllipsis()).Chosen() {
+				action = func() { a.searchInFolder(t.Rel(path)) }
+			}
 			m.Separator()
 			if _, changed := a.repositoryForPath(path).git.entries[path]; changed && !isDir {
 				if m.Item(locales.CmdGitOpenChanges()).Chosen() {
