@@ -154,7 +154,7 @@ func TestScmToggleSelectionAndKeyboardNavigation(t *testing.T) {
 	expectScmSelection(t, hs, "c.txt", "d.txt")
 	hs.key(ui.Shift, ui.KeyHome)
 	expectScmSelection(t, hs, "a.txt", "b.txt", "c.txt")
-	hs.key(ui.Cmd, ui.KeyA)
+	hs.command("selectAll")
 	expectScmSelection(t, hs, "a.txt", "b.txt", "c.txt", "d.txt")
 }
 
@@ -297,7 +297,7 @@ func TestScmCommitSelectionAndCopy(t *testing.T) {
 	click(0, "loose.txt")
 	click(0, "fourth")
 	expectScmSelection(t, hs)
-	hs.key(ui.Cmd, ui.KeyC)
+	hs.command("copy")
 	if got := tt.Clipboard(); got != short("fourth") {
 		t.Fatalf("copied after a click %q", got)
 	}
@@ -305,7 +305,7 @@ func TestScmCommitSelectionAndCopy(t *testing.T) {
 	if got := chosen(); got != "fourth,second" {
 		t.Fatalf("Cmd-click chose %q", got)
 	}
-	hs.key(ui.Cmd, ui.KeyC)
+	hs.command("copy")
 	if got := tt.Clipboard(); got != short("fourth", "second") {
 		t.Fatalf("copied %q", got)
 	}
@@ -322,14 +322,14 @@ func TestScmCommitSelectionAndCopy(t *testing.T) {
 	if got := chosen(); got != "fourth,third,second,first" {
 		t.Fatalf("Shift+Down chose %q", got)
 	}
-	hs.key(ui.Cmd, ui.KeyC)
+	hs.command("copy")
 	if got := tt.Clipboard(); got != short("fourth", "third", "second", "first") {
 		t.Fatalf("copied range %q", got)
 	}
 	click(0, "third")
-	hs.key(ui.Cmd, ui.KeyA)
+	hs.command("selectAll")
 	if got := chosen(); got != "fourth,third,second,first" {
-		t.Fatalf("Cmd+A chose %q", got)
+		t.Fatalf("Select All chose %q", got)
 	}
 	click(0, "loose.txt")
 	if got := chosen(); got != "" {
