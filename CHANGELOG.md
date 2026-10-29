@@ -7,6 +7,7 @@ needs a `## <version>` section here, or its build fails.
 
 - Mermaid diagrams in a Markdown preview open over the window from their hover button or a double-click.
 - An opened diagram zooms with its `−`/`+` buttons or `Cmd`-scroll, and drags to move; `Esc` closes it.
+- Bold and italic in a Markdown preview render when CJK punctuation sits next to Latin text.
 
 ## 0.14.2
 
