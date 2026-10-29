@@ -25,6 +25,7 @@ needs a `## <version>` section here, or its build fails.
 - **Stash Changes…** and **Stash Including Untracked…** in the Source Control **⋯** menu stash your changes.
 - The **⋯** menu's **Stashes** submenu applies, pops or drops one of the last ten stashes; dropping asks first.
 - **Git → Stashes…** lists every stash to search, with ⏎ to apply, ⌘⏎ to pop and ⌘⌫ to drop.
+- Tall Mermaid diagrams in a preview show their boxes and arrows, not just their labels.
 
 ## 0.14.1
 

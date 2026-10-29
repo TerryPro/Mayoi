@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"strings"
@@ -42,6 +43,38 @@ func TestRenderMermaid(t *testing.T) {
 				t.Errorf("%s: a label at %v,%v outside %vx%v", name, l.x, l.y, d.w, d.h)
 			}
 		}
+	}
+}
+
+func TestRenderMermaidTiles(t *testing.T) {
+	var b strings.Builder
+	b.WriteString("flowchart TD\n")
+	for i := range 30 {
+		fmt.Fprintf(&b, "N%d[Step %d<br/>more] --> N%d\n", i, i, i+1)
+	}
+	d := renderMermaid(b.String(), testMermaidStyle())
+	if d.err != "" {
+		t.Fatal(d.err)
+	}
+	if d.h <= mermaidTileSide || len(d.tiles) < 2 {
+		t.Fatalf("%vx%v in %d tiles", d.w, d.h, len(d.tiles))
+	}
+	area := float32(0)
+	for _, tile := range d.tiles {
+		w, h := tile.svg.Size()
+		if tile.w > mermaidTileSide || tile.h > mermaidTileSide || w != tile.w || h != tile.h {
+			t.Errorf("tile at %v,%v is %vx%v, its SVG %vx%v", tile.x, tile.y, tile.w, tile.h, w, h)
+		}
+		if tile.x+tile.w > d.w+0.01 || tile.y+tile.h > d.h+0.01 {
+			t.Errorf("tile at %v,%v %vx%v past %vx%v", tile.x, tile.y, tile.w, tile.h, d.w, d.h)
+		}
+		area += tile.w * tile.h
+	}
+	if math.Abs(float64(area-d.w*d.h)) > 1 {
+		t.Errorf("tiles cover %v of %v", area, d.w*d.h)
+	}
+	if small := renderMermaid("flowchart LR\nA --> B", testMermaidStyle()); len(small.tiles) != 1 || small.tiles[0].svg != small.svg {
+		t.Errorf("a small diagram in %d tiles", len(small.tiles))
 	}
 }
 
