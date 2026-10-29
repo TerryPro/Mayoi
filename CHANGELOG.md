@@ -11,6 +11,7 @@ needs a `## <version>` section here, or its build fails.
 - A pull request tab shows the same changes as GitHub, inline or side by side, with its state and branches on top.
 - Check **Viewed** on a file of a pull request to fold it and mark it viewed on GitHub, as its own checkbox does.
 - When new commits reach the pull request, its tab offers **Reload** to show them.
+- Commits that head an open pull request show a `#123` chip in the history; click it to open its changes.
 - **Git → Open File on Remote** opens the file on GitHub, GitLab or Bitbucket at the caret line or selected lines.
 - **Git → Copy Permalink** copies a link to the selected lines at the current commit.
 - Both are also in the tab and Explorer file context menus.

@@ -1137,6 +1137,7 @@ func (a *gitContext) scmCommit(c *ui.Context, i int, r scmRow, action *func()) {
 	unpushed := g.unpushed[cm.Hash]
 	head := g.status != nil && g.status.Head == cm.Hash
 	badges := refBadges(cm.Refs)
+	prs := a.prHeadsAt(cm.Hash)
 	tip := fmt.Sprintf("%s\n%s · %s · %s", cm.Subject, cm.Author, ago(cm.Time, time.Now()), cm.Short())
 	if unpushed {
 		tip += locales.ScmNotPushed()
@@ -1150,6 +1151,9 @@ func (a *gitContext) scmCommit(c *ui.Context, i int, r scmRow, action *func()) {
 			names[i] = b.label()
 		}
 		tip += "\n" + strings.Join(names, ", ")
+	}
+	for _, pr := range prs {
+		tip += "\n" + prHeadTip(pr)
 	}
 	indent := float32(6)
 	if r.at < 0 {
@@ -1205,14 +1209,20 @@ func (a *gitContext) scmCommit(c *ui.Context, i int, r scmRow, action *func()) {
 		if r.at >= 0 {
 			lead += 12 + 6 + graphLaneW*float32(lanes-1) + 12 + 6
 		}
-		shown, badgeW := a.app.badgeRoom(len(badges), indent-6, lead)
-		for i, bd := range badges {
-			if i == shown && len(badges) > shown {
-				ui.Text(c, fmt.Sprintf("+%d", len(badges)-i)).FontSize(10.5).TextColor(p.muted).Padding(0, 4).
+		// The pull requests whose head it is go first, then its refs.
+		n := len(prs) + len(badges)
+		shown, badgeW := a.app.badgeRoom(n, indent-6, lead)
+		for i := range n {
+			if i == shown && n > shown {
+				ui.Text(c, fmt.Sprintf("+%d", n-i)).FontSize(10.5).TextColor(p.muted).Padding(0, 4).
 					Height(16).Radius(4).Background(p.hover).Shrink(0)
 				break
 			}
-			a.app.refBadge(c, bd, lane, badgeW)
+			if i < len(prs) {
+				a.prHeadChip(c, cm.Hash, prs[i], lane, badgeW, action)
+				continue
+			}
+			a.app.refBadge(c, badges[i-len(prs)], lane, badgeW)
 		}
 		col := p.text
 		switch {

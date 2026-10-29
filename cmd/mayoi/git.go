@@ -109,6 +109,19 @@ type gitState struct {
 	prWake    *time.Timer
 	ghOK      bool
 	ghProbed  bool
+
+	// prHeads is the pull requests open of prHeadsRepo by the commit at
+	// their head, as gh last told, which the history marks; prHeadsRead
+	// is when it was asked last, of the refs prHeadsOf counts. As for pr,
+	// prHeadsRunning is set while gh runs, prHeadsOff once gh could not
+	// tell, and prHeadsWake draws a frame when it is time to ask again.
+	prHeads        map[string][]git.PRHead
+	prHeadsRepo    *git.Repo
+	prHeadsOf      int
+	prHeadsRead    time.Time
+	prHeadsRunning bool
+	prHeadsOff     bool
+	prHeadsWake    *time.Timer
 }
 
 // historyPage is how many commits the history reads at first, and more

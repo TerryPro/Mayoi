@@ -351,6 +351,11 @@ source control and the status bar; click it to open its changes in a tab, or rig
 comes from the `gh` CLI, run where the repository is, a host's for Remote SSH, and shows nothing without `gh` or its
 sign-in. It is asked for again every minute while the window shows, every 30 seconds while checks run.
 
+A commit of the history that is the head of a pull request open shows `#123` first among its branches and tags, muted
+for a draft; click it to open the pull request's changes in a tab, or right-click it for **Open on GitHub**. The pull
+requests come from `gh` the same way, read in the background after the history, again as the refs change and every two
+minutes, so the history never waits for them; without `gh` or its sign-in, no commit shows one.
+
 **Git → Open Pull Request…**, also in source control's **⋯** menu, lists the pull requests open, the branch's first;
 type to find one by its number, title, author or branch, or type any number to open that one, whatever its state. Its
 tab shows what GitHub shows, the changes from where its head left its base to its head, inline or side by side like

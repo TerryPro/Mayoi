@@ -1007,6 +1007,7 @@
   "prChecksPassed": "{count, plural, one {# check passed} other {# checks passed}}",
   "prChecksPending": "{count, plural, one {# check running} other {# checks running}}",
   "prClosed": "Closed",
+  "prHeadTip": "Pull request {number}: {title}",
   "prMerged": "Merged",
   "prOpen": "Open",
   "prReviewRequired": "Review required",

@@ -7892,6 +7892,16 @@ func (msgs Messages) PrClosed() string {
 	return Catalog.Format(msgs.locale, "prClosed", nil)
 }
 
+// PrHeadTip says "Pull request {number}: {title}"
+// in the language the app shows.
+func PrHeadTip(number string, title string) string { return In(i18n.Locale()).PrHeadTip(number, title) }
+
+// PrHeadTip says "Pull request {number}: {title}"
+// in the language of msgs.
+func (msgs Messages) PrHeadTip(number string, title string) string {
+	return Catalog.Format(msgs.locale, "prHeadTip", map[string]any{"number": number, "title": title})
+}
+
 // PrMerged says "Merged"
 // in the language the app shows.
 func PrMerged() string { return In(i18n.Locale()).PrMerged() }

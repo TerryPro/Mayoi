@@ -94,6 +94,45 @@ func parsePRList(b []byte) ([]PRListed, error) {
 	return prs, nil
 }
 
+// PRHead is a pull request open, as the commit at its head shows it.
+type PRHead struct {
+	Number int
+	Title  string
+	URL    string
+	Draft  bool
+}
+
+// PullRequestHeads lists the pull requests open by the commit at their
+// head, which the history marks.
+func (r *Repo) PullRequestHeads() (map[string][]PRHead, error) {
+	out, err := r.gh("pr", "list", "--state", "open", "--limit", "100", "--json", "number,title,url,isDraft,headRefOid")
+	if err != nil {
+		return nil, err
+	}
+	return parsePRHeads(out)
+}
+
+func parsePRHeads(b []byte) (map[string][]PRHead, error) {
+	var vs []struct {
+		Number     int
+		Title      string
+		URL        string
+		IsDraft    bool
+		HeadRefOid string
+	}
+	if err := json.Unmarshal(b, &vs); err != nil {
+		return nil, err
+	}
+	heads := map[string][]PRHead{}
+	for _, v := range vs {
+		if v.Number == 0 || !isCommitID(v.HeadRefOid) {
+			continue
+		}
+		heads[v.HeadRefOid] = append(heads[v.HeadRefOid], PRHead{Number: v.Number, Title: v.Title, URL: v.URL, Draft: v.IsDraft})
+	}
+	return heads, nil
+}
+
 // GitHubReady reports whether the GitHub CLI is installed and signed in
 // where the repository is.
 func (r *Repo) GitHubReady() error {

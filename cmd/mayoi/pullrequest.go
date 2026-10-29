@@ -19,6 +19,7 @@ const (
 	prEvery        = 60 * time.Second
 	prPendingEvery = 30 * time.Second
 	prOffEvery     = 10 * time.Minute
+	prHeadsEvery   = 2 * time.Minute
 )
 
 // refreshPR asks gh in the background for the pull request of the branch
@@ -80,6 +81,65 @@ func (a *gitContext) refreshPR() {
 			g.prWake = time.AfterFunc(a.prEvery(), a.app.invalidate)
 		})
 	})
+}
+
+// refreshPRHeads asks gh in the background for the pull requests open, by
+// the commit at their head, for the history to mark: once it is read, as
+// the refs change, or as the last answer gets old; only while the window
+// shows the project. The history never waits for it.
+func (a *gitContext) refreshPRHeads() {
+	g := a.git
+	if !a.live() || len(g.history) == 0 || g.prHeadsRunning || !a.app.online() || !a.app.host.shown() {
+		return
+	}
+	every := prHeadsEvery
+	if g.prHeadsOff {
+		every = prOffEvery
+	}
+	if g.prHeadsRepo == g.repo && g.prHeadsOf == g.refsGen && time.Since(g.prHeadsRead) < every {
+		return
+	}
+	if g.prHeadsRepo != g.repo {
+		g.prHeads = nil
+	}
+	g.prHeadsRunning = true
+	r, refs := g.repo, g.refsGen
+	bg.Go(func() {
+		defer recoverCrash()
+		heads, err := r.PullRequestHeads()
+		a.app.post(func() {
+			g.prHeadsRunning = false
+			if g.repo != r {
+				return
+			}
+			g.prHeadsRepo, g.prHeadsOf, g.prHeadsRead = r, refs, time.Now()
+			switch {
+			case err == nil:
+				g.prHeads, g.prHeadsOff = heads, false
+			case errors.Is(err, remote.ErrOffline):
+				// The host is away: what was read stays until it is back.
+			default:
+				g.prHeads, g.prHeadsOff = nil, true
+			}
+			every := prHeadsEvery
+			if g.prHeadsOff {
+				every = prOffEvery
+			}
+			if g.prHeadsWake != nil {
+				g.prHeadsWake.Stop()
+			}
+			g.prHeadsWake = time.AfterFunc(every, a.app.invalidate)
+		})
+	})
+}
+
+// prHeadsAt is the pull requests open whose head is commit hash.
+func (a *gitContext) prHeadsAt(hash string) []git.PRHead {
+	g := a.git
+	if g.prHeadsRepo != g.repo {
+		return nil
+	}
+	return g.prHeads[hash]
 }
 
 func (a *gitContext) prEvery() time.Duration {
@@ -213,4 +273,46 @@ func prTip(pr *git.PR) string {
 		parts = append(parts, review)
 	}
 	return strings.Join(parts, " · ")
+}
+
+// prHeadChip shows a pull request open whose head is a commit of the
+// history, in its lane's color, a draft's in the plain colors; a click
+// opens its changes in a tab.
+func (a *gitContext) prHeadChip(c *ui.Context, hash string, pr git.PRHead, lane ui.Color, maxW float32, action *func()) {
+	p := a.app.pal
+	fg, bg := lane, lane.Alpha(0.16)
+	if pr.Draft {
+		fg, bg = p.muted, p.hover
+	}
+	tip := prHeadTip(pr)
+	b := ui.ButtonBase(c.Key("prhead:"+hash+":"+strconv.Itoa(pr.Number))).Height(16).Padding(0, 5, 0, 4).Gap(3).
+		Radius(4).AlignItems(ui.Center).MaxWidth(maxW).Shrink(0).Label(tip).Tooltip(tip)
+	if b.Hovered() {
+		bg = mix(bg, p.hover, 0.5)
+	}
+	b.Background(bg)
+	b.Children(func() {
+		ui.Icon(c, iconPullRequest).FontSize(10).TextColor(fg).Shrink(0)
+		ui.Text(c, "#"+strconv.Itoa(pr.Number)).FontSize(11).FontWeight(600).TextColor(fg).SingleLine().Shrink(1)
+	})
+	b.ContextMenu(func(m *ui.Menu) {
+		if m.Item(locales.PrOpenChanges()).Chosen() {
+			*action = func() { a.openPullRequest(pr.Number) }
+		}
+		if m.Item(locales.PrOpenOnGitHub()).Disabled(pr.URL == "").Chosen() {
+			*action = func() { a.app.services.OpenURL(pr.URL) }
+		}
+	})
+	if b.Clicked() {
+		*action = func() { a.openPullRequest(pr.Number) }
+	}
+}
+
+// prHeadTip says which pull request a commit is the head of, and its title.
+func prHeadTip(pr git.PRHead) string {
+	s := locales.PrHeadTip("#"+strconv.Itoa(pr.Number), pr.Title)
+	if pr.Draft {
+		s += " · " + locales.PrDraft()
+	}
+	return s
 }

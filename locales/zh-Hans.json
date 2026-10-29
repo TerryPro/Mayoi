@@ -752,6 +752,7 @@
   "prChecksPassed": "{count} 项检查通过",
   "prChecksPending": "{count} 项检查进行中",
   "prClosed": "已关闭",
+  "prHeadTip": "拉取请求 {number}：{title}",
   "prMerged": "已合并",
   "prOpen": "开启",
   "prReviewRequired": "待审查",

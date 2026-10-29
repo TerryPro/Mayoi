@@ -135,6 +135,7 @@ func (a *app) refreshGit() {
 		ctx.refreshGit()
 	}
 	a.repository().refreshPR()
+	a.repository().refreshPRHeads()
 }
 
 // The index and module roots are read in the background after Git metadata

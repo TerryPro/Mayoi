@@ -752,6 +752,7 @@
   "prChecksPassed": "{count} 件のチェックに成功",
   "prChecksPending": "{count} 件のチェックを実行中",
   "prClosed": "クローズ済み",
+  "prHeadTip": "プルリクエスト {number}: {title}",
   "prMerged": "マージ済み",
   "prOpen": "オープン",
   "prReviewRequired": "レビュー待ち",
