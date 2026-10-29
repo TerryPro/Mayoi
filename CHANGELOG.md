@@ -6,7 +6,11 @@ needs a `## <version>` section here, or its build fails.
 ## Unreleased
 
 - A branch with a GitHub pull request shows `#123`, its checks and review in Source Control and the status bar.
-- Click the pull request badge to open the pull request in the browser; it needs the `gh` CLI signed in.
+- Click the pull request badge to see its changes in a tab; right-click it for **Open on GitHub**.
+- **Git → Open Pull Request…** lists open pull requests, or opens any one by its number; it needs `gh` signed in.
+- A pull request tab shows the same changes as GitHub, inline or side by side, with its state and branches on top.
+- Check **Viewed** on a file of a pull request to fold it and mark it viewed on GitHub, as its own checkbox does.
+- When new commits reach the pull request, its tab offers **Reload** to show them.
 - **Git → Open File on Remote** opens the file on GitHub, GitLab or Bitbucket at the caret line or selected lines.
 - **Git → Copy Permalink** copies a link to the selected lines at the current commit.
 - Both are also in the tab and Explorer file context menus.

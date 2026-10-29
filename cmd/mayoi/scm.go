@@ -1706,6 +1706,15 @@ func (a *gitContext) scmMenu(m *ui.Menu) {
 		m.Submenu(locales.ScmStashes(), a.stashMenu)
 	}
 	m.Separator()
+	if g.ghOK {
+		if pr := a.currentPR(); pr != nil && m.Item(locales.PrOpenChanges()).Chosen() {
+			a.app.post(func() { a.openPullRequest(pr.Number) })
+		}
+		if m.Item(locales.CmdGitOpenPullRequest()).Chosen() {
+			a.app.post(a.openPRPicker)
+		}
+		m.Separator()
+	}
 	if m.Item(locales.CmdGitFetch()).Disabled(g.busy != "").Chosen() {
 		a.app.post(a.fetch)
 	}

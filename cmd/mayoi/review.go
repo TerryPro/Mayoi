@@ -177,7 +177,10 @@ func (n *reviewNote) ref(rel func(string) string) string {
 	if n.oldSide {
 		tags = append(tags, "removed lines, numbered as before the change")
 	}
+	pr, prFrom, prTo, isPR := parsePRKey(n.commit)
 	switch {
+	case isPR:
+		tags = append(tags, fmt.Sprintf("in pull request #%d, the changes from commit %s to %s", pr, git.ShortHash(prFrom), git.ShortHash(prTo)))
 	case strings.Contains(n.commit, ".."):
 		from, to, _ := strings.Cut(n.commit, "..")
 		tags = append(tags, "in the changes from commit "+git.ShortHash(from)+" to "+git.ShortHash(to))

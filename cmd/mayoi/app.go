@@ -289,12 +289,17 @@ type app struct {
 	// press closes it rather than shows it.
 	middle *colTab
 
+	// viewedW is how wide the mark of a pull request's file viewed is in
+	// its header, with the gap before the counts, as measured last.
+	viewedW float32
+
 	quick      quickOpen
 	palette    []paletteEntry    // the commands of the command palette, made as it first opens
 	waits      []docWait         // the mayoi --wait commands waiting for documents to close
 	hints      map[string]string // the keys of the commands, as tooltips show them
 	branches   branchPicker      // the box that switches branches
 	stashes    stashPicker       // the box of the stashes
+	prs        prPicker          // the box of the pull requests
 	recents    recentPicker      // the box of the recent folders
 	themes     themePicker       // the box of the color themes
 	remotePick remotePicker      // the box that connects to a host

@@ -47,8 +47,18 @@ var (
 // PullRequest asks the GitHub CLI for the pull request of the branch
 // checked out. In a folder of another machine, gh runs there, as git does.
 func (r *Repo) PullRequest() (*PR, error) {
+	out, err := r.gh("pr", "view", "--json", "number,state,statusCheckRollup,reviewDecision,url")
+	if err != nil {
+		return nil, err
+	}
+	return parsePR(out)
+}
+
+// gh runs the GitHub CLI in the work tree, where the repository is, and
+// says why it failed as ErrNoPR, ErrNoGH or remote.ErrOffline.
+func (r *Repo) gh(args ...string) ([]byte, error) {
 	env := []string{"GH_PROMPT_DISABLED=1", "GH_NO_UPDATE_NOTIFIER=1", "NO_COLOR=1", "GIT_TERMINAL_PROMPT=0"}
-	cmd, err := vfs.Command(r.Root, env, nil, "gh", "pr", "view", "--json", "number,state,statusCheckRollup,reviewDecision,url")
+	cmd, err := vfs.Command(r.Root, env, nil, "gh", args...)
 	if err != nil {
 		return nil, err
 	}
@@ -58,12 +68,13 @@ func (r *Repo) PullRequest() (*PR, error) {
 		if vfs.IsRemote(r.Root) && !remote.IsConnected(r.Root) {
 			return nil, remote.ErrOffline
 		}
-		if strings.Contains(errb.String(), "no pull requests found") {
+		msg := strings.TrimSpace(errb.String())
+		if strings.Contains(msg, "no pull requests found") || strings.Contains(msg, "Could not resolve to a PullRequest") {
 			return nil, ErrNoPR
 		}
-		return nil, fmt.Errorf("%w: %s", ErrNoGH, strings.TrimSpace(errb.String()))
+		return nil, fmt.Errorf("%w: %s", ErrNoGH, msg)
 	}
-	return parsePR(out.Bytes())
+	return out.Bytes(), nil
 }
 
 func parsePR(b []byte) (*PR, error) {

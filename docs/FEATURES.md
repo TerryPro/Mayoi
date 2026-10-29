@@ -347,9 +347,19 @@ branch creation, rename, deletion, merge and rebase, and remote creation, URL ed
 Deletion refuses unmerged branches. **Refresh** rereads local refs; **Fetch** contacts the remote.
 
 When the branch has a pull request on GitHub, its number, how its checks went and its review show beside the branch in
-source control and the status bar; click it to open the pull request in the browser. It comes from the `gh` CLI, run
-where the repository is, a host's for Remote SSH, and shows nothing without `gh` or its sign-in. It is asked for again
-every minute while the window shows, every 30 seconds while checks run.
+source control and the status bar; click it to open its changes in a tab, or right-click it for **Open on GitHub**. It
+comes from the `gh` CLI, run where the repository is, a host's for Remote SSH, and shows nothing without `gh` or its
+sign-in. It is asked for again every minute while the window shows, every 30 seconds while checks run.
+
+**Git → Open Pull Request…**, also in source control's **⋯** menu, lists the pull requests open, the branch's first;
+type to find one by its number, title, author or branch, or type any number to open that one, whatever its state. Its
+tab shows what GitHub shows, the changes from where its head left its base to its head, inline or side by side like
+any diff, under a card of its state, its branches and **Open on GitHub**. Commits Mayoi does not have yet are fetched
+from the remote of the pull request's repository to `refs/mayoi/pull/<number>/head` and `…/base`, which keeps them for
+the tab when Mayoi opens again; a pull request from a fork needs no remote of its own. Each file's header has a
+**Viewed** box, which marks it viewed on GitHub, as the box on GitHub does, and folds it; the files viewed show
+folded as the tab opens, and the card counts them. When the pull request has commits newer than the tab's, the card
+offers **Reload**.
 
 Click the branch in the status bar to open the same branch picker as source control. The sync button alongside it
 shows how far the branch is ahead of its upstream (↑) and behind it (↓), and pulls then pushes in one click; a branch

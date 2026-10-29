@@ -730,6 +730,13 @@ func (a *app) splitRight() {
 		v := newDiffView(t.diff.layout)
 		if cm := t.diff.commit; cm != nil {
 			v = newCommitView(t.diff.layout, cm.key(), cm.info)
+			if cm.pr != nil {
+				// What GitHub told of the pull request, which it need not
+				// be asked again.
+				pr := *cm.pr
+				pr.reading, pr.marking = false, nil
+				v.commit.pr = &pr
+			}
 		}
 		v.repoRoot = t.diff.repoRoot
 		// The offsets only: the scroll's handle binds one view's control,

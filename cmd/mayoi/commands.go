@@ -144,6 +144,7 @@ func (a *app) commandsIn(t locales.Messages) []command {
 		{"git.stash", t.CmdGitStash(), "", func() { a.askStash(false) }},
 		{"git.stashUntracked", t.CmdGitStashUntracked(), "", func() { a.askStash(true) }},
 		{"git.stashes", t.CmdGitStashes(), "", a.openStashPicker},
+		{"git.openPullRequest", t.CmdGitOpenPullRequest(), "", a.openPRPicker},
 		{"git.blame", t.CmdGitBlame(), "", a.toggleBlame},
 		{"git.openFileOnRemote", t.CmdGitOpenFileOnRemote(), "", func() { a.activeFileOnRemote(false) }},
 		{"git.copyPermalink", t.CmdGitCopyPermalink(), "", func() { a.activeFileOnRemote(true) }},
@@ -521,6 +522,13 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 		it.Disabled = len(a.review.notes) == 0
 		return it
 	}
+	// The items of pull requests, off until gh answered where the
+	// repository is.
+	prItem := func(id string) *mygo.MenuItem {
+		it := item(id)
+		it.Disabled = !a.repository().git.ghOK
+		return it
+	}
 	cut := &mygo.MenuItem{Role: mygo.RoleCut}
 	if a.keyFocus == placeEditor {
 		cut = item("edit.cut")
@@ -579,6 +587,7 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 			item("git.stageFile"), item("git.unstageFile"), item("git.stageAll"), mygo.Separator(),
 			item("git.switchBranch"), item("git.createBranch"), item("git.fetch"), item("git.pull"), item("git.push"), mygo.Separator(),
 			item("git.stash"), item("git.stashUntracked"), item("git.stashes"), mygo.Separator(),
+			prItem("git.openPullRequest"), mygo.Separator(),
 			checkbox("git.blame", a.settings.Blame), item("git.openFileOnRemote"), item("git.copyPermalink"), item("git.refresh"), mygo.Separator(),
 			item("review.comment"), reviewItem("review.next"), reviewItem("review.previous"),
 			reviewItem("review.copy"), reviewItem("review.send"), reviewItem("review.clear"),

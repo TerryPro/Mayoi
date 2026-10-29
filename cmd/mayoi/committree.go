@@ -284,6 +284,9 @@ func (a *app) commitTreeRowUI(c *ui.Context, v *diffView, i int, r commitTreeRow
 	}
 	row.Children(func() {
 		a.commitFileLabel(c, e, tree, a.diffRelPath(v, e.Path))
+		if f != nil && v.fileViewed(f) {
+			ui.Icon(c, iconCheck).FontSize(12).TextColor(p.muted).Shrink(0).Tooltip(locales.PrViewed())
+		}
 	})
 	if clicked && *action == nil && f != nil {
 		*action = func() {

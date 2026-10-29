@@ -271,6 +271,9 @@ type diffFile struct {
 	// folded is set for a file whose lines are hidden under its header.
 	open   map[int]bool
 	folded bool
+	// prPath is the file's path in the repository when it is of a pull
+	// request's diff, whose header marks it viewed; "" for any other.
+	prPath string
 }
 
 func newDiffFile(e git.Entry, group scmGroup) *diffFile {
@@ -427,6 +430,9 @@ type commitDiff struct {
 	// unfolded whether the card shows all of the message.
 	lines    int
 	unfolded bool
+	// pr is the pull request whose changes these are, from where its
+	// head left its base to its head; nil for a commit's.
+	pr *prDiff
 }
 
 // diffTarget is a file of a diff to scroll to: path, as compared against
@@ -487,9 +493,14 @@ func newLocalCompareView(layout diffLayout, left, right string) *diffView {
 // already in info when its hash is set.
 //
 // A key "from..to" makes the tab of a comparison instead: the changes from
-// commit from to commit to, read as those of a commit whose parent is from.
+// commit from to commit to, read as those of a commit whose parent is from;
+// and "pr:n:from..to" that of pull request n, whose changes they are.
 func newCommitView(layout diffLayout, key string, info git.Commit) *diffView {
 	v := newDiffView(layout)
+	if n, from, to, ok := parsePRKey(key); ok {
+		v.commit = &commitDiff{hash: to, from: from, info: git.Commit{Hash: to, Parents: []string{from}}, pr: &prDiff{number: n}}
+		return v
+	}
 	if from, to, ok := strings.Cut(key, ".."); ok {
 		v.commit = &commitDiff{hash: to, from: from, info: git.Commit{Hash: to, Parents: []string{from}}}
 		return v
@@ -501,7 +512,10 @@ func newCommitView(layout diffLayout, key string, info git.Commit) *diffView {
 // key is what names a commit's diff: its hash, or "from..to" for a
 // comparison, as newCommitView takes it.
 func (cm *commitDiff) key() string {
-	if cm.from == "" {
+	switch {
+	case cm.pr != nil:
+		return prKey(cm.pr.number, cm.from, cm.hash)
+	case cm.from == "":
 		return cm.hash
 	}
 	return cm.from + ".." + cm.hash
@@ -512,6 +526,9 @@ func (v *diffView) name() string {
 		return filepath.Base(v.files[0].path) + " ↔ " + filepath.Base(v.files[0].peerPath)
 	}
 	if c := v.commit; c != nil {
+		if c.pr != nil {
+			return c.pr.name()
+		}
 		if c.from != "" {
 			return git.ShortHash(c.from) + " → " + git.ShortHash(c.hash)
 		}
@@ -859,6 +876,9 @@ func (a *app) listDiffFiles(v *diffView) {
 func (a *app) listCommitFiles(v *diffView) {
 	cm := v.commit
 	r := a.diffContext(v).git.repo
+	if cm.pr != nil {
+		a.readPR(v)
+	}
 	if cm.loaded || cm.loading || r == nil {
 		return
 	}
@@ -887,6 +907,10 @@ func (a *app) listCommitFiles(v *diffView) {
 				f := &diffFile{path: e.Path, base: diffCommit, group: groupCommits, letter: e.X, gitStale: true}
 				f.repoRoot = v.repoRoot
 				f.entry = e
+				if cm.pr != nil {
+					f.prPath = r.Rel(e.Path)
+					f.folded = cm.pr.viewed[f.prPath]
+				}
 				v.files = append(v.files, f)
 			}
 			v.tree.gen++

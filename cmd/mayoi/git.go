@@ -96,7 +96,9 @@ type gitState struct {
 	// pr is the pull request of prBranch of prRepo, as gh last told, nil
 	// for none; prRead is when it was asked last, of the state prOf names.
 	// prRunning is set while gh runs, prOff once gh could not tell, and
-	// prWake draws a frame when it is time to ask again.
+	// prWake draws a frame when it is time to ask again. ghOK is set once
+	// gh answered, which it does only when installed and signed in, and
+	// ghProbed once it was asked so without a branch checked out.
 	pr        *git.PR
 	prRepo    *git.Repo
 	prBranch  string
@@ -105,6 +107,8 @@ type gitState struct {
 	prRunning bool
 	prOff     bool
 	prWake    *time.Timer
+	ghOK      bool
+	ghProbed  bool
 }
 
 // historyPage is how many commits the history reads at first, and more

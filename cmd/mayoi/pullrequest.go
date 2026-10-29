@@ -27,6 +27,21 @@ const (
 func (a *gitContext) refreshPR() {
 	g := a.git
 	st := g.status
+	if a.live() && st != nil && st.Branch == "" && !g.ghProbed && a.app.online() {
+		// Detached, there is no pull request to ask for: only whether gh
+		// answers, for the pull requests' commands.
+		g.ghProbed = true
+		r := g.repo
+		bg.Go(func() {
+			defer recoverCrash()
+			err := r.GitHubReady()
+			a.app.post(func() {
+				if g.repo == r && !errors.Is(err, remote.ErrOffline) {
+					g.ghOK = err == nil
+				}
+			})
+		})
+	}
 	if !a.live() || st == nil || st.Branch == "" || g.prRunning || !a.app.online() || !a.app.host.shown() {
 		return
 	}
@@ -51,13 +66,13 @@ func (a *gitContext) refreshPR() {
 			g.prRepo, g.prBranch, g.prOf, g.prRead = r, branch, key, time.Now()
 			switch {
 			case err == nil:
-				g.pr, g.prOff = pr, false
+				g.pr, g.prOff, g.ghOK = pr, false, true
 			case errors.Is(err, git.ErrNoPR):
-				g.pr, g.prOff = nil, false
+				g.pr, g.prOff, g.ghOK = nil, false, true
 			case errors.Is(err, remote.ErrOffline):
 				// The host is away: what was read stays until it is back.
 			default:
-				g.pr, g.prOff = nil, true
+				g.pr, g.prOff, g.ghOK = nil, true, false
 			}
 			if g.prWake != nil {
 				g.prWake.Stop()
@@ -89,7 +104,7 @@ func (a *gitContext) currentPR() *git.PR {
 }
 
 // prBadge shows the pull request of the branch, its number, how its
-// checks went and its review, which a click opens in the browser. In the
+// checks went and its review, whose changes a click opens in a tab. In the
 // status bar, it is in the bar's color, and short says only the number.
 func (a *gitContext) prBadge(c *ui.Context, inStatus, short bool) {
 	pr := a.currentPR()
@@ -126,8 +141,16 @@ func (a *gitContext) prBadge(c *ui.Context, inStatus, short bool) {
 			text(review)
 		}
 	})
-	if b.Clicked() && pr.URL != "" {
-		a.app.services.OpenURL(pr.URL)
+	b.ContextMenu(func(m *ui.Menu) {
+		if m.Item(locales.PrOpenChanges()).Chosen() {
+			a.app.post(func() { a.openPullRequest(pr.Number) })
+		}
+		if m.Item(locales.PrOpenOnGitHub()).Disabled(pr.URL == "").Chosen() {
+			a.app.post(func() { a.app.services.OpenURL(pr.URL) })
+		}
+	})
+	if b.Clicked() {
+		a.app.post(func() { a.openPullRequest(pr.Number) })
 	}
 }
 

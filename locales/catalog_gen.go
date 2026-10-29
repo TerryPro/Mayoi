@@ -36,6 +36,198 @@ type Messages struct{ locale string }
 // source language.
 func In(locale string) Messages { return Messages{locale} }
 
+// BusyOpeningPR says "Opening the pull request…"
+// in the language the app shows.
+func BusyOpeningPR() string { return In(i18n.Locale()).BusyOpeningPR() }
+
+// BusyOpeningPR says "Opening the pull request…"
+// in the language of msgs.
+func (msgs Messages) BusyOpeningPR() string {
+	return Catalog.Format(msgs.locale, "busyOpeningPR", nil)
+}
+
+// CmdGitOpenPullRequest says "Open Pull Request…"
+// in the language the app shows.
+func CmdGitOpenPullRequest() string { return In(i18n.Locale()).CmdGitOpenPullRequest() }
+
+// CmdGitOpenPullRequest says "Open Pull Request…"
+// in the language of msgs.
+func (msgs Messages) CmdGitOpenPullRequest() string {
+	return Catalog.Format(msgs.locale, "cmdGitOpenPullRequest", nil)
+}
+
+// PrDraft says "Draft"
+// in the language the app shows.
+func PrDraft() string { return In(i18n.Locale()).PrDraft() }
+
+// PrDraft says "Draft"
+// in the language of msgs.
+func (msgs Messages) PrDraft() string {
+	return Catalog.Format(msgs.locale, "prDraft", nil)
+}
+
+// PrNoGitHub says "The GitHub CLI is not installed or not signed in where the repository is."
+// in the language the app shows.
+func PrNoGitHub() string { return In(i18n.Locale()).PrNoGitHub() }
+
+// PrNoGitHub says "The GitHub CLI is not installed or not signed in where the repository is."
+// in the language of msgs.
+func (msgs Messages) PrNoGitHub() string {
+	return Catalog.Format(msgs.locale, "prNoGitHub", nil)
+}
+
+// PrNoneForBranch says "The current branch has no pull request."
+// in the language the app shows.
+func PrNoneForBranch() string { return In(i18n.Locale()).PrNoneForBranch() }
+
+// PrNoneForBranch says "The current branch has no pull request."
+// in the language of msgs.
+func (msgs Messages) PrNoneForBranch() string {
+	return Catalog.Format(msgs.locale, "prNoneForBranch", nil)
+}
+
+// PrNotFound says "No pull request {number}."
+// in the language the app shows.
+func PrNotFound(number string) string { return In(i18n.Locale()).PrNotFound(number) }
+
+// PrNotFound says "No pull request {number}."
+// in the language of msgs.
+func (msgs Messages) PrNotFound(number string) string {
+	return Catalog.Format(msgs.locale, "prNotFound", map[string]any{"number": number})
+}
+
+// PrOpenChanges says "Open Pull Request Changes"
+// in the language the app shows.
+func PrOpenChanges() string { return In(i18n.Locale()).PrOpenChanges() }
+
+// PrOpenChanges says "Open Pull Request Changes"
+// in the language of msgs.
+func (msgs Messages) PrOpenChanges() string {
+	return Catalog.Format(msgs.locale, "prOpenChanges", nil)
+}
+
+// PrOpenOnGitHub says "Open on GitHub"
+// in the language the app shows.
+func PrOpenOnGitHub() string { return In(i18n.Locale()).PrOpenOnGitHub() }
+
+// PrOpenOnGitHub says "Open on GitHub"
+// in the language of msgs.
+func (msgs Messages) PrOpenOnGitHub() string {
+	return Catalog.Format(msgs.locale, "prOpenOnGitHub", nil)
+}
+
+// PrPickerCurrent says "current branch"
+// in the language the app shows.
+func PrPickerCurrent() string { return In(i18n.Locale()).PrPickerCurrent() }
+
+// PrPickerCurrent says "current branch"
+// in the language of msgs.
+func (msgs Messages) PrPickerCurrent() string {
+	return Catalog.Format(msgs.locale, "prPickerCurrent", nil)
+}
+
+// PrPickerFind says "Find a pull request, or type its number"
+// in the language the app shows.
+func PrPickerFind() string { return In(i18n.Locale()).PrPickerFind() }
+
+// PrPickerFind says "Find a pull request, or type its number"
+// in the language of msgs.
+func (msgs Messages) PrPickerFind() string {
+	return Catalog.Format(msgs.locale, "prPickerFind", nil)
+}
+
+// PrPickerLoading says "Reading the pull requests…"
+// in the language the app shows.
+func PrPickerLoading() string { return In(i18n.Locale()).PrPickerLoading() }
+
+// PrPickerLoading says "Reading the pull requests…"
+// in the language of msgs.
+func (msgs Messages) PrPickerLoading() string {
+	return Catalog.Format(msgs.locale, "prPickerLoading", nil)
+}
+
+// PrPickerNone says "No open pull request matches."
+// in the language the app shows.
+func PrPickerNone() string { return In(i18n.Locale()).PrPickerNone() }
+
+// PrPickerNone says "No open pull request matches."
+// in the language of msgs.
+func (msgs Messages) PrPickerNone() string {
+	return Catalog.Format(msgs.locale, "prPickerNone", nil)
+}
+
+// PrPickerNumber says "Open pull request {number}"
+// in the language the app shows.
+func PrPickerNumber(number string) string { return In(i18n.Locale()).PrPickerNumber(number) }
+
+// PrPickerNumber says "Open pull request {number}"
+// in the language of msgs.
+func (msgs Messages) PrPickerNumber(number string) string {
+	return Catalog.Format(msgs.locale, "prPickerNumber", map[string]any{"number": number})
+}
+
+// PrReload says "Reload"
+// in the language the app shows.
+func PrReload() string { return In(i18n.Locale()).PrReload() }
+
+// PrReload says "Reload"
+// in the language of msgs.
+func (msgs Messages) PrReload() string {
+	return Catalog.Format(msgs.locale, "prReload", nil)
+}
+
+// PrUpdated says "New commits on GitHub"
+// in the language the app shows.
+func PrUpdated() string { return In(i18n.Locale()).PrUpdated() }
+
+// PrUpdated says "New commits on GitHub"
+// in the language of msgs.
+func (msgs Messages) PrUpdated() string {
+	return Catalog.Format(msgs.locale, "prUpdated", nil)
+}
+
+// PrViewed says "Viewed"
+// in the language the app shows.
+func PrViewed() string { return In(i18n.Locale()).PrViewed() }
+
+// PrViewed says "Viewed"
+// in the language of msgs.
+func (msgs Messages) PrViewed() string {
+	return Catalog.Format(msgs.locale, "prViewed", nil)
+}
+
+// PrViewedCount says "{viewed} / {total} viewed"
+// in the language the app shows.
+func PrViewedCount(viewed string, total string) string {
+	return In(i18n.Locale()).PrViewedCount(viewed, total)
+}
+
+// PrViewedCount says "{viewed} / {total} viewed"
+// in the language of msgs.
+func (msgs Messages) PrViewedCount(viewed string, total string) string {
+	return Catalog.Format(msgs.locale, "prViewedCount", map[string]any{"viewed": viewed, "total": total})
+}
+
+// PrViewedFailed says "Could not mark the file on GitHub: {error}"
+// in the language the app shows.
+func PrViewedFailed(error string) string { return In(i18n.Locale()).PrViewedFailed(error) }
+
+// PrViewedFailed says "Could not mark the file on GitHub: {error}"
+// in the language of msgs.
+func (msgs Messages) PrViewedFailed(error string) string {
+	return Catalog.Format(msgs.locale, "prViewedFailed", map[string]any{"error": error})
+}
+
+// PullRequest says "Pull Request"
+// in the language the app shows.
+func PullRequest() string { return In(i18n.Locale()).PullRequest() }
+
+// PullRequest says "Pull Request"
+// in the language of msgs.
+func (msgs Messages) PullRequest() string {
+	return Catalog.Format(msgs.locale, "pullRequest", nil)
+}
+
 // BusyApplyingStash says "Applying the stash…"
 // in the language the app shows.
 func BusyApplyingStash() string { return In(i18n.Locale()).BusyApplyingStash() }
@@ -7730,11 +7922,11 @@ func (msgs Messages) PrReviewRequired() string {
 	return Catalog.Format(msgs.locale, "prReviewRequired", nil)
 }
 
-// PrTip says "Pull request {number} · {state}: open in the browser"
+// PrTip says "Pull request {number} · {state}: show its changes"
 // in the language the app shows.
 func PrTip(number string, state string) string { return In(i18n.Locale()).PrTip(number, state) }
 
-// PrTip says "Pull request {number} · {state}: open in the browser"
+// PrTip says "Pull request {number} · {state}: show its changes"
 // in the language of msgs.
 func (msgs Messages) PrTip(number string, state string) string {
 	return Catalog.Format(msgs.locale, "prTip", map[string]any{"number": number, "state": state})

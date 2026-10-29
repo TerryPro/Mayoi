@@ -166,6 +166,7 @@ func (a *app) view(c *ui.Context) {
 	a.quickOpenView(c)
 	a.branchPickerView(c)
 	a.stashPickerView(c)
+	a.prPickerView(c)
 	a.repositoryPickerView(c)
 	a.recentPickerView(c)
 	a.themePickerView(c)
@@ -759,6 +760,8 @@ func (a *app) breadcrumbs(c *ui.Context, col *column, t *colTab) {
 	var parts []crumb
 	if path := t.path(); path != "" {
 		parts = crumbsOf(path, a.root, homeDir())
+	} else if t.diff != nil && t.diff.commit != nil && t.diff.commit.pr != nil {
+		parts = []crumb{{locales.PullRequest(), ""}, {t.name(), ""}}
 	} else if t.diff != nil && t.diff.commit != nil && t.diff.commit.from != "" {
 		parts = []crumb{{locales.Comparison(), ""}, {t.name(), ""}}
 	} else if t.diff != nil && t.diff.commit != nil {
@@ -783,6 +786,8 @@ func (a *app) breadcrumbs(c *ui.Context, col *column, t *colTab) {
 			if last {
 				icon, col := fileIcon(p, part.name)
 				switch {
+				case t.diff != nil && t.diff.commit != nil && t.diff.commit.pr != nil:
+					icon, col = iconPullRequest, p.accent
 				case t.diff != nil && t.diff.commit != nil:
 					icon, col = iconCommit, p.accent
 				case t.diff != nil:
