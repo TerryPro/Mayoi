@@ -134,6 +134,8 @@ func (a *app) themePickerView(c *ui.Context) {
 		if tp.sel = max(sel, 0); sel < 0 {
 			a.previewChoice(0)
 		}
+		// The chosen row comes into view, as the box opens or the query changes.
+		tp.moved = true
 		tp.shown, tp.stale = tp.query, false
 	}
 	ui.Overlay(c, func() {
