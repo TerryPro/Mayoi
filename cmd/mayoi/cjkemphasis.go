@@ -20,7 +20,8 @@ func isCJK(r rune) bool {
 // scanCJKDelimiter is goldmark's ScanDelimiter with the CJK-friendly
 // flanking rule of markdown-it-cjk-friendly: a run after punctuation can
 // still close, and one before punctuation can still open, when CJK text
-// is on its other side, so **"准新机"**标着 is bold though CJK has no spaces.
+// is on either side, so **"准新机"**标着 and **调用。**qodercli are bold
+// though CJK has no spaces.
 func scanCJKDelimiter(line []byte, before rune, processor parser.DelimiterProcessor) *parser.Delimiter {
 	c := line[0]
 	if !processor.IsDelimiter(c) {
@@ -35,8 +36,8 @@ func scanCJKDelimiter(line []byte, before rune, processor parser.DelimiterProces
 	}
 	beforePunct, beforeSpace := util.IsPunctRune(before), util.IsSpaceRune(before)
 	afterPunct, afterSpace := util.IsPunctRune(after), util.IsSpaceRune(after)
-	left := !afterSpace && (!afterPunct || beforeSpace || beforePunct || isCJK(before))
-	right := !beforeSpace && (!beforePunct || afterSpace || afterPunct || isCJK(after))
+	left := !afterSpace && (!afterPunct || beforeSpace || beforePunct || isCJK(before) || isCJK(after))
+	right := !beforeSpace && (!beforePunct || afterSpace || afterPunct || isCJK(after) || isCJK(before))
 	canOpen, canClose := left, right
 	if c == '_' {
 		canOpen = left && (!right || beforePunct)
