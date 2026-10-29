@@ -287,7 +287,7 @@ func TestRepositoryKeysFromHeader(t *testing.T) {
 	if sub.changesUI.selection.Len() != 1 {
 		t.Fatalf("Shift+Down from the module header chose %d files", sub.changesUI.selection.Len())
 	}
-	// Cmd+A must also work directly from a non-file row, and retain a
+	// Select All must also work directly from a non-file row, and retain a
 	// file cursor for the next keyboard action.
 	for i, row := range a.repositoryChangeRows(a.rootRepositoryList()) {
 		if row.kind == repositoryCommit && row.repo.git == sub.git {
@@ -296,7 +296,7 @@ func TestRepositoryKeysFromHeader(t *testing.T) {
 		}
 	}
 	hs.settle()
-	hs.key(ui.Cmd, ui.KeyA)
+	hs.command("selectAll")
 	hs.key(0, ui.KeySpace)
 	settleRepositories(t, hs, 2)
 	if len(sub.groupEntries()[groupStaged]) != 2 || len(a.rootRepository().groupEntries()[groupStaged]) != 0 {

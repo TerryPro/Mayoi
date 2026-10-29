@@ -219,6 +219,7 @@ func (a *app) repositoryChanges(c *ui.Context, contexts []*gitContext) {
 			reveal(state.row)
 		}
 	}
+	out.HandleInput(func(ev ui.InputEvent) bool { return r.repo.scmInput(ev, r.repo.scmRows()) })
 	r.repo.scmListInput(out, r.repo.scmRows(), func(at int) {
 		for i, row := range rows {
 			if row.repo.git == r.repo.git && row.kind == repositoryEntry && row.at == at {
@@ -229,7 +230,7 @@ func (a *app) repositoryChanges(c *ui.Context, contexts []*gitContext) {
 		}
 	})
 	if at := r.repo.scm.row; at != r.at {
-		// Cmd+A can choose the first file without asking to scroll. Mirror
+		// Select All can choose the first file without asking to scroll. Mirror
 		// that cursor too, so the next key still addresses the same file.
 		for i, row := range rows {
 			if row.repo.git == r.repo.git && row.kind == repositoryEntry && row.at == at {

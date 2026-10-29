@@ -33,6 +33,13 @@ func (hs *harness) key(mods ui.Modifiers, key ui.Key) {
 	hs.settle()
 }
 
+// command runs an Edit menu command, as Copy, which macOS sends in place
+// of its key, ⌘C, to the element with the keyboard.
+func (hs *harness) command(name string) {
+	hs.tt.Command(name)
+	hs.settle()
+}
+
 func expectText(t *testing.T, d *editor, want string) {
 	t.Helper()
 	if got := d.buf.String(); got != want {

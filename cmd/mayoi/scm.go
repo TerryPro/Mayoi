@@ -130,6 +130,9 @@ type scmState struct {
 	// scrolledAt is when the list last scrolled: commits show no tooltip
 	// until it has rested for scmScrollQuiet.
 	scrolledAt time.Time
+	// selectAll is Select All of the Edit menu, which the list takes in
+	// its next frame.
+	selectAll bool
 }
 
 // scmScrollQuiet is how long the list rests after scrolling before its
@@ -545,7 +548,7 @@ func (a *gitContext) scmList(c *ui.Context) {
 			if ev.Kind == ui.InputScroll {
 				s.scrolledAt = ev.Time
 			}
-			return false
+			return a.scmInput(ev, rows)
 		})
 		if s.section == scmChanges {
 			out.Fill()
@@ -581,8 +584,8 @@ func (a *gitContext) scmListInput(out ui.Element, rows []scmRow, reveal func(int
 			s.anchor = ""
 		}
 	}
-	// The list of the row chosen, or the files', which Shift and Cmd+A
-	// choose in.
+	// The list of the row chosen, or the files', which Shift and Select
+	// All choose in.
 	list := "file"
 	if s.row >= 0 && s.row < len(rows) && rows[s.row].choice() != "" {
 		list = rows[s.row].choice()
@@ -608,7 +611,8 @@ func (a *gitContext) scmListInput(out ui.Element, rows []scmRow, reveal func(int
 			}
 		}
 	}
-	if out.Shortcut(ui.Cmd, ui.KeyA) {
+	if s.selectAll {
+		s.selectAll = false
 		if s.row < 0 || s.row >= len(rows) || rows[s.row].choice() != list {
 			for i, r := range rows {
 				if r.choice() == list {
@@ -623,9 +627,6 @@ func (a *gitContext) scmListInput(out ui.Element, rows []scmRow, reveal func(int
 				s.selection.Add(r.key)
 			}
 		}
-	}
-	if out.Shortcut(ui.Cmd, ui.KeyC) {
-		a.copyChosenCommits(rows)
 	}
 	if s.row >= 0 && s.row < len(rows) && out.Submitted() {
 		switch r := rows[s.row]; {
@@ -1156,10 +1157,26 @@ func (a *gitContext) selectScmRow(i int, mods ui.Modifiers) {
 	s.row = i
 }
 
+// scmInput takes Copy and Select All of the Edit menu while the list has
+// the keyboard: the menu, not the list, gets their keys, ⌘C and ⌘A.
+func (a *gitContext) scmInput(ev ui.InputEvent, rows []scmRow) bool {
+	if ev.Kind != ui.InputCommand {
+		return false
+	}
+	switch ev.Text {
+	case "copy":
+		return a.copyChosenCommits(rows)
+	case "selectAll":
+		a.scm.selectAll = true
+		return true
+	}
+	return false
+}
+
 // copyChosenCommits copies the short hashes of the commits chosen, one a
 // line in the order of the list, or of the commit of the row the cursor
-// is on when none are.
-func (a *gitContext) copyChosenCommits(rows []scmRow) {
+// is on when none are, and reports whether it copied any.
+func (a *gitContext) copyChosenCommits(rows []scmRow) bool {
 	s := a.scm
 	var hashes []string
 	for _, r := range rows {
@@ -1171,10 +1188,11 @@ func (a *gitContext) copyChosenCommits(rows []scmRow) {
 		hashes = append(hashes, rows[s.row].commit.Short())
 	}
 	if len(hashes) == 0 {
-		return
+		return false
 	}
 	a.app.services.WriteClipboard(strings.Join(hashes, "\n"))
 	a.app.tell(note{message: locales.CopiedCommitHashes(len(hashes))})
+	return true
 }
 
 // scmCommit is the row of a commit of the history: its lanes of the
