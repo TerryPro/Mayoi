@@ -662,6 +662,26 @@ func (msgs Messages) ShowDiagram() string {
 	return Catalog.Format(msgs.locale, "showDiagram", nil)
 }
 
+// OpenDiagram says "Open Diagram"
+// in the language the app shows.
+func OpenDiagram() string { return In(i18n.Locale()).OpenDiagram() }
+
+// OpenDiagram says "Open Diagram"
+// in the language of msgs.
+func (msgs Messages) OpenDiagram() string {
+	return Catalog.Format(msgs.locale, "openDiagram", nil)
+}
+
+// CloseDiagram says "Close Diagram"
+// in the language the app shows.
+func CloseDiagram() string { return In(i18n.Locale()).CloseDiagram() }
+
+// CloseDiagram says "Close Diagram"
+// in the language of msgs.
+func (msgs Messages) CloseDiagram() string {
+	return Catalog.Format(msgs.locale, "closeDiagram", nil)
+}
+
 // ThemeAboutClaude says "Ivory and near-black, with Claude's orange"
 // in the language the app shows.
 func ThemeAboutClaude() string { return In(i18n.Locale()).ThemeAboutClaude() }

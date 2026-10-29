@@ -1028,6 +1028,8 @@
   "searchToggleReplace": "置換の切り替え",
   "searchWithNothing": "空の文字列",
   "showDiagram": "図を表示",
+  "openDiagram": "図を開く",
+  "closeDiagram": "図を閉じる",
   "showLess": "表示を減らす",
   "showMore": "さらに表示",
   "showPreview": "プレビューを表示",
