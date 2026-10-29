@@ -6,6 +6,11 @@ needs a `## <version>` section here, or its build fails.
 ## Unreleased
 
 - Press `⌘⏎` in quick open to open the chosen file in the column to the side, splitting one if needed.
+- The Markdown preview shows `[[note]]` and `[[note|label]]` wiki links, and a click opens the note.
+- Wiki links find their note next to the file, at the repository's root, or anywhere in it, as Obsidian does.
+- `[[note#heading]]` opens the note at that heading, as do Markdown links to `other.md#heading`.
+- `![[image.png]]` shows the image in the Markdown preview, and `![[image.png|300]]` sets its width.
+- `⌘`-click a `[[wiki link]]` in a Markdown file's text to open its note.
 
 ## 0.13.1
 

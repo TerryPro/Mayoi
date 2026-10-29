@@ -196,8 +196,10 @@ type markdownBlock struct {
 	formula *mathFormula
 }
 
-func isMarkdown(d *document) bool {
-	ext := filepath.Ext(d.path)
+func isMarkdown(d *document) bool { return isMarkdownPath(d.path) }
+
+func isMarkdownPath(path string) bool {
+	ext := filepath.Ext(path)
 	return strings.EqualFold(ext, ".md") || strings.EqualFold(ext, ".markdown") || strings.EqualFold(ext, ".mdx")
 }
 
@@ -338,6 +340,26 @@ func markdownRoot(path, workspace string) string {
 	return ""
 }
 
+// markdownSkipFrontMatter is source without its front matter, and the
+// lines it took. Front matter is recognized only at the start, with exact
+// delimiter lines around what looks like YAML.
+func markdownSkipFrontMatter(source []byte) ([]byte, int) {
+	lines := strings.SplitAfter(string(source), "\n")
+	if strings.TrimSuffix(strings.TrimSuffix(lines[0], "\n"), "\r") != "---" {
+		return source, 0
+	}
+	for i := 1; i < len(lines); i++ {
+		line := strings.TrimSuffix(strings.TrimSuffix(lines[i], "\n"), "\r")
+		if line == "---" || line == "..." {
+			if markdownFrontMatter(lines[1:i]) {
+				return []byte(strings.Join(lines[i+1:], "")), i + 1
+			}
+			break
+		}
+	}
+	return source, 0
+}
+
 // markdownFrontMatter reports whether lines, those between front matter's
 // delimiters, look like YAML, so a document opening with a rule keeps the
 // text up to its next rule.
@@ -365,13 +387,14 @@ func markdownFrontMatter(lines []string) bool {
 // markdownParser parses GitHub's Markdown: goldmark's parser with the
 // parts of its GFM and footnote extensions that parse, without their HTML
 // renderers, which the preview has no use for and would make Mayoi
-// larger, and with its math when math is set.
+// larger, with Obsidian's wiki links, and with its math when math is set.
 func markdownParser(math bool) parser.Parser {
 	inlines := append(parser.DefaultInlineParsers(),
 		util.Prioritized(extension.NewStrikethroughParser(), 500),
 		util.Prioritized(extension.NewTaskCheckBoxParser(), 0),
 		util.Prioritized(extension.NewLinkifyParser(), 999),
-		util.Prioritized(extension.NewFootnoteParser(), 101))
+		util.Prioritized(extension.NewFootnoteParser(), 101),
+		util.Prioritized(wikiLinkParser{}, 199))
 	if math {
 		inlines = append(inlines, util.Prioritized(mathParser{}, 150))
 	}
@@ -577,22 +600,7 @@ func parseMarkdown(source []byte, path, root string, current func() bool, caches
 		}
 		return runs
 	}
-	// Front matter is recognized only at the start, with exact delimiter lines
-	// around what looks like YAML. skip is the lines it took.
-	skip := 0
-	if lines := strings.SplitAfter(string(source), "\n"); strings.TrimSuffix(strings.TrimSuffix(lines[0], "\n"), "\r") == "---" {
-		for i := 1; i < len(lines); i++ {
-			line := strings.TrimSuffix(strings.TrimSuffix(lines[i], "\n"), "\r")
-			if line == "---" || line == "..." {
-				if markdownFrontMatter(lines[1:i]) {
-					source = []byte(strings.Join(lines[i+1:], ""))
-					skip = i + 1
-				}
-				break
-			}
-		}
-	}
-
+	source, skip := markdownSkipFrontMatter(source)
 	// An .mdx file's top-level import and export statements blank out:
 	// they are code, not text the preview shows.
 	if strings.EqualFold(filepath.Ext(path), ".mdx") {
@@ -734,6 +742,32 @@ func parseMarkdown(source []byte, path, root string, current func() bool, caches
 					out = append(out, r)
 				}
 				continue
+			case *wikiLinkNode:
+				s.text = x.text()
+				file := ""
+				if x.target != "" && (current == nil || current()) {
+					file = wikiLinkFile(root, path, x.target)
+				}
+				switch {
+				case x.target == "":
+					s.link = wikiLinkDest(path, "", x.heading)
+				case file == "":
+					// A note not found is its text alone.
+				case x.embed && isImage(file):
+					// ![[picture|300]] is 300 wide, and |300x200 that high.
+					t := markdownTag{name: "img", attrs: map[string]string{"src": wikiLinkDest(path, file, "")}}
+					w, h, _ := strings.Cut(x.label, "x")
+					_, werr := strconv.Atoi(w)
+					_, herr := strconv.Atoi(h)
+					if werr == nil && (h == "" || herr == nil) {
+						t.attrs["width"], t.attrs["height"] = w, h
+					} else {
+						t.attrs["alt"] = x.label
+					}
+					s = htmlImage(t, cur)
+				default:
+					s.link = wikiLinkDest(path, file, x.heading)
+				}
 			case *mathNode:
 				fence := "$"
 				if x.display {
@@ -1619,8 +1653,85 @@ func (a *app) markdownLink(c *ui.Context, m *markdownPreview, path, dest string,
 		return e.OnClick(func() { c.OpenURL(dest) })
 	case heading >= 0:
 		return e.OnClick(func() { m.list.ScrollTo(heading, ui.Start) })
+	case err == nil && u.Fragment != "" && isMarkdownPath(local):
+		return e.OnClick(func() { a.openMarkdownAt(local, u.Fragment) })
 	}
 	return e.OnClick(func() { a.openFile(local, true) })
+}
+
+// openMarkdownAt shows a note at a heading, as a link to note#heading
+// does: its preview scrolled to it, or its text with the caret on it.
+func (a *app) openMarkdownAt(path, heading string) {
+	a.openFile(path, true)
+	d := a.activeEditor()
+	if d == nil || d.path != path {
+		return
+	}
+	line := markdownHeadingLine([]byte(d.buf.String()), heading)
+	if line < 0 {
+		return
+	}
+	if d.preview != nil && d.preview.markdown != nil {
+		m := d.preview.markdown
+		m.sync.want, m.sync.placing, m.sync.tries = float32(line), true, 0
+		a.invalidate()
+		return
+	}
+	s, _ := d.buf.Snapshot().LineRange(line)
+	d.selectRange(s, s, true)
+	d.lightLanding()
+}
+
+// markdownHeadingLine is the line of source, from 0, of the heading
+// named, by its text or its anchor, as GitHub numbers the anchors of a
+// text's headings after the first; -1 for none.
+func markdownHeadingLine(source []byte, heading string) int {
+	want := markdownSlug(heading)
+	source, skip := markdownSkipFrontMatter(source)
+	tree := markdownParser(false).Parse(text.NewReader(source))
+	slugs := map[string]int{}
+	line := -1
+	_ = ast.Walk(tree, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		h, ok := n.(*ast.Heading)
+		if !ok || !entering {
+			return ast.WalkContinue, nil
+		}
+		slug := markdownSlug(markdownNodeText(h, source))
+		if k := slugs[slug]; k > 0 {
+			slugs[slug] = k + 1
+			slug += "-" + strconv.Itoa(k)
+		} else {
+			slugs[slug] = 1
+		}
+		if at := markdownStart(h); slug == want && at >= 0 {
+			line = skip + bytes.Count(source[:at], []byte{'\n'})
+			return ast.WalkStop, nil
+		}
+		return ast.WalkSkipChildren, nil
+	})
+	return line
+}
+
+// markdownNodeText is the text a node shows, without its markup.
+func markdownNodeText(n ast.Node, source []byte) string {
+	var b strings.Builder
+	_ = ast.Walk(n, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		switch x := n.(type) {
+		case *ast.Text:
+			b.Write(x.Segment.Value(source))
+		case *ast.String:
+			b.Write(x.Value)
+		case *ast.AutoLink:
+			b.Write(x.Label(source))
+		case *wikiLinkNode:
+			b.WriteString(x.text())
+		}
+		return ast.WalkContinue, nil
+	})
+	return b.String()
 }
 
 func (a *app) markdownImage(c *ui.Context, m *markdownPreview, path string, r markdownInline, width float32) {
