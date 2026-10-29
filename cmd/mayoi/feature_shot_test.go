@@ -39,6 +39,8 @@ PROMPT='%F{cyan}%1~%f %F{magenta}main%f %F{green}❯%f '
 RPROMPT=''
 export CLICOLOR=1 LSCOLORS=ExGxFxdaCxDaDahbadacec
 alias ls='ls -G'
+# Exiting, zsh would write its history here while the test removes it.
+unset HISTFILE
 `), 0o644)
 	t.Setenv("ZDOTDIR", z)
 	t.Setenv("SHELL", "/bin/zsh")
