@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/egoist/mygo/i18n"
 	"github.com/egoist/mygo/ui"
 )
 
@@ -46,6 +47,10 @@ type findState struct {
 	// back is set when the last step went to the match before, which
 	// rolls the count down.
 	back bool
+	// countW is the width of the count of matches in the language
+	// countFor: measured again only as it changes.
+	countW   float32
+	countFor string
 }
 
 func (f *findState) pattern() string {
@@ -336,8 +341,28 @@ func (a *app) visibleMatches(d *editor, first, last int) []matchRect {
 // textWidth measures a run of a line as the editor lays it out.
 func (a *app) textWidth(s string) float32 { return a.font.width(s) }
 
-// findCountW is the width of find's count of matches.
-const findCountW = 74
+// findCountMin is the narrowest find's count of matches is.
+const findCountMin = 74
+
+// findCountWidth is the width of find's count of matches: that of the
+// widest text it shows in the app's language, so that none is cut short
+// and the buttons after it stay put as the count grows.
+func (a *app) findCountWidth(c *ui.Context) float32 {
+	f := &a.find
+	if loc := i18n.Locale(); loc != f.countFor || f.countW == 0 {
+		m := locales.In(loc)
+		w := float32(findCountMin)
+		for _, s := range []string{m.FindCountMore(maxMatches, maxMatches), m.FindInvalid(), m.FindNoResults()} {
+			tw, _ := c.MeasureText(0, ui.Span{Text: s, Size: findCountSize})
+			w = max(w, tw+4)
+		}
+		f.countW, f.countFor = w, loc
+	}
+	return f.countW
+}
+
+// findCountSize is the font size of find's count of matches.
+const findCountSize = 11.5
 
 // findView is the find widget, over the top right of the editor.
 func (a *app) findView(c *ui.Context, d *editor) {
@@ -374,6 +399,7 @@ type findBox struct {
 func (a *app) findBoxView(c *ui.Context, b findBox) {
 	f, p := &a.find, a.pal
 	canReplace := b.replaceOne != nil
+	countW := a.findCountWidth(c)
 	toggle := func(icon *ui.SVG, label string, on *bool) {
 		if a.optionToggle(c, icon, label, on) {
 			f.stale = true
@@ -434,7 +460,7 @@ func (a *app) findBoxView(c *ui.Context, b findBox) {
 				col = p.dangerFg
 			}
 			// The count rolls from match to match, down going back.
-			ui.Text(c, count).FontSize(11.5).TextColor(col).Width(findCountW).SingleLine().TextAlign(ui.Center).
+			ui.Text(c, count).FontSize(findCountSize).TextColor(col).Width(countW).SingleLine().TextAlign(ui.Center).
 				ContentTransition(ui.ContentTransition{Numeric: true, Down: f.back})
 			if a.iconButton(c, iconArrowUp, locales.FindPrevMatch(keyText("Shift+Enter")), false).Disabled(b.n == 0).Clicked() {
 				b.step(-1)
@@ -469,7 +495,7 @@ func (a *app) findBoxView(c *ui.Context, b findBox) {
 			}
 			// Under the count and the buttons after it, so that the fields
 			// end alike: what is left of them past these two buttons.
-			ui.Box(c).Width(findCountW + 3*26 + 4*4 - (2*26 + 3*4))
+			ui.Box(c).Width(countW + 3*26 + 4*4 - (2*26 + 3*4))
 		})
 	})
 	if box.OverlayShortcut(0, ui.KeyEscape) || box.Shortcut(0, ui.KeyEscape) {

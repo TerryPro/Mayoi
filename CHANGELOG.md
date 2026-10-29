@@ -11,6 +11,8 @@ needs a `## <version>` section here, or its build fails.
 - `[[note#heading]]` opens the note at that heading, as do Markdown links to `other.md#heading`.
 - `![[image.png]]` shows the image in the Markdown preview, and `![[image.png|300]]` sets its width.
 - `⌘`-click a `[[wiki link]]` in a Markdown file's text to open its note.
+- The find bar's match count shows in full in every language, even with thousands of matches.
+- In Chinese, the find bar's match count reads `1/5`, as in Japanese.
 
 ## 0.13.1
 
