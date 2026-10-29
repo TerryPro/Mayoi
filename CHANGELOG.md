@@ -3,7 +3,7 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
-## Unreleased
+## 0.14.1
 
 - **View → Theme → Purple Gold** is always dark: a near-black sidebar and a royal purple status bar.
 - The Purple Gold theme uses classic gold for buttons, chosen rows and highlights, and golds and lavenders for code.
