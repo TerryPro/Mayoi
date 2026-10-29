@@ -307,6 +307,7 @@
   "convertToSpaces": "将缩进转换为空格",
   "convertToTabs": "将缩进转换为制表符",
   "copiedCode": "已复制代码",
+  "copiedCommitHashes": "{count, plural, other {已复制 # 个提交哈希}}",
   "copiedPatchOf": "已复制 {commit} 的补丁",
   "copiedPermalink": "已复制永久链接",
   "copiedText": "已复制 {text}",

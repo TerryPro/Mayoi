@@ -3440,6 +3440,16 @@ func (msgs Messages) CopiedCode() string {
 	return Catalog.Format(msgs.locale, "copiedCode", nil)
 }
 
+// CopiedCommitHashes says "{count, plural, one {Copied # commit hash} other {Copied # commit hashes}}"
+// in the language the app shows.
+func CopiedCommitHashes(count int) string { return In(i18n.Locale()).CopiedCommitHashes(count) }
+
+// CopiedCommitHashes says "{count, plural, one {Copied # commit hash} other {Copied # commit hashes}}"
+// in the language of msgs.
+func (msgs Messages) CopiedCommitHashes(count int) string {
+	return Catalog.Format(msgs.locale, "copiedCommitHashes", map[string]any{"count": count})
+}
+
 // CopiedPatchOf says "Copied the patch of {commit}"
 // in the language the app shows.
 func CopiedPatchOf(commit string) string { return In(i18n.Locale()).CopiedPatchOf(commit) }

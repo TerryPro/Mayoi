@@ -18,6 +18,8 @@ needs a `## <version>` section here, or its build fails.
 - **Re-run** runs a failed job again; **Copy Log** and **Open on GitHub** are there too.
 - **Git → Open File on Remote** opens the file on GitHub, GitLab or Bitbucket at the caret line or selected lines.
 - **Git → Copy Permalink** copies a link to the selected lines at the current commit.
+- Cmd-click or Shift-click commits in **Source Control** to select several; Shift+arrow keys extend the range.
+- Press `Cmd+C` in the commits list to copy the short hashes of the selected commits, one per line.
 - Both are also in the tab and Explorer file context menus.
 - **Stash Changes…** and **Stash Including Untracked…** in the Source Control **⋯** menu stash your changes.
 - The **⋯** menu's **Stashes** submenu applies, pops or drops one of the last ten stashes; dropping asks first.
