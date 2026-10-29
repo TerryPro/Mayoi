@@ -255,3 +255,55 @@ func TestMermaidFilePreview(t *testing.T) {
 		t.Fatal(d.preview.err)
 	}
 }
+
+// TestMermaidOverlay: a diagram of a Markdown preview opens over the
+// window from its button or a double click, zooms there, closes with
+// Escape, and closes as its block stops drawing a diagram.
+func TestMermaidOverlay(t *testing.T) {
+	hs := newHarness(t, true)
+	a := hs.a
+	path := hs.path("diagrams.md")
+	os.WriteFile(path, []byte(mermaidMarkdown), 0o644)
+	a.openFile(path, true)
+	a.run("view.togglePreview")
+	d := a.activeEditor()
+	hs.until("diagrams", func() bool { return d.preview != nil && d.preview.loaded })
+	hs.settle()
+	box, ok := hs.tt.Find("mermaid")
+	if !ok {
+		t.Fatal("no diagram shows")
+	}
+	x, y := box.X+box.W/2, box.Y+box.H/2
+	hs.tt.Move(x, y)
+	hs.settle()
+	if err := hs.tt.Click(locales.OpenDiagram()); err != nil {
+		t.Fatal(err)
+	}
+	hs.settle()
+	o := a.diagram
+	if o == nil || !hs.tt.HasText(locales.CloseDiagram()) {
+		t.Fatal("the diagram did not open over the window")
+	}
+	hs.shot("mermaid-overlay")
+	if o.view.zoom != 0 {
+		t.Fatalf("opened at zoom %v, not fitted", o.view.zoom)
+	}
+	a.run("image.zoomIn")
+	if o.view.zoom == 0 {
+		t.Error("zooming in left the diagram fitted")
+	}
+	hs.tt.Key(0, ui.KeyEscape)
+	hs.settle()
+	if a.diagram != nil {
+		t.Fatal("Escape left the diagram open")
+	}
+
+	hs.tt.ClickAt(x, y)
+	hs.tt.ClickAt(x, y)
+	hs.settle()
+	if a.diagram == nil {
+		t.Fatal("a double click did not open the diagram")
+	}
+	a.settings.PreviewMermaid = false
+	hs.until("closed", func() bool { return a.diagram == nil })
+}

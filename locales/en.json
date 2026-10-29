@@ -273,6 +273,8 @@
   "mathCannotDraw": "Cannot draw the math: {err}",
   "mermaidCannotDraw": "Cannot draw the diagram: {err}",
   "showDiagram": "Show Diagram",
+  "openDiagram": "Open Diagram",
+  "closeDiagram": "Close Diagram",
   "themeAboutClaude": "Ivory and near-black, with Claude's orange",
   "themeAboutCursor": "Cursor's greys, with its blue",
   "themeAboutGrokBot": "Grok Bot's Sand: monochrome, with its blue",

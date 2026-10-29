@@ -1812,20 +1812,39 @@ func (a *app) markdownCodeCard(c *ui.Context, m *markdownPreview, path string, b
 }
 
 // markdownDiagram is the diagram a block of Mermaid draws, at its size
-// or as wide as the column, with its source and its copy on hover.
-func (a *app) markdownDiagram(c *ui.Context, m *markdownPreview, b markdownBlock, size, width float32) {
-	p, d := a.pal, b.diagram
+// or as wide as the column, with its source and its copy on hover. It
+// opens over the window from its button, or by a double click.
+func (a *app) markdownDiagram(c *ui.Context, v *viewer, b markdownBlock, size, width float32) {
+	m, p, d := v.markdown, a.pal, b.diagram
 	pad := size
 	w := min(d.w, max(1, width-2*pad-2))
 	h := w * d.h / d.w
 	card := ui.Column(c.Key("diagram")).WidthPercent(100).Padding(pad).Background(p.editor).Border(1, p.border).Radius(8).AlignItems(ui.Center)
 	over := card.Hovered()
 	card.Children(func() {
-		ui.Box(c).Width(w).Height(h).Label(b.language).Draw(d.draw)
+		// Unselectable, so that a double click opens it rather than
+		// selecting the text around it. It opens as the second click is
+		// released, as the overlay would take its press as one outside it.
+		ui.Box(c).Width(w).Height(h).Label(b.language).Draw(d.draw).Unselectable().HandleInput(func(ev ui.InputEvent) bool {
+			if ev.Button != 0 || ev.Clicks != 2 {
+				return false
+			}
+			switch ev.Kind {
+			case ui.InputPointerDown:
+				return true // to have the release
+			case ui.InputPointerUp:
+				a.openDiagram(v, b)
+				return true
+			}
+			return false
+		})
 		if !over {
 			return
 		}
 		ui.Row(c).Absolute().Top(size * 0.4).Right(size * 0.4).Gap(2).Background(p.editor).Radius(4).Children(func() {
+			if a.smallButton(c, iconMaximize, locales.OpenDiagram()) {
+				a.openDiagram(v, b)
+			}
 			if a.smallButton(c, iconFileCode, locales.ShowSource()) {
 				if m.sources == nil {
 					m.sources = map[int]bool{}
@@ -2009,7 +2028,7 @@ func (a *app) markdownView(c *ui.Context, v *viewer, name string) {
 						})
 					case markdownCodeBlock:
 						if d := b.diagram; d != nil && d.err == "" && !m.sources[b.line] {
-							a.markdownDiagram(c, m, b, size, max(1, width-(b.offset+b.markerWidth)*size-float32(b.quote)*size))
+							a.markdownDiagram(c, v, b, size, max(1, width-(b.offset+b.markerWidth)*size-float32(b.quote)*size))
 							break
 						}
 						a.markdownCodeCard(c, m, path, b, size, a.previewHits(m, row.Index, -1, 0))

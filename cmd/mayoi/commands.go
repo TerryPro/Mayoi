@@ -386,8 +386,13 @@ func (a *app) zoom(by float32) {
 	a.host.redrawWindows()
 }
 
-// imageZoom changes only the picture shown, or fits it for 0.
+// imageZoom changes only the picture shown, or fits it for 0: the
+// diagram over the window while one is.
 func (a *app) imageZoom(by int) {
+	if a.diagram != nil {
+		a.diagram.view.zoomBy(by)
+		return
+	}
 	if v := a.activeViewer(); v != nil && v.markdown == nil {
 		v.zoomBy(by)
 	}

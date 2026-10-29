@@ -1028,6 +1028,8 @@
   "searchToggleReplace": "切换替换",
   "searchWithNothing": "空内容",
   "showDiagram": "显示图表",
+  "openDiagram": "打开图表",
+  "closeDiagram": "关闭图表",
   "showLess": "收起",
   "showMore": "显示更多",
   "showPreview": "显示预览",
