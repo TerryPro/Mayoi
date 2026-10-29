@@ -8,6 +8,7 @@
 package highlight
 
 import (
+	"embed"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -66,11 +67,23 @@ type Line struct {
 // files, show plain.
 const MaxLineRunes = 4000
 
+// vueXML is Chroma's Vue lexer with its v- directive values ending at
+// their closing quote: Chroma's own run on, over lines, to a later quote,
+// as in a value prettier wraps.
+//
+//go:embed vue.xml
+var vueXML embed.FS
+
+// vue is the lexer of .vue files, made once.
+var vue = sync.OnceValue(func() chroma.Lexer {
+	return chroma.Coalesce(chroma.MustNewXMLLexer(vueXML, "vue.xml"))
+})
+
 // Lexer returns the lexer of a file by its name, nil for plain text.
 func Lexer(path string) chroma.Lexer {
 	name := filepath.Base(path)
-	// Names Chroma gets wrong, or does not know: go.mod is not AMPL, and
-	// .sql is any SQL, not MySQL's.
+	// Names Chroma gets wrong, or does not know: go.mod is not AMPL, .sql
+	// is any SQL, not MySQL's, and .vue needs the fixed lexer above.
 	switch strings.ToLower(name) {
 	case "go.mod", "go.work", "go.sum":
 		return nil
@@ -79,8 +92,11 @@ func Lexer(path string) chroma.Lexer {
 	case ".npmrc":
 		return chroma.Coalesce(lexers.Get("ini"))
 	}
-	if strings.EqualFold(filepath.Ext(name), ".sql") {
+	switch strings.ToLower(filepath.Ext(name)) {
+	case ".sql":
 		return chroma.Coalesce(lexers.Get("sql"))
+	case ".vue":
+		return vue()
 	}
 	l := lexers.Match(name)
 	if l == nil {

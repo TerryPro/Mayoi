@@ -11,6 +11,7 @@ needs a `## <version>` section here, or its build fails.
 - Commit tooltips in the history no longer pop up over the rows while you scroll.
 - Right-click a folder in **Explorer** and choose **Find in Folder…** to search only that folder.
 - Bold, italic and strikethrough now render in the Markdown preview when quotes or brackets touch Chinese text.
+- Vue files keep their colors after a directive value that prettier wraps over several lines.
 
 ## 0.14.0
 

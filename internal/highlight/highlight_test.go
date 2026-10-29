@@ -34,6 +34,21 @@ func TestLexSplitsTokensByLine(t *testing.T) {
 	}
 }
 
+func TestVueDirectiveOverLines(t *testing.T) {
+	src := "<template>\n  <div\n    v-if=\"\n      a &&\n      !b\n    \"\n    class=\"hint\"\n  >\n    text\n  </div>\n</template>\n"
+	lines := Lex(Lexer("x.vue"), src)
+	// class after the wrapped value is an attribute, not more of its string.
+	if got := lines[6].Tokens; len(got) == 0 || got[0] != (Token{4, 9, Attribute}) {
+		t.Errorf("class line tokens %v", got)
+	}
+	if !slices.Contains(lines[9].Tokens, Token{4, 7, Tag}) {
+		t.Errorf("closing div tokens %v", lines[9].Tokens)
+	}
+	if Name(Lexer("x.vue")) != "vue" {
+		t.Errorf("lexer %q", Name(Lexer("x.vue")))
+	}
+}
+
 func TestPlainText(t *testing.T) {
 	if Lexer("notes.unknownext") != nil {
 		t.Error("lexer for an unknown extension")
