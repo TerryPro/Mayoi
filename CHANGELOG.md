@@ -3,7 +3,7 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
-## Unreleased
+## 0.14.2
 
 - The color theme box opens scrolled to the theme you're using.
 - `Cmd+A` in the editor selects all without scrolling to the end of the file.
