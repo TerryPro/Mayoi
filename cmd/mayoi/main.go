@@ -300,9 +300,10 @@ func main() {
 		return
 	}
 	// After the lock, so that a second Mayoi leaves the first's crash.log
-	// alone.
-	if dir, err := mygo.App.Path(mygo.PathUserData); err == nil {
+	// alone; a snapshot, which takes no lock, leaves it alone too.
+	if dir, err := mygo.App.Path(mygo.PathUserData); err == nil && os.Getenv("MAYOI_SNAPSHOT") == "" {
 		keepCrashes(dir)
+		keepStderr(dir)
 	}
 	// Opened from the Finder or the Dock, Mayoi has the system's PATH
 	// only; git, its hooks and what else Mayoi runs look for commands
