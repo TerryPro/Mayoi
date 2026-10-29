@@ -10,6 +10,7 @@ needs a `## <version>` section here, or its build fails.
 - The Cursor theme's current line, word highlights, find matches and hovered rows now match Cursor's own.
 - Commit tooltips in the history no longer pop up over the rows while you scroll.
 - Right-click a folder in **Explorer** and choose **Find in Folder…** to search only that folder.
+- Bold, italic and strikethrough now render in the Markdown preview when quotes or brackets touch Chinese text.
 
 ## 0.14.0
 

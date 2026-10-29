@@ -202,6 +202,38 @@ func TestMarkdownLinkifyAfterPunctuation(t *testing.T) {
 	}
 }
 
+func TestMarkdownCJKEmphasis(t *testing.T) {
+	for _, c := range []struct{ source, want string }{
+		{`**京东/淘宝上的港版"准新机"**标着"仅海外 eSIM"`, `[b:京东/淘宝上的港版"准新机"]标着"仅海外 eSIM"`},
+		{"**「准新机」**标着", "[b:「准新机」]标着"},
+		{`中文**"引号"**中文`, `中文[b:"引号"]中文`},
+		{"*（斜体）*后", "[i:（斜体）]后"},
+		{"价格**很高**，除非", "价格[b:很高]，除非"},
+		{`~~"旧价"~~现价`, `[s:"旧价"]现价`},
+		{`a**"b"**c`, `a**"b"**c`},
+		{"snake_case_word", "snake_case_word"},
+		{"**bold** and ~~gone~~", "[b:bold] and [s:gone]"},
+		{"a ~~~b~~~ c", "a ~~~b~~~ c"},
+	} {
+		var got strings.Builder
+		for _, r := range parseMarkdown([]byte(c.source), "", "", nil)[0].runs {
+			switch {
+			case r.bold:
+				got.WriteString("[b:" + r.text + "]")
+			case r.italic:
+				got.WriteString("[i:" + r.text + "]")
+			case r.strike:
+				got.WriteString("[s:" + r.text + "]")
+			default:
+				got.WriteString(r.text)
+			}
+		}
+		if got.String() != c.want {
+			t.Errorf("%q: got %q, want %q", c.source, got.String(), c.want)
+		}
+	}
+}
+
 func TestMarkdownFootnotes(t *testing.T) {
 	source := "## 数据[^11]\n\nA[^1] b[^1] c[^note].\n\n## 参考链接\n\n" +
 		"[^1]: 第 4 次尝试 https://x.com/a/status/1\n[^note]: 锁定：https://x.com/a/status/2\n[^11]: Eleven.\n[^unused]: Never referenced.\n\n" +

@@ -388,9 +388,17 @@ func markdownFrontMatter(lines []string) bool {
 // parts of its GFM and footnote extensions that parse, without their HTML
 // renderers, which the preview has no use for and would make Mayoi
 // larger, with Obsidian's wiki links, and with its math when math is set.
+// Emphasis and strikethrough use the CJK-friendly flanking rule.
 func markdownParser(math bool) parser.Parser {
-	inlines := append(parser.DefaultInlineParsers(),
-		util.Prioritized(extension.NewStrikethroughParser(), 500),
+	var inlines []util.PrioritizedValue
+	for _, v := range parser.DefaultInlineParsers() {
+		if v.Value != parser.NewEmphasisParser() {
+			inlines = append(inlines, v)
+		}
+	}
+	inlines = append(inlines,
+		util.Prioritized(cjkEmphasisParser{emphasisDelimiters}, 500),
+		util.Prioritized(cjkEmphasisParser{strikethroughDelimiters}, 500),
 		util.Prioritized(extension.NewTaskCheckBoxParser(), 0),
 		util.Prioritized(extension.NewLinkifyParser(), 999),
 		util.Prioritized(extension.NewFootnoteParser(), 101),
