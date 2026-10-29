@@ -744,6 +744,7 @@
   "quickOpenAction": "打开",
   "quickOpenLabel": "快速打开",
   "quickOpenOrGoIn": "打开或进入",
+  "quickOpenToSide": "在侧边打开",
   "quickRunAction": "运行",
   "quickSearchFiles": "按名称搜索文件",
   "quickSwitchAction": "切换",

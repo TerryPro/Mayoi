@@ -224,6 +224,23 @@ func (a *app) openFile(path string, focus bool) {
 	a.openFileIn(col, col.active+1, path, focus)
 }
 
+// openFileToSide shows a file in a tab of the column beside the file
+// column, splitting one off on its right when there is none.
+func (a *app) openFileToSide(path string) {
+	col := a.fileColumn()
+	if side := a.sideColumn(col); side != nil {
+		a.openFileIn(side, side.active+1, path, true)
+		return
+	}
+	side := a.splitColumn(col, true)
+	a.openFileIn(side, 0, path, true)
+	if len(side.tabs) == 0 {
+		// It could not be read.
+		col.weight *= 2
+		a.removeColumn(side)
+	}
+}
+
 // openText has open run with openingText set, so a file it opens shows
 // its text, whatever markdownPreview says. The flag goes back to what it
 // was when open returns, a nested call included.

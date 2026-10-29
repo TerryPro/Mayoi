@@ -455,6 +455,48 @@ func TestQuickOpenAndGoToLine(t *testing.T) {
 	}
 }
 
+func TestQuickOpenToSide(t *testing.T) {
+	hs := newHarness(t, true)
+	a, tt := hs.a, hs.tt
+	a.openFile(hs.path("main.go"), true)
+	hs.settle()
+	quickOpenSide := func(query string) {
+		t.Helper()
+		a.run("go.quickOpen")
+		hs.settle()
+		deadline := time.Now().Add(5 * time.Second)
+		for a.index == nil && time.Now().Before(deadline) {
+			hs.settle()
+		}
+		tt.Type(query)
+		hs.settle()
+		hs.key(ui.Cmd, ui.KeyEnter)
+		if a.quick.open {
+			t.Fatal("quick open stayed open")
+		}
+	}
+
+	quickOpenSide("bts")
+	if len(a.cols) != 2 {
+		t.Fatalf("%d columns, want 2", len(a.cols))
+	}
+	if a.col != 1 || filepath.Base(a.activeEditor().path) != "b.ts" {
+		t.Errorf("column %d shows %s, want b.ts in column 1", a.col, a.activeEditor().path)
+	}
+	if len(a.cols[0].tabs) != 1 {
+		t.Errorf("the first column has %d tabs, want 1", len(a.cols[0].tabs))
+	}
+
+	// From the column on the right, the side is the one on its left.
+	quickOpenSide("gomod")
+	if len(a.cols) != 2 {
+		t.Fatalf("%d columns, want 2", len(a.cols))
+	}
+	if a.col != 0 || filepath.Base(a.activeEditor().path) != "go.mod" {
+		t.Errorf("column %d shows %s, want go.mod in column 0", a.col, a.activeEditor().path)
+	}
+}
+
 func TestFindAndReplace(t *testing.T) {
 	hs := newHarness(t, true)
 	a, tt := hs.a, hs.tt

@@ -744,6 +744,7 @@
   "quickOpenAction": "開く",
   "quickOpenLabel": "クイック オープン",
   "quickOpenOrGoIn": "開く/中に入る",
+  "quickOpenToSide": "横に開く",
   "quickRunAction": "実行",
   "quickSearchFiles": "名前でファイルを検索",
   "quickSwitchAction": "切り替え",

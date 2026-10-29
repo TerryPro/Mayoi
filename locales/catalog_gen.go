@@ -7662,6 +7662,16 @@ func (msgs Messages) QuickOpenOrGoIn() string {
 	return Catalog.Format(msgs.locale, "quickOpenOrGoIn", nil)
 }
 
+// QuickOpenToSide says "to the side"
+// in the language the app shows.
+func QuickOpenToSide() string { return In(i18n.Locale()).QuickOpenToSide() }
+
+// QuickOpenToSide says "to the side"
+// in the language of msgs.
+func (msgs Messages) QuickOpenToSide() string {
+	return Catalog.Format(msgs.locale, "quickOpenToSide", nil)
+}
+
 // QuickRunAction says "run"
 // in the language the app shows.
 func QuickRunAction() string { return In(i18n.Locale()).QuickRunAction() }

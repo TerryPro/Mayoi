@@ -249,7 +249,7 @@ func (a *gitContext) branchPickerView(c *ui.Context) {
 				if b.sel < len(choices) && (choices[b.sel].prompt || choices[b.sel].create != "") {
 					action = locales.QuickCreateAction()
 				}
-				a.app.quickFooter(c, false, action, locales.BranchTypeToCreate(), false)
+				a.app.quickFooter(c, false, action, locales.BranchTypeToCreate(), false, false)
 			})
 			if box.PressedOutside() || back.OverlayShortcut(0, ui.KeyEscape) {
 				a.closeBranchPicker()

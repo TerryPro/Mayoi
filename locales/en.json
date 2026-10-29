@@ -984,6 +984,7 @@
   "quickOpenAction": "open",
   "quickOpenLabel": "Quick Open",
   "quickOpenOrGoIn": "open or go in",
+  "quickOpenToSide": "to the side",
   "quickRunAction": "run",
   "quickSearchFiles": "Search files by name",
   "quickSwitchAction": "switch",

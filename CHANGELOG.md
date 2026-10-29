@@ -3,6 +3,10 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
+## Unreleased
+
+- Press `⌘⏎` in quick open to open the chosen file in the column to the side, splitting one if needed.
+
 ## 0.13.1
 
 - When an update check fails, the update window shows the whole error, with no tooltip over it.
