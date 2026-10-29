@@ -156,6 +156,16 @@ func (msgs Messages) ThemeAboutMayoi() string {
 	return Catalog.Format(msgs.locale, "themeAboutMayoi", nil)
 }
 
+// ThemeAboutPurpleGold says "Deep purple and charcoal, with champagne gold"
+// in the language the app shows.
+func ThemeAboutPurpleGold() string { return In(i18n.Locale()).ThemeAboutPurpleGold() }
+
+// ThemeAboutPurpleGold says "Deep purple and charcoal, with champagne gold"
+// in the language of msgs.
+func (msgs Messages) ThemeAboutPurpleGold() string {
+	return Catalog.Format(msgs.locale, "themeAboutPurpleGold", nil)
+}
+
 // ThemeAboutQoder says "Qoder's Forest greens"
 // in the language the app shows.
 func ThemeAboutQoder() string { return In(i18n.Locale()).ThemeAboutQoder() }
@@ -2558,6 +2568,16 @@ func CmdViewThemeMatrix() string { return In(i18n.Locale()).CmdViewThemeMatrix()
 // in the language of msgs.
 func (msgs Messages) CmdViewThemeMatrix() string {
 	return Catalog.Format(msgs.locale, "cmdViewThemeMatrix", nil)
+}
+
+// CmdViewThemePurpleGold says "Purple Gold"
+// in the language the app shows.
+func CmdViewThemePurpleGold() string { return In(i18n.Locale()).CmdViewThemePurpleGold() }
+
+// CmdViewThemePurpleGold says "Purple Gold"
+// in the language of msgs.
+func (msgs Messages) CmdViewThemePurpleGold() string {
+	return Catalog.Format(msgs.locale, "cmdViewThemePurpleGold", nil)
 }
 
 // CmdViewTogglePreview says "Toggle Preview"

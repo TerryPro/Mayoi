@@ -194,6 +194,7 @@ func (a *app) commandsIn(t locales.Messages) []command {
 		{"view.theme.qoder", "Qoder", "", func() { a.setTheme(themeQoder) }},
 		{"view.theme.grokbot", "Grok Bot", "", func() { a.setTheme(themeGrokBot) }},
 		{"view.theme.cursor", "Cursor", "", func() { a.setTheme(themeCursor) }},
+		{"view.theme.purplegold", t.CmdViewThemePurpleGold(), "", func() { a.setTheme(themePurpleGold) }},
 		{localeCommand + "system", t.CmdViewLocaleSystem(), "", func() { a.setLocale("") }},
 	}
 	// The languages, each named in itself.
@@ -432,11 +433,11 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 		it.Type, it.Checked = mygo.MenuItemRadio, checked
 		return it
 	}
-	// The appearances, which The Matrix, always dark, has no choice of,
-	// and the themes.
+	// The appearances, which The Matrix and Purple Gold, always dark, have
+	// no choice of, and the themes.
 	appearance := func(id, ap string) *mygo.MenuItem {
 		it := radio(id, a.settings.Appearance == ap)
-		it.Disabled = a.settings.Theme == themeMatrix
+		it.Disabled = alwaysDark(a.settings.Theme)
 		return it
 	}
 	theme := func(id, th string) *mygo.MenuItem { return radio(id, a.settings.Theme == th) }
@@ -555,6 +556,7 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 				appearance("view.appearance.system", ""), appearance("view.appearance.light", "light"), appearance("view.appearance.dark", "dark"),
 				mygo.Separator(), theme("view.theme.mayoi", ""), theme("view.theme.matrix", themeMatrix), theme("view.theme.claude", themeClaude),
 				theme("view.theme.qoder", themeQoder), theme("view.theme.grokbot", themeGrokBot), theme("view.theme.cursor", themeCursor),
+				theme("view.theme.purplegold", themePurpleGold),
 			}},
 			{Label: locales.MenuLanguage(), Submenu: languages}, mygo.Separator(),
 			{Role: mygo.RoleToggleFullScreen}, {Role: mygo.RoleToggleDevTools},

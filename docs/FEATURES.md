@@ -610,8 +610,8 @@ for options it doesn't know. A `mayoi` command an older Mayoi installed is broug
 
 ## Appearance and persistence
 
-**View → Theme** picks a theme, Mayoi, The Matrix, Claude, Qoder, Grok Bot or Cursor, and apart from it whether the window follows the system's
-light or dark mode or is always Light or Dark. Light and Dark are greyed out under The Matrix, which is always dark.
+**View → Theme** picks a theme, Mayoi, The Matrix, Claude, Qoder, Grok Bot, Cursor or Purple Gold, and apart from it whether the window follows the system's
+light or dark mode or is always Light or Dark. Light and Dark are greyed out under The Matrix and Purple Gold, which are always dark.
 The Matrix is phosphor green on black, with the whole window in the code's font, file icons in greens, and red and amber
 kept for what is removed, failed or changed. Digital rain falls behind the welcome page while the window has the
 keyboard, and holds still without it or when the system asks for reduced motion. Claude is Anthropic's ivory and warm
@@ -625,7 +625,9 @@ and a dark kind, and its code in the warm colors of x.ai's terminal. Grok Bot's 
 eyes, takes the logo's place and the status bar's start as Clawd does, looks up as it hops, and now and then glances
 to one side and the other. Cursor is Cursor's own Cursor Light and Cursor Dark: near-white or near-black greys with
 Cursor's blue for the accent and the buttons, in a light and a dark kind, and its code in Cursor's own colors. It has
-no character, so the welcome page keeps Mayoi's logo.
+no character, so the welcome page keeps Mayoi's logo. Purple Gold is a deep purple sidebar, tab strip and status bar
+around a charcoal editor, with champagne gold for the accent and the buttons, and its code in muted golds, lavenders,
+roses and teals. It has no character either.
 **View → Theme → Color Theme…** (`workbench.action.selectTheme` in `keybindings.json`, as `cmd+k cmd+t`), or **Color
 Theme…** on the welcome page, opens a box of the themes, each with a little window in its colors and its character: the
 window takes each theme as ↑ and ↓ move to it, and ← and → switch the appearance; Return keeps them, and Escape goes

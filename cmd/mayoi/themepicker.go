@@ -26,6 +26,7 @@ var themeChoices = []themeChoice{
 	{themeQoder, func() string { return "Qoder" }, locales.ThemeAboutQoder},
 	{themeGrokBot, func() string { return "Grok Bot" }, locales.ThemeAboutGrokBot},
 	{themeCursor, func() string { return "Cursor" }, locales.ThemeAboutCursor},
+	{themePurpleGold, locales.CmdViewThemePurpleGold, locales.ThemeAboutPurpleGold},
 }
 
 // themeAppearances are the appearances the box chooses between, as the
@@ -202,7 +203,8 @@ func (a *app) themePickerView(c *ui.Context) {
 }
 
 // appearanceSwitch is the switch of the appearance in the box's head:
-// the system's, light or dark. The Matrix is always dark, so it greys out.
+// the system's, light or dark. The Matrix and Purple Gold are always dark,
+// so it greys out under them.
 func (a *app) appearanceSwitch(c *ui.Context) {
 	sel := 0
 	for i, ap := range themeAppearances {
@@ -214,7 +216,7 @@ func (a *app) appearanceSwitch(c *ui.Context) {
 	sw := ui.Segmented(c.Key("theme-appearance"), &sel,
 		locales.CmdViewAppearanceSystem(), locales.CmdViewAppearanceLight(), locales.CmdViewAppearanceDark()).
 		FontSize(12).Shrink(0).Label(locales.ThemeAppearance())
-	if a.settings.Theme == themeMatrix {
+	if alwaysDark(a.settings.Theme) {
 		sw.Disabled(true).Tooltip(locales.ThemeAlwaysDark())
 	}
 	if sel != was {

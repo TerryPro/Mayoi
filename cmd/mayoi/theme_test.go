@@ -50,6 +50,20 @@ func TestMatrixTheme(t *testing.T) {
 	}
 }
 
+// Purple Gold is always dark, whatever the appearance, and has no rain.
+func TestPurpleGoldTheme(t *testing.T) {
+	if paletteFor(themePurpleGold, false) != purpleGoldPal || paletteFor(themePurpleGold, true) != purpleGoldPal {
+		t.Error("Purple Gold follows the window's light or dark")
+	}
+	if themeSource(themePurpleGold, "light") != mygo.ThemeDark || themeSource(themePurpleGold, "") != mygo.ThemeDark {
+		t.Error("the native window is not dark under Purple Gold")
+	}
+	hs := themeHarness(t, themePurpleGold, false)
+	if hs.a.pal != purpleGoldPal || hs.a.rain.moving {
+		t.Error("a light window is not in Purple Gold, without rain")
+	}
+}
+
 // The rain falls while the window has the keyboard, and holds still
 // without it, asking for no frames.
 func TestMatrixRainStopsWhenBlurred(t *testing.T) {
@@ -270,6 +284,10 @@ func TestShotCursor(t *testing.T) {
 	shotTheme(t, themeCursor)
 }
 
+func TestShotPurpleGold(t *testing.T) {
+	shotTheme(t, themePurpleGold)
+}
+
 // shotTheme shoots a theme's welcome page and an editor, light and dark.
 func shotTheme(t *testing.T, theme string) {
 	if os.Getenv("SHOTS") == "" {
@@ -297,8 +315,8 @@ func shotTheme(t *testing.T, theme string) {
 	}
 }
 
-// The appearances are greyed out in the menu under The Matrix, which is
-// always dark, and the themes and appearances are checked apart.
+// The appearances are greyed out in the menu under The Matrix and Purple
+// Gold, which are always dark, and the themes and appearances are checked apart.
 func TestThemeMenu(t *testing.T) {
 	hs := newHarness(t, true)
 	a := hs.a
@@ -336,6 +354,13 @@ func TestThemeMenu(t *testing.T) {
 	if find("Mayoi").Checked || !find("The Matrix").Checked {
 		t.Error("The Matrix is not the theme checked")
 	}
+	a.setTheme(themePurpleGold)
+	if l, g := find("Light"), find("Purple Gold"); g == nil || !g.Checked || !l.Disabled || !l.Checked || !a.commandOn("view.theme.purplegold") {
+		t.Error("Purple Gold is not the theme checked, with Light greyed out and kept")
+	}
+	if a.themeMascot() != nil {
+		t.Error("Purple Gold has a character")
+	}
 	a.setTheme(themeQoder)
 	if q, l := find("Qoder"), find("Light"); q == nil || !q.Checked || find("The Matrix").Checked || l.Disabled {
 		t.Error("Qoder is not the theme checked, with Light to choose")
@@ -362,7 +387,7 @@ func TestThemeMenu(t *testing.T) {
 func TestButtonContrast(t *testing.T) {
 	pals := map[string]*palette{"light": lightPal, "dark": darkPal, "matrix": matrixPal, "claude light": claudeLightPal, "claude dark": claudeDarkPal,
 		"qoder light": qoderLightPal, "qoder dark": qoderDarkPal, "grok bot light": grokBotLightPal, "grok bot dark": grokBotDarkPal,
-		"cursor light": cursorLightPal, "cursor dark": cursorDarkPal}
+		"cursor light": cursorLightPal, "cursor dark": cursorDarkPal, "purple gold": purpleGoldPal}
 	for name, p := range pals {
 		for _, pair := range []struct {
 			what     string
@@ -388,7 +413,7 @@ func TestButtonContrast(t *testing.T) {
 func TestStatusTextContrast(t *testing.T) {
 	pals := map[string]*palette{"light": lightPal, "dark": darkPal, "matrix": matrixPal, "claude light": claudeLightPal, "claude dark": claudeDarkPal,
 		"qoder light": qoderLightPal, "qoder dark": qoderDarkPal, "grok bot light": grokBotLightPal, "grok bot dark": grokBotDarkPal,
-		"cursor light": cursorLightPal, "cursor dark": cursorDarkPal}
+		"cursor light": cursorLightPal, "cursor dark": cursorDarkPal, "purple gold": purpleGoldPal}
 	for name, p := range pals {
 		for what, fg := range map[string]ui.Color{"modified": p.modifiedFg, "added": p.addedFg, "removed": p.removedFg, "danger": p.dangerFg} {
 			for _, back := range []ui.Color{p.chrome, p.editor, p.panel} {

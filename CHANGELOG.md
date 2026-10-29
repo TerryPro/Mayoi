@@ -3,6 +3,11 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
+## Unreleased
+
+- **View → Theme → Purple Gold** is always dark: a deep purple sidebar around a charcoal editor.
+- The Purple Gold theme uses champagne gold for buttons, and muted golds and lavenders for the code.
+
 ## 0.14.0
 
 - **View → Theme → Cursor** takes Cursor's own Cursor Light and Cursor Dark, as the Appearance is.
