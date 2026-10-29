@@ -377,6 +377,15 @@ func (a *app) fileTree(c *ui.Context) {
 			if m.Item(locales.CopyRelativePath()).Chosen() {
 				action = func() { a.services.WriteClipboard(t.Rel(path)) }
 			}
+			if !isDir && a.repositoryForPath(path).git.repo != nil {
+				m.Separator()
+				if m.Item(locales.CmdGitOpenFileOnRemote()).Chosen() {
+					action = func() { a.fileOnRemote(path, nil, false) }
+				}
+				if m.Item(locales.CmdGitCopyPermalink()).Chosen() {
+					action = func() { a.fileOnRemote(path, nil, true) }
+				}
+			}
 			m.Separator()
 			if m.Item(locales.RenameEllipsis()).Chosen() {
 				action = func() { a.askRename(path) }

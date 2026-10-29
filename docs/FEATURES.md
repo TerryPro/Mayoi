@@ -128,6 +128,11 @@ change, and the **Git** menu has the same commands for the change at the caret.
 The caret's line shows who changed it last, when, and the commit's summary, a moment after the caret stops. Turn this
 off from **Git → Inline Blame**.
 
+**Git → Open File on Remote** opens the file on GitHub, GitLab or Bitbucket at the upstream branch, or at the commit
+checked out when the branch has none, marking the caret's line or the lines selected (`#L10-L20`). **Git → Copy
+Permalink** copies the same link at the commit checked out. Both are in the tab's and the Explorer's file menus too,
+which link the whole file. The remote is the upstream's, else origin, else the first.
+
 ## Source control
 
 The button beside **EXPLORER** at the top of the sidebar (⌃⇧G) switches it to the changes of the folder's Git work
@@ -334,6 +339,11 @@ Panel data loads when it is opened, and branch history loads when that branch is
 Branch rows offer checkout and pull; a remote branch's **Fetch Remote** fetches its whole remote. Context menus offer
 branch creation, rename, deletion, merge and rebase, and remote creation, URL editing, removal, fetch and prune.
 Deletion refuses unmerged branches. **Refresh** rereads local refs; **Fetch** contacts the remote.
+
+When the branch has a pull request on GitHub, its number, how its checks went and its review show beside the branch in
+source control and the status bar; click it to open the pull request in the browser. It comes from the `gh` CLI, run
+where the repository is, a host's for Remote SSH, and shows nothing without `gh` or its sign-in. It is asked for again
+every minute while the window shows, every 30 seconds while checks run.
 
 Click the branch in the status bar to open the same branch picker as source control. The sync button alongside it
 shows how far the branch is ahead of its upstream (↑) and behind it (↓), and pulls then pushes in one click; a branch

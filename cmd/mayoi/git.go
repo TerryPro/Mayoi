@@ -91,6 +91,19 @@ type gitState struct {
 	// HEAD and the read reachOf names.
 	reach   map[string]bool
 	reachOf string
+
+	// pr is the pull request of prBranch of prRepo, as gh last told, nil
+	// for none; prRead is when it was asked last, of the state prOf names.
+	// prRunning is set while gh runs, prOff once gh could not tell, and
+	// prWake draws a frame when it is time to ask again.
+	pr        *git.PR
+	prRepo    *git.Repo
+	prBranch  string
+	prOf      string
+	prRead    time.Time
+	prRunning bool
+	prOff     bool
+	prWake    *time.Timer
 }
 
 // historyPage is how many commits the history reads at first, and more

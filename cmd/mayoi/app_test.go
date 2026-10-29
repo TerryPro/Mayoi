@@ -127,6 +127,9 @@ func (h *fakeHost) closeProject()           {}
 func (h *fakeHost) projectTabsChanged()     {}
 func (h *fakeHost) nativeDrags() bool       { return false }
 
+// Off screen, the pull request of the branch is not asked of gh.
+func (h *fakeHost) shown() bool { return false }
+
 // workspaceFixture makes a folder of a few files.
 func workspaceFixture(t testing.TB) string {
 	root := t.TempDir()

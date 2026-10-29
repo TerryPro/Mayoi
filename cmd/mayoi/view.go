@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -882,6 +883,7 @@ func (a *app) previewButton(c *ui.Context, t *colTab, d *editor) {
 type statusVisibility struct {
 	branchLabel   bool
 	gitSyncCounts bool
+	prDetail      bool // the checks and the review after the number
 	folder        bool
 	terminal      bool
 	lines         bool
@@ -993,6 +995,12 @@ func (a *app) statusFit(c *ui.Context, width float32) statusVisibility {
 	}
 	if version := a.host.update(); version != "" {
 		used += measure(version, true)
+	}
+	if pr := a.repository().currentPR(); pr != nil {
+		// The number stays, as the branch's icon does.
+		number := measure("#"+strconv.Itoa(pr.Number), false)
+		used += number
+		add(&v.prDetail, measure(prBadgeLabel(pr), false)-number+4*4)
 	}
 	if repo := a.repository(); repo.gitSyncVisible() {
 		used += 2*6 + 12 + 2 // the sync icon stays beside the branch
@@ -1172,6 +1180,7 @@ func (a *app) statusBar(c *ui.Context) {
 			if bb.Clicked() {
 				repo.openBranchPicker()
 			}
+			repo.prBadge(c, true, !visible.prDetail)
 		}
 		repo.gitSyncStatus(c, visible.gitSyncCounts)
 		a.transferStatus(c, text)

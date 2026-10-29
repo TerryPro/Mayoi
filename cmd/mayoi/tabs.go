@@ -295,6 +295,15 @@ func (a *app) tabMenu(m *ui.Menu, col *column, t *colTab, closing **colTab) {
 	if m.Item(locales.CopyRelativePath()).Disabled(path == "").Chosen() {
 		a.copyPath(path, true)
 	}
+	if path != "" && a.repositoryForPath(path).git.repo != nil {
+		m.Separator()
+		if m.Item(locales.CmdGitOpenFileOnRemote()).Chosen() {
+			a.post(func() { a.fileOnRemote(path, t.ed, false) })
+		}
+		if m.Item(locales.CmdGitCopyPermalink()).Chosen() {
+			a.post(func() { a.fileOnRemote(path, t.ed, true) })
+		}
+	}
 }
 
 func (a *app) columnLockMenu(m *ui.Menu, col *column) {

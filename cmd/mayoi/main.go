@@ -148,6 +148,9 @@ func (h *desktop) confirmClose(name string, done func(int)) {
 
 func (h *desktop) trash(path string) error { return mygo.Shell.TrashItem(path) }
 func (h *desktop) nativeDrags() bool       { return true }
+func (h *desktop) shown() bool {
+	return h.f.active == h && h.f.win.IsVisible() && !h.f.win.IsMinimized()
+}
 func (h *desktop) reveal(path string) {
 	if !remote.Is(path) {
 		mygo.Shell.ShowItemInFolder(path)

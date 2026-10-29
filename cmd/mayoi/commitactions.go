@@ -137,3 +137,38 @@ func (a *gitContext) gitRead(busy string, fn func(*git.Repo) error, then func())
 		})
 	})
 }
+
+// fileOnRemote opens the file at path on its repository's hosting
+// service, or copies a permalink to it, at the commit checked out. When
+// d is its editor, the link marks the caret's line or the lines chosen.
+func (a *app) fileOnRemote(path string, d *editor, permalink bool) {
+	ctx := a.repositoryForPath(path)
+	if path == "" || ctx.git.repo == nil {
+		return
+	}
+	from, to := 0, 0
+	if d != nil && d.path == path {
+		if n := editorExcerpt(d); n != nil {
+			from, to = n.from+1, n.to
+		}
+	}
+	var link string
+	ctx.gitRead(locales.BusyReadingRemote(), func(repo *git.Repo) (err error) {
+		link, err = repo.FileRemoteURL(path, from, to, permalink)
+		return
+	}, func() {
+		if permalink {
+			a.services.WriteClipboard(link)
+			a.tell(note{message: locales.CopiedPermalink()})
+			return
+		}
+		a.services.OpenURL(link)
+	})
+}
+
+// activeFileOnRemote is fileOnRemote for the tab shown.
+func (a *app) activeFileOnRemote(permalink bool) {
+	if t := a.activeTab(); t != nil {
+		a.fileOnRemote(t.path(), t.ed, permalink)
+	}
+}

@@ -112,6 +112,9 @@ type host interface {
 	// pasteboard, and says no, which keeps drags in-process value drags
 	// there.
 	nativeDrags() bool
+	// shown reports whether the project is the one its window shows, and
+	// the window is on screen, not minimized nor hidden.
+	shown() bool
 }
 
 // app is the state of a window of Mayoi.

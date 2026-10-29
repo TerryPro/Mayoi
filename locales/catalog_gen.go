@@ -1710,6 +1710,16 @@ func (msgs Messages) CmdGitContinue() string {
 	return Catalog.Format(msgs.locale, "cmdGitContinue", nil)
 }
 
+// CmdGitCopyPermalink says "Copy Permalink"
+// in the language the app shows.
+func CmdGitCopyPermalink() string { return In(i18n.Locale()).CmdGitCopyPermalink() }
+
+// CmdGitCopyPermalink says "Copy Permalink"
+// in the language of msgs.
+func (msgs Messages) CmdGitCopyPermalink() string {
+	return Catalog.Format(msgs.locale, "cmdGitCopyPermalink", nil)
+}
+
 // CmdGitCreateBranch says "Create Branch…"
 // in the language the app shows.
 func CmdGitCreateBranch() string { return In(i18n.Locale()).CmdGitCreateBranch() }
@@ -1768,6 +1778,16 @@ func CmdGitOpenChanges() string { return In(i18n.Locale()).CmdGitOpenChanges() }
 // in the language of msgs.
 func (msgs Messages) CmdGitOpenChanges() string {
 	return Catalog.Format(msgs.locale, "cmdGitOpenChanges", nil)
+}
+
+// CmdGitOpenFileOnRemote says "Open File on Remote"
+// in the language the app shows.
+func CmdGitOpenFileOnRemote() string { return In(i18n.Locale()).CmdGitOpenFileOnRemote() }
+
+// CmdGitOpenFileOnRemote says "Open File on Remote"
+// in the language of msgs.
+func (msgs Messages) CmdGitOpenFileOnRemote() string {
+	return Catalog.Format(msgs.locale, "cmdGitOpenFileOnRemote", nil)
 }
 
 // CmdGitPrevChange says "Previous Change"
@@ -2872,6 +2892,16 @@ func CopiedPatchOf(commit string) string { return In(i18n.Locale()).CopiedPatchO
 // in the language of msgs.
 func (msgs Messages) CopiedPatchOf(commit string) string {
 	return Catalog.Format(msgs.locale, "copiedPatchOf", map[string]any{"commit": commit})
+}
+
+// CopiedPermalink says "Copied the permalink"
+// in the language the app shows.
+func CopiedPermalink() string { return In(i18n.Locale()).CopiedPermalink() }
+
+// CopiedPermalink says "Copied the permalink"
+// in the language of msgs.
+func (msgs Messages) CopiedPermalink() string {
+	return Catalog.Format(msgs.locale, "copiedPermalink", nil)
 }
 
 // CopiedText says "Copied {text}"
@@ -7418,6 +7448,106 @@ func PortsForwarded(count int, host string) string {
 // in the language of msgs.
 func (msgs Messages) PortsForwarded(count int, host string) string {
 	return Catalog.Format(msgs.locale, "portsForwarded", map[string]any{"count": count, "host": host})
+}
+
+// PrApproved says "Approved"
+// in the language the app shows.
+func PrApproved() string { return In(i18n.Locale()).PrApproved() }
+
+// PrApproved says "Approved"
+// in the language of msgs.
+func (msgs Messages) PrApproved() string {
+	return Catalog.Format(msgs.locale, "prApproved", nil)
+}
+
+// PrChangesRequested says "Changes requested"
+// in the language the app shows.
+func PrChangesRequested() string { return In(i18n.Locale()).PrChangesRequested() }
+
+// PrChangesRequested says "Changes requested"
+// in the language of msgs.
+func (msgs Messages) PrChangesRequested() string {
+	return Catalog.Format(msgs.locale, "prChangesRequested", nil)
+}
+
+// PrChecksFailed says "{count, plural, one {# check failed} other {# checks failed}}"
+// in the language the app shows.
+func PrChecksFailed(count int) string { return In(i18n.Locale()).PrChecksFailed(count) }
+
+// PrChecksFailed says "{count, plural, one {# check failed} other {# checks failed}}"
+// in the language of msgs.
+func (msgs Messages) PrChecksFailed(count int) string {
+	return Catalog.Format(msgs.locale, "prChecksFailed", map[string]any{"count": count})
+}
+
+// PrChecksPassed says "{count, plural, one {# check passed} other {# checks passed}}"
+// in the language the app shows.
+func PrChecksPassed(count int) string { return In(i18n.Locale()).PrChecksPassed(count) }
+
+// PrChecksPassed says "{count, plural, one {# check passed} other {# checks passed}}"
+// in the language of msgs.
+func (msgs Messages) PrChecksPassed(count int) string {
+	return Catalog.Format(msgs.locale, "prChecksPassed", map[string]any{"count": count})
+}
+
+// PrChecksPending says "{count, plural, one {# check running} other {# checks running}}"
+// in the language the app shows.
+func PrChecksPending(count int) string { return In(i18n.Locale()).PrChecksPending(count) }
+
+// PrChecksPending says "{count, plural, one {# check running} other {# checks running}}"
+// in the language of msgs.
+func (msgs Messages) PrChecksPending(count int) string {
+	return Catalog.Format(msgs.locale, "prChecksPending", map[string]any{"count": count})
+}
+
+// PrClosed says "Closed"
+// in the language the app shows.
+func PrClosed() string { return In(i18n.Locale()).PrClosed() }
+
+// PrClosed says "Closed"
+// in the language of msgs.
+func (msgs Messages) PrClosed() string {
+	return Catalog.Format(msgs.locale, "prClosed", nil)
+}
+
+// PrMerged says "Merged"
+// in the language the app shows.
+func PrMerged() string { return In(i18n.Locale()).PrMerged() }
+
+// PrMerged says "Merged"
+// in the language of msgs.
+func (msgs Messages) PrMerged() string {
+	return Catalog.Format(msgs.locale, "prMerged", nil)
+}
+
+// PrOpen says "Open"
+// in the language the app shows.
+func PrOpen() string { return In(i18n.Locale()).PrOpen() }
+
+// PrOpen says "Open"
+// in the language of msgs.
+func (msgs Messages) PrOpen() string {
+	return Catalog.Format(msgs.locale, "prOpen", nil)
+}
+
+// PrReviewRequired says "Review required"
+// in the language the app shows.
+func PrReviewRequired() string { return In(i18n.Locale()).PrReviewRequired() }
+
+// PrReviewRequired says "Review required"
+// in the language of msgs.
+func (msgs Messages) PrReviewRequired() string {
+	return Catalog.Format(msgs.locale, "prReviewRequired", nil)
+}
+
+// PrTip says "Pull request {number} · {state}: open in the browser"
+// in the language the app shows.
+func PrTip(number string, state string) string { return In(i18n.Locale()).PrTip(number, state) }
+
+// PrTip says "Pull request {number} · {state}: open in the browser"
+// in the language of msgs.
+func (msgs Messages) PrTip(number string, state string) string {
+	return Catalog.Format(msgs.locale, "prTip", map[string]any{"number": number, "state": state})
 }
 
 // PreviewEmpty says "Nothing to preview"

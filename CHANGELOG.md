@@ -3,6 +3,14 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
+## Unreleased
+
+- A branch with a GitHub pull request shows `#123`, its checks and review in Source Control and the status bar.
+- Click the pull request badge to open the pull request in the browser; it needs the `gh` CLI signed in.
+- **Git → Open File on Remote** opens the file on GitHub, GitLab or Bitbucket at the caret line or selected lines.
+- **Git → Copy Permalink** copies a link to the selected lines at the current commit.
+- Both are also in the tab and Explorer file context menus.
+
 ## 0.14.1
 
 - **View → Theme → Purple Gold** is always dark: a near-black sidebar and a royal purple status bar.

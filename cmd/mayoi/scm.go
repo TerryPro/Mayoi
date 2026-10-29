@@ -2144,6 +2144,7 @@ func (a *app) activePaths() []string {
 func (a *gitContext) scmBranchRow(c *ui.Context) {
 	ui.Row(c).Height(30).Padding(0, 8, 0, 8).Gap(2).AlignItems(ui.Center).Children(func() {
 		a.scmBranchButton(c, false)
+		a.prBadge(c, false, false)
 		ui.Spacer(c)
 		a.scmActions(c)
 	})
