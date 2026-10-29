@@ -734,16 +734,25 @@ func (a *app) sendReview() {
 		a.tell(note{message: locales.ReviewNoneToSend()})
 		return
 	}
-	s := a.reviewTerminal()
-	if s == nil {
+	if !a.pasteToTerminal(a.reviewText() + "\n") {
 		a.services.WriteClipboard(a.reviewText())
 		a.tell(note{message: locales.ReviewNoTerminal(k)})
 		return
 	}
-	s.term.Paste(a.reviewText() + "\n")
 	a.dropReview()
-	a.showTerminal(s)
 	a.tell(note{message: locales.ReviewSent(k)})
+}
+
+// pasteToTerminal pastes text into the terminal used last, without
+// pressing Enter, and shows it; false with no terminal open.
+func (a *app) pasteToTerminal(text string) bool {
+	s := a.reviewTerminal()
+	if s == nil {
+		return false
+	}
+	s.term.Paste(text)
+	a.showTerminal(s)
+	return true
 }
 
 // clearReview drops every note, which the toast that says so puts back.

@@ -366,6 +366,14 @@ the tab when Mayoi opens again; a pull request from a fork needs no remote of it
 folded as the tab opens, and the card counts them. When the pull request has commits newer than the tab's, the card
 offers **Reload**.
 
+**Git → Show Pull Request Checks…**, also **Show Checks…** in the badge's context menu and source control's **⋯**
+menu, or a click on the badge's checks icon, lists the checks of the branch's pull request, failed first, and reads
+them again every 30 seconds while one runs; type to find one. A failed GitHub Actions job offers **Send to Terminal**
+(⏎), which reads the last 3000 lines of its log, without colors or time stamps, and pastes them into the terminal used
+last without pressing Enter, as **Send Review Comments to Terminal** does, copying them with no terminal open; **Copy
+Log**; **Re-run** (⌘⏎), which runs that job again; and **Open on GitHub**, the only one a check outside GitHub Actions
+offers.
+
 Click the branch in the status bar to open the same branch picker as source control. The sync button alongside it
 shows how far the branch is ahead of its upstream (↑) and behind it (↓), and pulls then pushes in one click; a branch
 without an upstream has a publish button instead. Switching waits until open files are saved.

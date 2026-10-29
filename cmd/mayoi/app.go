@@ -300,6 +300,7 @@ type app struct {
 	branches   branchPicker      // the box that switches branches
 	stashes    stashPicker       // the box of the stashes
 	prs        prPicker          // the box of the pull requests
+	checks     checksPicker      // the box of the checks of the pull request
 	recents    recentPicker      // the box of the recent folders
 	themes     themePicker       // the box of the color themes
 	remotePick remotePicker      // the box that connects to a host

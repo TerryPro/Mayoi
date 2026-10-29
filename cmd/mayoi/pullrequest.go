@@ -164,7 +164,8 @@ func (a *gitContext) currentPR() *git.PR {
 }
 
 // prBadge shows the pull request of the branch, its number, how its
-// checks went and its review, whose changes a click opens in a tab. In the
+// checks went and its review, whose changes a click opens in a tab; a
+// click on the icon of the checks lists them. In the
 // status bar, it is in the bar's color, and short says only the number.
 func (a *gitContext) prBadge(c *ui.Context, inStatus, short bool) {
 	pr := a.currentPR()
@@ -194,7 +195,16 @@ func (a *gitContext) prBadge(c *ui.Context, inStatus, short bool) {
 		}
 		if icon != nil {
 			text("·")
-			ui.Icon(c, icon).FontSize(11).TextColor(col)
+			// The icon of the checks lists them.
+			ib := ui.ButtonBase(c.Key(key+":checks")).Height(h-4).Padding(0, 2).Radius(3).AlignItems(ui.Center).
+				Label(locales.PrShowChecks()).Tooltip(locales.PrShowChecks())
+			if ib.Hovered() {
+				ib.Background(p.hover)
+			}
+			ib.Children(func() { ui.Icon(c, icon).FontSize(11).TextColor(col) })
+			if ib.Clicked() {
+				a.app.post(a.openChecks)
+			}
 		}
 		if review := prReviewLabel(pr.Review); review != "" {
 			text("·")
@@ -204,6 +214,9 @@ func (a *gitContext) prBadge(c *ui.Context, inStatus, short bool) {
 	b.ContextMenu(func(m *ui.Menu) {
 		if m.Item(locales.PrOpenChanges()).Chosen() {
 			a.app.post(func() { a.openPullRequest(pr.Number) })
+		}
+		if m.Item(locales.PrShowChecks()).Disabled(pr.Checks == git.ChecksNone).Chosen() {
+			a.app.post(a.openChecks)
 		}
 		if m.Item(locales.PrOpenOnGitHub()).Disabled(pr.URL == "").Chosen() {
 			a.app.post(func() { a.app.services.OpenURL(pr.URL) })

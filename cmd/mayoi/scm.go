@@ -1717,8 +1717,13 @@ func (a *gitContext) scmMenu(m *ui.Menu) {
 	}
 	m.Separator()
 	if g.ghOK {
-		if pr := a.currentPR(); pr != nil && m.Item(locales.PrOpenChanges()).Chosen() {
-			a.app.post(func() { a.openPullRequest(pr.Number) })
+		if pr := a.currentPR(); pr != nil {
+			if m.Item(locales.PrOpenChanges()).Chosen() {
+				a.app.post(func() { a.openPullRequest(pr.Number) })
+			}
+			if m.Item(locales.PrShowChecks()).Disabled(pr.Checks == git.ChecksNone).Chosen() {
+				a.app.post(a.openChecks)
+			}
 		}
 		if m.Item(locales.CmdGitOpenPullRequest()).Chosen() {
 			a.app.post(a.openPRPicker)

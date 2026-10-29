@@ -39,6 +39,7 @@ func (a *app) askNewBranch()                           { a.repository().askNewBr
 func (a *app) askStash(untracked bool)                 { a.repository().askStash(untracked) }
 func (a *app) openStashPicker()                        { a.repository().openStashPicker() }
 func (a *app) openPRPicker()                           { a.repository().openPRPicker() }
+func (a *app) openChecks()                             { a.repository().openChecks() }
 func (a *app) groupEntries() [groupCount][]git.Entry   { return a.repository().groupEntries() }
 func (a *app) scmRows() []scmRow                       { return a.repository().scmRows() }
 func (a *app) toggleDir(r scmRow)                      { a.repository().toggleDir(r) }

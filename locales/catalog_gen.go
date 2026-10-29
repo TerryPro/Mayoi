@@ -36,6 +36,180 @@ type Messages struct{ locale string }
 // source language.
 func In(locale string) Messages { return Messages{locale} }
 
+// CmdGitShowPullRequestChecks says "Show Pull Request Checks…"
+// in the language the app shows.
+func CmdGitShowPullRequestChecks() string { return In(i18n.Locale()).CmdGitShowPullRequestChecks() }
+
+// CmdGitShowPullRequestChecks says "Show Pull Request Checks…"
+// in the language of msgs.
+func (msgs Messages) CmdGitShowPullRequestChecks() string {
+	return Catalog.Format(msgs.locale, "cmdGitShowPullRequestChecks", nil)
+}
+
+// PrShowChecks says "Show Checks…"
+// in the language the app shows.
+func PrShowChecks() string { return In(i18n.Locale()).PrShowChecks() }
+
+// PrShowChecks says "Show Checks…"
+// in the language of msgs.
+func (msgs Messages) PrShowChecks() string {
+	return Catalog.Format(msgs.locale, "prShowChecks", nil)
+}
+
+// ChecksTitle says "Checks of pull request {number}"
+// in the language the app shows.
+func ChecksTitle(number string) string { return In(i18n.Locale()).ChecksTitle(number) }
+
+// ChecksTitle says "Checks of pull request {number}"
+// in the language of msgs.
+func (msgs Messages) ChecksTitle(number string) string {
+	return Catalog.Format(msgs.locale, "checksTitle", map[string]any{"number": number})
+}
+
+// ChecksFind says "Find a check of {number}"
+// in the language the app shows.
+func ChecksFind(number string) string { return In(i18n.Locale()).ChecksFind(number) }
+
+// ChecksFind says "Find a check of {number}"
+// in the language of msgs.
+func (msgs Messages) ChecksFind(number string) string {
+	return Catalog.Format(msgs.locale, "checksFind", map[string]any{"number": number})
+}
+
+// ChecksLoading says "Reading the checks…"
+// in the language the app shows.
+func ChecksLoading() string { return In(i18n.Locale()).ChecksLoading() }
+
+// ChecksLoading says "Reading the checks…"
+// in the language of msgs.
+func (msgs Messages) ChecksLoading() string {
+	return Catalog.Format(msgs.locale, "checksLoading", nil)
+}
+
+// ChecksNone says "The pull request has no checks."
+// in the language the app shows.
+func ChecksNone() string { return In(i18n.Locale()).ChecksNone() }
+
+// ChecksNone says "The pull request has no checks."
+// in the language of msgs.
+func (msgs Messages) ChecksNone() string {
+	return Catalog.Format(msgs.locale, "checksNone", nil)
+}
+
+// ChecksNoMatch says "No check matches."
+// in the language the app shows.
+func ChecksNoMatch() string { return In(i18n.Locale()).ChecksNoMatch() }
+
+// ChecksNoMatch says "No check matches."
+// in the language of msgs.
+func (msgs Messages) ChecksNoMatch() string {
+	return Catalog.Format(msgs.locale, "checksNoMatch", nil)
+}
+
+// ChecksSend says "Send to Terminal"
+// in the language the app shows.
+func ChecksSend() string { return In(i18n.Locale()).ChecksSend() }
+
+// ChecksSend says "Send to Terminal"
+// in the language of msgs.
+func (msgs Messages) ChecksSend() string {
+	return Catalog.Format(msgs.locale, "checksSend", nil)
+}
+
+// ChecksCopyLog says "Copy Log"
+// in the language the app shows.
+func ChecksCopyLog() string { return In(i18n.Locale()).ChecksCopyLog() }
+
+// ChecksCopyLog says "Copy Log"
+// in the language of msgs.
+func (msgs Messages) ChecksCopyLog() string {
+	return Catalog.Format(msgs.locale, "checksCopyLog", nil)
+}
+
+// ChecksRerun says "Re-run"
+// in the language the app shows.
+func ChecksRerun() string { return In(i18n.Locale()).ChecksRerun() }
+
+// ChecksRerun says "Re-run"
+// in the language of msgs.
+func (msgs Messages) ChecksRerun() string {
+	return Catalog.Format(msgs.locale, "checksRerun", nil)
+}
+
+// ChecksReadingLog says "Reading the log of {name}…"
+// in the language the app shows.
+func ChecksReadingLog(name string) string { return In(i18n.Locale()).ChecksReadingLog(name) }
+
+// ChecksReadingLog says "Reading the log of {name}…"
+// in the language of msgs.
+func (msgs Messages) ChecksReadingLog(name string) string {
+	return Catalog.Format(msgs.locale, "checksReadingLog", map[string]any{"name": name})
+}
+
+// ChecksLogFailed says "Could not read the log of {name}: {error}"
+// in the language the app shows.
+func ChecksLogFailed(name string, error string) string {
+	return In(i18n.Locale()).ChecksLogFailed(name, error)
+}
+
+// ChecksLogFailed says "Could not read the log of {name}: {error}"
+// in the language of msgs.
+func (msgs Messages) ChecksLogFailed(name string, error string) string {
+	return Catalog.Format(msgs.locale, "checksLogFailed", map[string]any{"name": name, "error": error})
+}
+
+// ChecksLogSent says "Sent the log of {name} to the terminal"
+// in the language the app shows.
+func ChecksLogSent(name string) string { return In(i18n.Locale()).ChecksLogSent(name) }
+
+// ChecksLogSent says "Sent the log of {name} to the terminal"
+// in the language of msgs.
+func (msgs Messages) ChecksLogSent(name string) string {
+	return Catalog.Format(msgs.locale, "checksLogSent", map[string]any{"name": name})
+}
+
+// ChecksLogCopied says "Copied the log of {name}"
+// in the language the app shows.
+func ChecksLogCopied(name string) string { return In(i18n.Locale()).ChecksLogCopied(name) }
+
+// ChecksLogCopied says "Copied the log of {name}"
+// in the language of msgs.
+func (msgs Messages) ChecksLogCopied(name string) string {
+	return Catalog.Format(msgs.locale, "checksLogCopied", map[string]any{"name": name})
+}
+
+// ChecksNoTerminal says "No terminal is open: copied the log of {name} instead"
+// in the language the app shows.
+func ChecksNoTerminal(name string) string { return In(i18n.Locale()).ChecksNoTerminal(name) }
+
+// ChecksNoTerminal says "No terminal is open: copied the log of {name} instead"
+// in the language of msgs.
+func (msgs Messages) ChecksNoTerminal(name string) string {
+	return Catalog.Format(msgs.locale, "checksNoTerminal", map[string]any{"name": name})
+}
+
+// ChecksRerunFailed says "Could not re-run {name}: {error}"
+// in the language the app shows.
+func ChecksRerunFailed(name string, error string) string {
+	return In(i18n.Locale()).ChecksRerunFailed(name, error)
+}
+
+// ChecksRerunFailed says "Could not re-run {name}: {error}"
+// in the language of msgs.
+func (msgs Messages) ChecksRerunFailed(name string, error string) string {
+	return Catalog.Format(msgs.locale, "checksRerunFailed", map[string]any{"name": name, "error": error})
+}
+
+// ChecksRerunning says "Re-running {name}"
+// in the language the app shows.
+func ChecksRerunning(name string) string { return In(i18n.Locale()).ChecksRerunning(name) }
+
+// ChecksRerunning says "Re-running {name}"
+// in the language of msgs.
+func (msgs Messages) ChecksRerunning(name string) string {
+	return Catalog.Format(msgs.locale, "checksRerunning", map[string]any{"name": name})
+}
+
 // BusyOpeningPR says "Opening the pull request…"
 // in the language the app shows.
 func BusyOpeningPR() string { return In(i18n.Locale()).BusyOpeningPR() }

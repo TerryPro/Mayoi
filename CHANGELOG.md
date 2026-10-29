@@ -12,6 +12,10 @@ needs a `## <version>` section here, or its build fails.
 - Check **Viewed** on a file of a pull request to fold it and mark it viewed on GitHub, as its own checkbox does.
 - When new commits reach the pull request, its tab offers **Reload** to show them.
 - Commits that head an open pull request show a `#123` chip in the history; click it to open its changes.
+- **Git → Show Pull Request Checks…** lists the CI checks of the branch's pull request and how each went.
+- Click the badge's checks icon, or right-click the badge for **Show Checks…**, to open the same list.
+- **Send to Terminal** on a failed job pastes the end of its log into the last terminal, without pressing Enter.
+- **Re-run** runs a failed job again; **Copy Log** and **Open on GitHub** are there too.
 - **Git → Open File on Remote** opens the file on GitHub, GitLab or Bitbucket at the caret line or selected lines.
 - **Git → Copy Permalink** copies a link to the selected lines at the current commit.
 - Both are also in the tab and Explorer file context menus.
