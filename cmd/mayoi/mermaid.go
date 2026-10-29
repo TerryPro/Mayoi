@@ -10,6 +10,7 @@ import (
 	"io"
 	"math"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -97,7 +98,10 @@ const mermaidSmaller = 0.8
 // mermaidDiagram is a diagram drawn: its shapes, which an SVG draws, and
 // its labels, which the window's text draws, as MyGo's SVGs have no text.
 type mermaidDiagram struct {
+	// svg is the whole of its shapes, and tiles the pieces they are
+	// drawn in, as MyGo draws no SVG past 4096 pixels.
 	svg    *ui.SVG
+	tiles  []mermaidTile
 	w, h   float32
 	labels []mermaidLabel
 	// err is why the diagram could not be drawn, "" when it was.
@@ -118,14 +122,29 @@ type mermaidLabel struct {
 	color ui.Color
 }
 
+// mermaidTile is a piece of a diagram's shapes, the part of it at x, y,
+// w×h of the diagram.
+type mermaidTile struct {
+	svg        *ui.SVG
+	x, y, w, h float32
+}
+
+// mermaidTileSide is the longest side of a tile, in DIPs: under 4096
+// pixels at 4×, as a 2× display shows a diagram zoomed to 2.
+const mermaidTileSide = 1024
+
 // draw draws the diagram in r, its labels shaped at the size they show
 // at, which keeps them sharp as the diagram is zoomed.
 func (d *mermaidDiagram) draw(pt *ui.Painter, r ui.Rect) {
 	if d.svg == nil || d.w <= 0 || r.W <= 0 {
 		return
 	}
-	pt.Image(d.svg, r, ui.FillBox)
 	s := r.W / d.w
+	for _, t := range d.tiles {
+		// Each tile from where the next one starts, so they meet.
+		x0, y0 := r.X+t.x*s, r.Y+t.y*s
+		pt.Image(t.svg, ui.Rect{X: x0, Y: y0, W: r.X + (t.x+t.w)*s - x0, H: r.Y + (t.y+t.h)*s - y0}, ui.FillBox)
+	}
 	if size := float32(math.Round(float64(s)*100) / 100); size != d.scale || len(d.shaped) != len(d.labels) {
 		d.scale, d.shaped = size, make([]*ui.TextLayout, len(d.labels))
 		for i, l := range d.labels {
@@ -265,11 +284,66 @@ func renderMermaid(source string, st mermaidStyle) *mermaidDiagram {
 	if d.w, d.h = s.Size(); d.w <= 0 || d.h <= 0 {
 		return &mermaidDiagram{err: locales.ErrSVGNoSize()}
 	}
+	if d.tiles, err = mermaidTiles(shapes, s, d.w, d.h); err != nil {
+		return &mermaidDiagram{err: err.Error()}
+	}
 	for _, t := range texts {
 		d.labels = append(d.labels, t.shape(st)...)
 	}
 	return d
 }
+
+// mermaidTiles cuts the shapes of a diagram w×h, which s draws whole, into
+// tiles no side of which is longer than mermaidTileSide.
+func mermaidTiles(shapes []byte, s *ui.SVG, w, h float32) ([]mermaidTile, error) {
+	if w <= mermaidTileSide && h <= mermaidTileSide {
+		return []mermaidTile{{svg: s, w: w, h: h}}, nil
+	}
+	open := bytes.Index(shapes, []byte("<svg"))
+	end := bytes.IndexByte(shapes[max(open, 0):], '>')
+	if open < 0 || end < 0 {
+		return []mermaidTile{{svg: s, w: w, h: h}}, nil
+	}
+	end += open
+	root := string(shapes[open:end])
+	vx, vy, vw, vh := float32(0), float32(0), w, h
+	if m := svgViewBox.FindStringSubmatch(root); m != nil {
+		if f := strings.FieldsFunc(m[1], func(r rune) bool { return r == ',' || r == ' ' }); len(f) == 4 {
+			var n [4]float32
+			ok := true
+			for i, v := range f {
+				x, err := strconv.ParseFloat(v, 32)
+				n[i], ok = float32(x), ok && err == nil
+			}
+			if ok && n[2] > 0 && n[3] > 0 {
+				vx, vy, vw, vh = n[0], n[1], n[2], n[3]
+			}
+		}
+	}
+	root = svgSizeAttr.ReplaceAllString(root, "")
+	var tiles []mermaidTile
+	for y := float32(0); y < h; y += mermaidTileSide {
+		for x := float32(0); x < w; x += mermaidTileSide {
+			tw, th := min(mermaidTileSide, w-x), min(mermaidTileSide, h-y)
+			var b bytes.Buffer
+			b.Write(shapes[:open])
+			fmt.Fprintf(&b, `%s viewBox="%g %g %g %g" width="%g" height="%g"`, root,
+				vx+x*vw/w, vy+y*vh/h, tw*vw/w, th*vh/h, tw, th)
+			b.Write(shapes[end:])
+			t, err := ui.ParseSVG(b.Bytes())
+			if err != nil {
+				return nil, err
+			}
+			tiles = append(tiles, mermaidTile{svg: t, x: x, y: y, w: tw, h: th})
+		}
+	}
+	return tiles, nil
+}
+
+var (
+	svgViewBox  = regexp.MustCompile(`\sviewBox="([^"]*)"`)
+	svgSizeAttr = regexp.MustCompile(`\s(viewBox|width|height|preserveAspectRatio)="[^"]*"`)
+)
 
 // mermaidRun is a run of a label's text in one style.
 type mermaidRun struct {

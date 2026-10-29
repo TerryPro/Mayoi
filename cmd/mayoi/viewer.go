@@ -44,6 +44,7 @@ const maxBitmapSide = 8192
 
 // maxSVGSide is the longest side an SVG is drawn at, in DIPs: MyGo draws
 // an SVG whole, and not past 4096 pixels, which is this on a 2× display.
+// A diagram is drawn in tiles, of which this holds for the largest.
 const maxSVGSide = 2048
 
 // zoomSteps are the scales zooming in and out goes through.
@@ -326,6 +327,13 @@ func (v *viewer) fitScale(w, h float32) float32 {
 
 // maxScale is the largest the picture zooms to.
 func (v *viewer) maxScale() float32 {
+	if v.diagram != nil {
+		side := float32(0)
+		for _, t := range v.diagram.tiles {
+			side = max(side, t.w, t.h)
+		}
+		return max(maxSVGSide/max(side, 1), 1)
+	}
 	if _, ok := v.src.(*ui.SVG); ok {
 		return max(maxSVGSide/max(v.w, v.h), 1)
 	}
