@@ -7,6 +7,7 @@ needs a `## <version>` section here, or its build fails.
 
 - **View → Theme → Purple Gold** is always dark: a deep purple sidebar around a charcoal editor.
 - The Purple Gold theme uses champagne gold for buttons, and muted golds and lavenders for the code.
+- The Cursor theme's current line, word highlights, find matches and hovered rows now match Cursor's own.
 
 ## 0.14.0
 

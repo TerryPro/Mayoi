@@ -779,20 +779,24 @@ func grokBotDarkPalette() *palette {
 // accent and the buttons. Its code takes Cursor Light's own colors.
 func cursorLightPalette() *palette {
 	p := &palette{
-		editor:    ui.Hex("#fcfcfc"),
-		chrome:    ui.Hex("#f3f3f3"),
-		panel:     ui.Hex("#f3f3f3"),
-		border:    ui.Hex("#e2e2e2"),
-		hover:     ui.RGBA(20, 20, 20, 0.045),
-		active:    ui.RGBA(20, 20, 20, 0.08),
-		text:      ui.Hex("#141414"),
-		muted:     ui.Hex("#6d6d6d"),
+		editor: ui.Hex("#fcfcfc"),
+		chrome: ui.Hex("#f3f3f3"),
+		panel:  ui.Hex("#f3f3f3"),
+		border: ui.Hex("#e2e2e2"),
+		hover:  ui.RGBA(20, 20, 20, 0.078),
+		// Cursor Light's chosen row is as faint as its hover, so it takes
+		// its focused row's, to tell them apart.
+		active: ui.RGBA(20, 20, 20, 0.141),
+		text:   ui.Hex("#141414"),
+		muted:  ui.Hex("#6d6d6d"),
+		// Cursor Light's faintest ink is too faint for text, so it is a
+		// little darker.
 		faint:     ui.Hex("#848484"),
 		accent:    ui.Hex("#2778c1"),
 		accentDim: ui.RGBA(39, 120, 193, 0.5),
-		line:      ui.RGBA(20, 20, 20, 0.04),
-		// Cursor Light's selection is as faint as its hover, so it is a
-		// little deeper, to show over the caret's line.
+		line:      ui.RGBA(20, 20, 20, 0.078),
+		// Cursor Light's selection is as faint as its caret's line, so it
+		// is a little deeper, to show over it.
 		selection: ui.RGBA(20, 20, 20, 0.12),
 		gutter:    ui.Hex("#a8a8a8"),
 		gutterNow: ui.Hex("#505050"),
@@ -800,13 +804,13 @@ func cursorLightPalette() *palette {
 		statusFg:  ui.Hex("#6d6d6d"),
 		modified:  ui.Hex("#a46700"),
 		danger:    ui.Hex("#be1744"),
-		match:     ui.RGBA(59, 126, 132, 0.16),
-		matchNow:  ui.RGBA(59, 126, 132, 0.30),
+		match:     ui.RGBA(59, 126, 132, 0.141),
+		matchNow:  ui.RGBA(59, 126, 132, 0.239),
 		matchRing: ui.RGBA(59, 126, 132, 0.9),
 		guide:     ui.RGBA(20, 20, 20, 0.08),
 		guideNow:  ui.RGBA(20, 20, 20, 0.2),
 		bracket:   ui.RGBA(20, 20, 20, 0.28),
-		word:      ui.RGBA(20, 20, 20, 0.08),
+		word:      ui.RGBA(20, 20, 20, 0.141),
 		shadow:    ui.RGBA(20, 20, 20, 0.14),
 		added:     ui.Hex("#007041"),
 		changed:   ui.Hex("#a46700"),
@@ -814,12 +818,12 @@ func cursorLightPalette() *palette {
 		// Cursor Light's button, as it is under the pointer.
 		fill:           ui.Hex("#2778c1"),
 		fillHover:      ui.Hex("#246aab"),
-		fillText:       ui.Hex("#ffffff"),
+		fillText:       ui.Hex("#fcfcfc"),
 		dangerFill:     ui.Hex("#be1744"),
 		dangerText:     ui.Hex("#ffffff"),
-		surface:        ui.Hex("#ffffff"),
-		surfaceHover:   ui.Hex("#f0f0f0"),
-		surfacePressed: ui.Hex("#e6e6e6"),
+		surface:        ui.Hex("#fcfcfc"),
+		surfaceHover:   ui.Hex("#ededed"),
+		surfacePressed: ui.Hex("#e3e3e3"),
 		scrollbar:      ui.RGBA(20, 20, 20, 0.16),
 		// Cursor Light's terminal, but for its whites, which would not
 		// show on a light terminal.
@@ -870,7 +874,7 @@ func cursorDarkPalette() *palette {
 		faint:     ui.Hex("#636363"),
 		accent:    ui.Hex("#81a1c1"),
 		accentDim: ui.RGBA(129, 161, 193, 0.55),
-		line:      ui.RGBA(240, 240, 240, 0.05),
+		line:      ui.RGBA(240, 240, 240, 0.065),
 		selection: ui.RGBA(64, 64, 64, 0.6),
 		gutter:    ui.Hex("#666666"),
 		gutterNow: ui.Hex("#f0f0f0"),
@@ -884,7 +888,7 @@ func cursorDarkPalette() *palette {
 		guide:     ui.RGBA(240, 240, 240, 0.075),
 		guideNow:  ui.RGBA(240, 240, 240, 0.19),
 		bracket:   ui.RGBA(240, 240, 240, 0.30),
-		word:      ui.RGBA(240, 240, 240, 0.09),
+		word:      ui.RGBA(240, 240, 240, 0.118),
 		shadow:    ui.RGBA(0, 0, 0, 0.4),
 		added:     ui.Hex("#3fa266"),
 		changed:   ui.Hex("#d2943e"),
@@ -896,9 +900,9 @@ func cursorDarkPalette() *palette {
 		fillText:       ui.Hex("#191c22"),
 		dangerFill:     ui.Hex("#fc6b83"),
 		dangerText:     ui.Hex("#191c22"),
-		surface:        ui.Hex("#1f1f1f"),
-		surfaceHover:   ui.Hex("#262626"),
-		surfacePressed: ui.Hex("#2e2e2e"),
+		surface:        ui.Hex("#1d1d1d"),
+		surfaceHover:   ui.Hex("#242424"),
+		surfacePressed: ui.Hex("#2c2c2c"),
 		scrollbar:      ui.RGBA(240, 240, 240, 0.14),
 		inverse:        ui.Hex("#2a2a2a"),
 		inverseText:    ui.Hex("#f0f0f0"),
