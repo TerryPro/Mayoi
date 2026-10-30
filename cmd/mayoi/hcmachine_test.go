@@ -50,6 +50,23 @@ func TestHCMachine(t *testing.T) {
 	}
 }
 
+// Only a failure of hc that asks for a password suggests logging in;
+// one that could not copy hc there suggests installing it.
+func TestHCAddFailure(t *testing.T) {
+	login := hcAddFailure("vps", &hcErr{"needs_login", "on vps: it asks for a password"})
+	install := hcAddFailure("mini", &hcErr{"install_failed", "on mini: this hc does not run there"})
+	other := hcAddFailure("vps", errors.New("ssh: connect to host vps: Connection refused"))
+	if !strings.Contains(login, "hc machine login vps") {
+		t.Errorf("login: %q", login)
+	}
+	if strings.Contains(install, "hc machine login") || !strings.Contains(install, "Install hc on mini") {
+		t.Errorf("install: %q", install)
+	}
+	if strings.Contains(other, "hc machine login") || !strings.Contains(other, "Connection refused") {
+		t.Errorf("other: %q", other)
+	}
+}
+
 // A terminal of a host hc doesn't know uses ssh, and the first asks once
 // whether to add the host; adding it says so. Once added, a terminal of
 // it starts on it, its address the machine's.

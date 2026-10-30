@@ -477,6 +477,8 @@
   "failReplaceIn": "无法在 {what} 中替换",
   "failAttachHC": "无法连接到 herdr-core 中的 {addr}，它的 shell 仍在那里运行。",
   "failHCAdd": "无法把 {host} 加入 hc：{err}。如果它需要密码，请运行 hc machine login {machine}。",
+  "failHCAddPlain": "无法把 {host} 加入 hc：{err}。",
+  "failHCInstall": "无法把 {host} 加入 hc：{err}。请自行在 {host} 上安装 hc，然后再打开终端；在此之前它的终端使用 ssh。",
   "failRestartTerminal": "无法重新启动终端：{err}",
   "failSave": "无法保存 {name}：{err}",
   "failStartHC": "无法在 herdr-core 中启动终端，改为在 Mayoi 中运行：{err}",

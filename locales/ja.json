@@ -477,6 +477,8 @@
   "failReplaceIn": "{what} で置換できませんでした",
   "failAttachHC": "herdr-core の {addr} に接続できませんでした。シェルはそこで動き続けています。",
   "failHCAdd": "{host} を hc に追加できませんでした: {err}。パスワードを求められる場合は hc machine login {machine} を実行してください。",
+  "failHCAddPlain": "{host} を hc に追加できませんでした: {err}。",
+  "failHCInstall": "{host} を hc に追加できませんでした: {err}。{host} に hc を手動でインストールしてから、もう一度ターミナルを開いてください。それまでターミナルは ssh を使います。",
   "failRestartTerminal": "ターミナルを再起動できませんでした: {err}",
   "failSave": "{name} を保存できませんでした: {err}",
   "failStartHC": "herdr-core でターミナルを起動できなかったため、Mayoi で実行します: {err}",
