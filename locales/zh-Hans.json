@@ -290,6 +290,7 @@
   "cmdViewZoomReset": "重置缩放",
   "cmdFileSettingsJSON": "打开设置 (JSON)",
   "settingsTitle": "设置",
+  "markdownContents": "目录",
   "settingsGroupEditor": "编辑器",
   "settingsGroupAppearance": "外观",
   "settingsGroupTerminal": "终端",

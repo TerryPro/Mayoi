@@ -454,7 +454,7 @@ func (a *app) viewerInput(v *viewer, ev ui.InputEvent) bool {
 // which shows what is transparent, or what kept it from showing.
 func (a *app) viewerView(c *ui.Context, v *viewer, name string) {
 	if v.markdown != nil {
-		a.markdownView(c, v, name)
+		a.markdownPreviewView(c, v, name)
 		return
 	}
 	p := a.pal

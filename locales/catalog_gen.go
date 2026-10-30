@@ -3296,6 +3296,16 @@ func (msgs Messages) SettingsTitle() string {
 	return Catalog.Format(msgs.locale, "settingsTitle", nil)
 }
 
+// MarkdownContents says "Contents"
+// in the language the app shows.
+func MarkdownContents() string { return In(i18n.Locale()).MarkdownContents() }
+
+// MarkdownContents says "Contents"
+// in the language of msgs.
+func (msgs Messages) MarkdownContents() string {
+	return Catalog.Format(msgs.locale, "markdownContents", nil)
+}
+
 // SettingsGroupEditor says "Editor"
 // in the language the app shows.
 func SettingsGroupEditor() string { return In(i18n.Locale()).SettingsGroupEditor() }

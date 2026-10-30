@@ -291,6 +291,7 @@
   "cmdViewZoomReset": "ズームのリセット",
   "cmdFileSettingsJSON": "設定を開く (JSON)",
   "settingsTitle": "設定",
+  "markdownContents": "目次",
   "settingsGroupEditor": "エディタ",
   "settingsGroupAppearance": "外観",
   "settingsGroupTerminal": "ターミナル",

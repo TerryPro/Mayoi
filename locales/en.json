@@ -560,6 +560,7 @@
   "cmdViewZoomReset": "Reset Zoom",
   "cmdFileSettingsJSON": "Open Settings (JSON)",
   "settingsTitle": "Settings",
+  "markdownContents": "Contents",
   "settingsGroupEditor": "Editor",
   "settingsGroupAppearance": "Appearance",
   "settingsGroupTerminal": "Terminal",
