@@ -164,6 +164,7 @@ func (a *app) commandsIn(t locales.Messages) []command {
 		{"view.newTerminal", t.CmdViewNewTerminal(), "Ctrl+Shift+`", func() { a.openTerminal(a.workDir()) }},
 		{"view.terminalTab", t.CmdViewTerminalTab(), "", func() { a.newTerminalTab(a.fileColumn(), a.workDir(), true) }},
 		{"view.terminalMove", t.CmdViewTerminalMove(), "", a.moveTerminal},
+		{"view.installHC", t.CmdViewInstallHC(), "", a.installHC},
 		{"view.terminalLocation", t.CmdViewTerminalLocation(), "", a.toggleTerminalLocation},
 		{"view.terminalLockRight", t.CmdViewTerminalLockRight(), "", a.moveTerminalToLockedRight},
 		{"view.panelPosition.bottom", t.CmdViewPanelBottom(), "", func() { a.setPanelPosition("") }},
@@ -214,6 +215,9 @@ func (a *app) commandsIn(t locales.Messages) []command {
 	}
 	if !remoteSupported {
 		cmds = slices.DeleteFunc(cmds, func(c command) bool { return strings.HasPrefix(c.id, "remote.") })
+	}
+	if !hcInstallable() {
+		cmds = slices.DeleteFunc(cmds, func(c command) bool { return c.id == "view.installHC" })
 	}
 	return cmds
 }
@@ -540,6 +544,7 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 	if a.keyFocus == placeEditor {
 		cut, selectAll = item("edit.cut"), item("edit.selectAll")
 	}
+	installHC := item("view.installHC")
 	menus := []*mygo.MenuItem{
 		appMenu,
 		{Label: locales.MenuFile(), Submenu: file},
@@ -563,7 +568,7 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 			checkbox("view.vim", a.settings.Vim), checkbox("view.projectTabs", a.settings.ProjectTabs), mygo.Separator(),
 			item("view.splitRight"), item("view.nextColumn"), item("view.prevColumn"),
 			item("view.moveTabNext"), item("view.moveTabPrev"), mygo.Separator(),
-			item("view.terminal"), item("view.newTerminal"), item("view.terminalTab"), item("view.terminalMove"),
+			item("view.terminal"), item("view.newTerminal"), item("view.terminalTab"), item("view.terminalMove"), installHC,
 			checkbox("view.terminalLocation", a.settings.TerminalLocation == "editor"),
 			{Label: locales.MenuPanelPosition(), Submenu: []*mygo.MenuItem{
 				radio("view.panelPosition.bottom", a.panelSide() == "bottom"),
@@ -603,6 +608,12 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 	}
 	if len(help) > 0 {
 		menus = append(menus, &mygo.MenuItem{Label: locales.MenuHelp(), Submenu: help})
+	}
+	// Install hc… only where herdr has builds of hc.
+	if !hcInstallable() {
+		for _, m := range menus {
+			m.Submenu = slices.DeleteFunc(m.Submenu, func(it *mygo.MenuItem) bool { return it == installHC })
+		}
 	}
 	return mygo.NewMenu(menus)
 }

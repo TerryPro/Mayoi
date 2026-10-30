@@ -11,6 +11,9 @@ needs a `## <version>` section here, or its build fails.
 - Terminals in herdr-core attach again when Mayoi starts, with their scrollback, in their tabs and the panel.
 - In a remote folder, terminals in herdr-core run on the host as one of hc's machines.
 - Mayoi asks once before adding a host to hc, and its terminals use ssh until then.
+- **View → Install hc…** installs or updates `hc` in `~/.local/bin` with herdr's installer, on macOS and Linux.
+- With `terminalBackend` `"hc"` and no `hc` installed, the first new terminal offers to install it.
+- Mayoi finds `hc` in `~/.local/bin` even when your shell's PATH lacks it, so it works right after installing.
 
 ## 0.14.3
 

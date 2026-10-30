@@ -24,8 +24,10 @@ type fakeHC struct {
 
 func useFakeHC(t *testing.T, reply func(args []string) ([]byte, error)) *fakeHC {
 	f := &fakeHC{reply: reply}
-	oldRun, oldLook := hcRun, lookPath
-	t.Cleanup(func() { hcRun, lookPath = oldRun, oldLook })
+	oldRun, oldLook, oldBin := hcRun, lookPath, hcLocalBin
+	bin := t.TempDir()
+	hcLocalBin = func() string { return bin }
+	t.Cleanup(func() { hcRun, lookPath, hcLocalBin = oldRun, oldLook, oldBin })
 	hcRun = func(args ...string) ([]byte, error) {
 		f.mu.Lock()
 		f.calls = append(f.calls, args)

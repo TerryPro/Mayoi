@@ -138,7 +138,9 @@ differ in width lines them up only roughly.
   with its scrollback. Closing the terminal ends it. In a remote folder the shell runs on the host, one of hc's
   machines (`hc machine ls`): the first terminal of a host hc doesn't know asks to add it, which may copy `hc` there,
   and until then, or if you decline, terminals of the host use ssh until Mayoi quits. Mayoi takes `Ctrl+\`, hc's detach key,
-  and sends it to the shell. Without `hc` on the path, terminals run in Mayoi.
+  and sends it to the shell. Mayoi finds `hc` on the path or in `~/.local/bin`; without it, terminals run in Mayoi,
+  and the first one asks once whether to install it. **View → Install hc…** installs it there with herdr's installer, on
+  macOS and Linux, and new terminals use it without a restart.
 - **`projectTabs`** keeps every folder open in one window, as project tabs on a rail on its left, rather than a
   window for each. Changing it gathers the windows into one, or parts them, at once.
 - **`projectTabStyle`** gives a project's square on the rail its own label, up to two characters, in place of its
