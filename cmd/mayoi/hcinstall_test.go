@@ -27,6 +27,7 @@ func useFakeInstall(t *testing.T, install func() ([]byte, error)) (runs *int) {
 // hc that herdr's installer put in ~/.local/bin is found off the path,
 // as herdr-core when the hc beside it is missing, and runs from there.
 func TestHCLocalBin(t *testing.T) {
+	skipOnWindows(t, "herdr has no hc for Windows")
 	hs := newHarness(t, true)
 	a := hs.a
 	useFakeHC(t, nil)
@@ -54,6 +55,7 @@ func TestHCLocalBin(t *testing.T) {
 // Install hc… runs the installer once at a time, says so, and once it
 // is done new terminals run in herdr-core.
 func TestInstallHC(t *testing.T) {
+	skipOnWindows(t, "herdr has no hc for Windows")
 	hs := newHarness(t, true)
 	a := hs.a
 	a.settings.TerminalBackend = "hc"
@@ -98,6 +100,7 @@ func TestInstallHCFails(t *testing.T) {
 // With terminalBackend "hc" and no hc, the first new terminal offers to
 // install it, once, and runs in Mayoi; without the setting, none does.
 func TestOfferHC(t *testing.T) {
+	skipOnWindows(t, "herdr has no hc for Windows")
 	hs := newHarness(t, true)
 	a := hs.a
 	runs := useFakeInstall(t, func() ([]byte, error) { return nil, nil })
