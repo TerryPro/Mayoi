@@ -10,6 +10,8 @@ import (
 
 	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/ui"
+
+	"mayoi/internal/settings"
 )
 
 // fakeHC stands in for hc: it records the commands run and answers them
@@ -122,8 +124,11 @@ func TestHCStart(t *testing.T) {
 	if len(run) != 1 || !slices.Equal(run[0], want) {
 		t.Errorf("ran %q, want %q", run, want)
 	}
-	if got := hcAttach("t9"); !slices.Equal(got, []string{"hc", "attach", "t9"}) {
+	if got := hcAttach("t9", false); !slices.Equal(got, []string{"hc", "attach", "t9"}) {
 		t.Errorf("attach command %q", got)
+	}
+	if got := hcAttach("t9", true); !slices.Equal(got, []string{"hc", "attach", "--history", "1000", "t9"}) {
+		t.Errorf("attach command with history %q", got)
 	}
 	f.reply = func([]string) ([]byte, error) { return nil, errors.New("no core") }
 	if _, err := a.hcStart(hs.root); err == nil || err.Error() != "no core" {
@@ -231,20 +236,101 @@ func TestHCReattach(t *testing.T) {
 	hs := newHarness(t, true)
 	a := hs.a
 	useFakeHC(t, func([]string) ([]byte, error) { return []byte(`{"state":"live"}`), nil })
-	old := hcAttach
-	t.Cleanup(func() { hcAttach = old })
-	var attached []string
-	hcAttach = func(addr string) []string {
-		attached = append(attached, addr)
-		return []string{"sleep", "30"}
-	}
+	attached := fakeAttach(t)
 	s := hcSession(t, a, "t9")
 	first := s.term
 	s.attached = time.Now().Add(-time.Minute)
 	a.terminalExited(s, first, 0)
 	hs.settle()
-	if !slices.Contains(a.terms, s) || s.term == first || !slices.Equal(attached, []string{"t9"}) {
-		t.Fatalf("not attached again: open %v, attached %q", slices.Contains(a.terms, s), attached)
+	if !slices.Contains(a.terms, s) || s.term == first || !slices.Equal(*attached, []string{"t9+history"}) {
+		t.Fatalf("not attached again: open %v, attached %q", slices.Contains(a.terms, s), *attached)
 	}
 	a.closeTerminals()
+}
+
+// The settings keep the addresses of the terminals whose shells run in
+// herdr-core, of tabs and of the panel, with the one the panel shows.
+func TestHCRemembered(t *testing.T) {
+	hs := newHarness(t, true)
+	a := hs.a
+	useFakeHC(t, nil)
+	hcSession(t, a, "t3")
+	shown := hcSession(t, a, "t4")
+	here := &session{id: 99, dir: a.root, term: connTerminal(t)}
+	a.terms = append(a.terms, here)
+	tab := hcSession(t, a, "t5")
+	a.panelTerm = shown
+	tab.tab = &colTab{term: tab}
+	a.addTab(a.column(), len(a.column().tabs), tab.tab)
+	a.rememberTabs()
+	if w := a.window; !slices.Equal(w.PanelTerms, []string{"t3", "t4"}) || w.PanelTerm != 1 {
+		t.Errorf("panel %q, showing %d", w.PanelTerms, w.PanelTerm)
+	}
+	tabs := a.window.Columns[0].Tabs
+	if ts := tabs[len(tabs)-1]; !ts.Terminal || ts.HC != "t5" {
+		t.Errorf("tab %+v", ts)
+	}
+}
+
+// fakeAttach has terminals of herdr-core run a program that waits, and
+// returns the addresses attached to, with history or not.
+func fakeAttach(t *testing.T) *[]string {
+	old := hcAttach
+	t.Cleanup(func() { hcAttach = old })
+	var attached []string
+	hcAttach = func(addr string, history bool) []string {
+		if history {
+			addr += "+history"
+		}
+		attached = append(attached, addr)
+		return []string{"sleep", "30"}
+	}
+	return &attached
+}
+
+// Starting again, a window attaches to the terminals whose shells still
+// run in herdr-core, tabs and the panel's, with what they showed before,
+// and starts a new shell for a tab whose shell ended.
+func TestHCRestore(t *testing.T) {
+	if testing.Short() {
+		t.Skip("starts a program")
+	}
+	hs := newHarness(t, true)
+	a := hs.a
+	t.Cleanup(a.closeTerminals)
+	sub := hs.path("web")
+	useFakeHC(t, func(args []string) ([]byte, error) {
+		return []byte(`{"terminals":[{"address":"t3","cwd":"` + sub + `","state":"live"},` +
+			`{"address":"t4","state":"finished"},{"address":"t6","state":"live"},{"address":"t7","state":"live"}]}`), nil
+	})
+	attached := fakeAttach(t)
+	a.window.Columns = []settings.Column{{Tabs: []settings.Tab{{Terminal: true, HC: "t3"}, {Terminal: true, HC: "t4"}}}}
+	a.restoreTabs()
+	hs.settle()
+	var terms []*session
+	for _, tab := range a.column().tabs {
+		if tab.term != nil {
+			terms = append(terms, tab.term)
+		}
+	}
+	if len(terms) != 2 || terms[0].hc != "t3" || terms[0].dir != sub || terms[1].hc != "" {
+		t.Fatalf("restored %d terminal tabs", len(terms))
+	}
+	if !slices.Equal(*attached, []string{"t3+history"}) {
+		t.Errorf("attached %q", *attached)
+	}
+	// The panel: t5 ended, t3 shows already, and the one it showed was t7.
+	if !a.restorePanel([]string{"t5", "t6", "t3", "t7"}, 3) {
+		t.Fatal("the panel attached to none")
+	}
+	var panel []string
+	for _, s := range a.panelTerms() {
+		panel = append(panel, s.hc)
+	}
+	if !slices.Equal(panel, []string{"t6", "t7"}) || a.panelTerm == nil || a.panelTerm.hc != "t7" {
+		t.Errorf("panel %q", panel)
+	}
+	if a.restorePanel([]string{"t5"}, 0) {
+		t.Error("attached to a shell that ended")
+	}
 }

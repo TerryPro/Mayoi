@@ -74,9 +74,15 @@ func (a *app) hcStart(dir string) (string, error) {
 	return t.Address, nil
 }
 
-// hcAttach is the command that shows the terminal of herdr-core at addr.
-// Tests replace it.
-var hcAttach = func(addr string) []string { return []string{"hc", "attach", addr} }
+// hcAttach is the command that shows the terminal of herdr-core at addr,
+// with what scrolled off its screen when history is set. Tests replace
+// it.
+var hcAttach = func(addr string, history bool) []string {
+	if history {
+		return []string{"hc", "attach", "--history", "1000", addr}
+	}
+	return []string{"hc", "attach", addr}
+}
 
 // hcKill ends the shell of a terminal of herdr-core, in the background.
 func hcKill(addr string) {
@@ -149,4 +155,68 @@ func (a *app) hcReattach(s *session) {
 	}
 	s.term = t
 	old.Close()
+}
+
+// hcTerms returns the terminals of herdr-core that run, by address, with
+// the folder each is in: none when hc is not there.
+func hcTerms() map[string]string {
+	if _, err := lookPath("hc"); err != nil {
+		return nil
+	}
+	out, err := hcRun("ls", "--json")
+	if err != nil {
+		return nil
+	}
+	var l struct {
+		Terminals []struct{ Address, Cwd, State string }
+	}
+	if json.Unmarshal(out, &l) != nil {
+		return nil
+	}
+	live := map[string]string{}
+	for _, t := range l.Terminals {
+		if t.State == "live" {
+			live[t.Address] = t.Cwd
+		}
+	}
+	return live
+}
+
+// hcShown reports whether a terminal here shows the shell at addr in
+// herdr-core already.
+func (a *app) hcShown(addr string) bool {
+	return slices.ContainsFunc(a.terms, func(s *session) bool { return s.hc == addr })
+}
+
+// attachTerminal shows the shell at addr in herdr-core, in dir, in a
+// terminal: one of a window before it closed.
+func (a *app) attachTerminal(addr, dir string) *session {
+	return a.addTerminal(&session{dir: dir, title: shellName(), hc: addr})
+}
+
+// restorePanel attaches the panel again to those of its terminals at
+// addrs whose shells run on in herdr-core, showing the one at shown,
+// and reports whether there were any. The panel stays as it was, shown
+// or hidden.
+func (a *app) restorePanel(addrs []string, shown int) bool {
+	if len(addrs) == 0 {
+		return false
+	}
+	live := hcTerms()
+	var show *session
+	for i, addr := range addrs {
+		dir, ok := live[addr]
+		if !ok || a.hcShown(addr) {
+			continue
+		}
+		if s := a.attachTerminal(addr, dir); s != nil && (show == nil || i == shown) {
+			show = s
+		}
+	}
+	if show == nil {
+		return false
+	}
+	a.panelTerm = show
+	a.rememberTabs()
+	return true
 }

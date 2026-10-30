@@ -134,7 +134,8 @@ differ in width lines them up only roughly.
   open the panel.
 - **`terminalBackend`** is what runs a terminal's shell: `""` Mayoi, or `"hc"` a terminal of
   [herdr-core](https://herdr.dev/core/), which `hc attach` shows. Its shell keeps running as the window closes or Mayoi
-  quits, where `hc ls` and the Herdr app see it. Closing the terminal ends it. Mayoi takes `Ctrl+\`, hc's detach key,
+  quits, where `hc ls` and the Herdr app see it, and the next start attaches to it again, in its tab or the panel,
+  with its scrollback. Closing the terminal ends it. Mayoi takes `Ctrl+\`, hc's detach key,
   and sends it to the shell. Without `hc` on the path, terminals run in Mayoi.
 - **`projectTabs`** keeps every folder open in one window, as project tabs on a rail on its left, rather than a
   window for each. Changing it gathers the windows into one, or parts them, at once.

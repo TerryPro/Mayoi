@@ -879,7 +879,7 @@ func (a *app) rememberTabs() {
 			var ts settings.Tab
 			switch {
 			case t.term != nil:
-				ts = settings.Tab{Terminal: true}
+				ts = settings.Tab{Terminal: true, HC: t.term.hc}
 			case t.diff != nil && t.diff.commit != nil:
 				ts = settings.Tab{Diff: "commit:" + t.diff.commit.key(), Layout: t.diff.layout.key(), Transient: t.transient}
 			case t.diff != nil:
@@ -940,6 +940,16 @@ func (a *app) rememberTabs() {
 		a.window.Expanded = open
 	}
 	a.window.Review = a.keptReview()
+	a.window.PanelTerms, a.window.PanelTerm = nil, 0
+	for _, s := range a.panelTerms() {
+		if s.hc == "" {
+			continue
+		}
+		if s == a.panelTerm {
+			a.window.PanelTerm = len(a.window.PanelTerms)
+		}
+		a.window.PanelTerms = append(a.window.PanelTerms, s.hc)
+	}
 	a.settings.Changed()
 }
 
@@ -1022,6 +1032,13 @@ func (a *app) restoreTabs() {
 	// Allocate each saved column before opening tabs. Empty locked columns
 	// and the file workspace beside them are part of the saved layout too.
 	restored := make([]*column, len(saved))
+	// The terminals whose shells run on in herdr-core attach again.
+	var live map[string]string
+	if slices.ContainsFunc(saved, func(cs settings.Column) bool {
+		return slices.ContainsFunc(cs.Tabs, func(ts settings.Tab) bool { return ts.HC != "" })
+	}) {
+		live = hcTerms()
+	}
 	for i, cs := range saved {
 		col := a.cols[len(a.cols)-1]
 		if i > 0 || len(col.tabs) > 0 {
@@ -1048,7 +1065,11 @@ func (a *app) restoreTabs() {
 			n := len(col.tabs)
 			switch {
 			case ts.Terminal:
-				if a.root != "" {
+				if dir, ok := live[ts.HC]; ok && ts.HC != "" {
+					if !a.hcShown(ts.HC) {
+						a.terminalTab(col, len(col.tabs), a.attachTerminal(ts.HC, dir), false)
+					}
+				} else if a.root != "" {
 					a.newTerminalTab(col, a.root, false)
 				}
 			case strings.HasPrefix(ts.Diff, "commit:"):

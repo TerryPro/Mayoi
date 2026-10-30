@@ -33,8 +33,11 @@ type session struct {
 	// hc is the address of the terminal of herdr-core the shell runs in,
 	// "" for one that runs here.
 	hc string
-	// attached is when the view last attached to it.
+	// attached is when the view last attached to it, and hcNew is set
+	// until the first attach of a shell just started, which has no
+	// history to show.
 	attached time.Time
+	hcNew    bool
 }
 
 type panelHeaderLayout struct {
@@ -84,19 +87,25 @@ func (a *app) workDir() string {
 
 // startTerminal starts a terminal in dir, nil when it cannot.
 func (a *app) startTerminal(dir string) *session {
-	a.nextTerm++
-	s := &session{id: a.nextTerm, dir: dir, title: shellName()}
+	s := &session{dir: dir, title: shellName()}
 	if c := sessionConn(s); c != nil {
 		s.title = c.Host
 	} else if a.hcBackend() {
 		// A shell in herdr-core, or one of Mayoi's own when it can't.
 		if addr, err := a.hcStart(dir); err == nil {
-			s.hc = addr
+			s.hc, s.hcNew = addr, true
 		} else {
 			a.fail("%s", locales.FailStartHC(err.Error()))
 		}
 	}
-	term, err := a.spawnTerminal(s, dir)
+	return a.addTerminal(s)
+}
+
+// addTerminal starts the program of a terminal, nil when it cannot.
+func (a *app) addTerminal(s *session) *session {
+	a.nextTerm++
+	s.id = a.nextTerm
+	term, err := a.spawnTerminal(s, s.dir)
 	if err != nil {
 		a.fail("%s", locales.FailStartTerminal(err.Error()))
 		return nil
@@ -118,8 +127,8 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 	}
 	// In herdr-core, its terminal there.
 	if s.hc != "" {
-		command = hcAttach(s.hc)
-		s.attached = time.Now()
+		command = hcAttach(s.hc, !s.hcNew)
+		s.attached, s.hcNew = time.Now(), false
 	}
 	// term is the terminal made, which OnExit tells from one that took
 	// its place.
@@ -203,7 +212,7 @@ func (a *app) newTerminalIn(dir string) {
 	}
 	a.panelTerm = s
 	a.window.PanelOpen, a.window.TerminalOpen = true, true
-	a.settings.Changed()
+	a.rememberTabs()
 	a.focusTerminal()
 }
 
@@ -226,7 +235,12 @@ func (a *app) newTerminalTab(col *column, dir string, focus bool) bool {
 // newTerminalTabAt starts a terminal in dir in a tab at place at of a
 // column.
 func (a *app) newTerminalTabAt(col *column, at int, dir string, focus bool) bool {
-	s := a.startTerminal(dir)
+	return a.terminalTab(col, at, a.startTerminal(dir), focus)
+}
+
+// terminalTab shows a terminal started in a tab at place at of a column,
+// and reports whether there was one.
+func (a *app) terminalTab(col *column, at int, s *session, focus bool) bool {
 	if s == nil {
 		return false
 	}
@@ -309,6 +323,7 @@ func (a *app) removeTerminal(s *session) {
 	}
 	a.leavePanel(s)
 	a.terms = slices.Delete(a.terms, i, i+1)
+	a.rememberTabs()
 	if a.panelTerm == nil {
 		a.focusColumn()
 	} else {
