@@ -1033,11 +1033,17 @@ func (a *app) restoreTabs() {
 	// and the file workspace beside them are part of the saved layout too.
 	restored := make([]*column, len(saved))
 	// The terminals whose shells run on in herdr-core attach again.
+	var addrs []string
+	for _, cs := range saved {
+		for _, ts := range cs.Tabs {
+			if ts.HC != "" {
+				addrs = append(addrs, ts.HC)
+			}
+		}
+	}
 	var live map[string]string
-	if slices.ContainsFunc(saved, func(cs settings.Column) bool {
-		return slices.ContainsFunc(cs.Tabs, func(ts settings.Tab) bool { return ts.HC != "" })
-	}) {
-		live = hcTerms()
+	if len(addrs) > 0 {
+		live = a.hcTerms(addrs)
 	}
 	for i, cs := range saved {
 		col := a.cols[len(a.cols)-1]

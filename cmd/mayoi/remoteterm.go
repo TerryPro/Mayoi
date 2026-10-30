@@ -52,8 +52,13 @@ func (a *app) restartTerminals() {
 }
 
 // restartTerminal starts a terminal of a host again, in the folder its
-// shell was last in, showing what it showed before.
+// shell was last in, showing what it showed before. One whose shell runs
+// in herdr-core attaches to it again.
 func (a *app) restartTerminal(s *session) {
+	if s.hc != "" {
+		a.hcReattach(s)
+		return
+	}
 	c := sessionConn(s)
 	if c == nil {
 		return

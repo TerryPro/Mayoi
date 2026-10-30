@@ -88,15 +88,17 @@ func (a *app) workDir() string {
 // startTerminal starts a terminal in dir, nil when it cannot.
 func (a *app) startTerminal(dir string) *session {
 	s := &session{dir: dir, title: shellName()}
+	// A shell in herdr-core: of the host in a remote folder, as one of
+	// hc's machines.
 	if c := sessionConn(s); c != nil {
 		s.title = c.Host
-	} else if a.hcBackend() {
-		// A shell in herdr-core, or one of Mayoi's own when it can't.
-		if addr, err := a.hcStart(dir); err == nil {
-			s.hc, s.hcNew = addr, true
-		} else {
-			a.fail("%s", locales.FailStartHC(err.Error()))
+		if a.hcBackend() {
+			if machine := a.hcRemote(c.Host); machine != "" {
+				a.hcBegin(s, machine)
+			}
 		}
+	} else if a.hcBackend() {
+		a.hcBegin(s, "")
 	}
 	return a.addTerminal(s)
 }

@@ -115,7 +115,7 @@ func TestHCStart(t *testing.T) {
 	if !a.hcBackend() {
 		t.Fatal("no hc with terminalBackend hc")
 	}
-	addr, err := a.hcStart(hs.root)
+	addr, err := a.hcStart(hs.root, "")
 	if err != nil || addr != "t9" {
 		t.Fatalf("hcStart: %q, %v", addr, err)
 	}
@@ -131,7 +131,7 @@ func TestHCStart(t *testing.T) {
 		t.Errorf("attach command with history %q", got)
 	}
 	f.reply = func([]string) ([]byte, error) { return nil, errors.New("no core") }
-	if _, err := a.hcStart(hs.root); err == nil || err.Error() != "no core" {
+	if _, err := a.hcStart(hs.root, ""); err == nil || err.Error() != "no core" {
 		t.Errorf("hcStart with no core: %v", err)
 	}
 	lookPath = func(string) (string, error) { return "", errors.New("not found") }
