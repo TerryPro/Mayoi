@@ -23,8 +23,9 @@ import (
 type Settings struct {
 	Prefs
 	State
-	// WrapGen counts the changes of WordWrap.
-	WrapGen int
+	// WrapGen counts the changes of WordWrap, and LSPGen those of the
+	// language servers' settings.
+	WrapGen, LSPGen int
 
 	path      string
 	statePath string
@@ -90,11 +91,11 @@ type legacy struct {
 // applies as Mayoi runs: not the windows and the layout it keeps itself.
 type Prefs struct {
 	// ZoomLevel scales all window content by 1.2 to this power.
-	ZoomLevel  float32 `json:"zoomLevel"`
-	FontSize   float32 `json:"fontSize"`
+	ZoomLevel float32 `json:"zoomLevel"`
+	FontSize  float32 `json:"fontSize"`
 	// TabSize is how many cells a tab spans, 1 to 8, 4 unless set.
-	TabSize    int     `json:"tabSize,omitempty"`
-	FontFamily string  `json:"fontFamily"`
+	TabSize    int    `json:"tabSize,omitempty"`
+	FontFamily string `json:"fontFamily"`
 	// FontWeight is how heavy the code's text is, from 100 to 900.
 	FontWeight int `json:"fontWeight"`
 	// FontFeatures turn OpenType features of the code's font on and off,
@@ -210,10 +211,29 @@ type Prefs struct {
 	// next launch: "" asks whether to send it to Mon, "always" sends it
 	// and "never" doesn't.
 	CrashReports string `json:"crashReports,omitempty"`
+	// LSP starts a language server of the folder, for diagnostics and go
+	// to definition, gopls for Go.
+	LSP bool `json:"lsp,omitempty"`
+	// LSPCommand is Go's language server's command, gopls when empty.
+	LSPCommand string `json:"lspCommand,omitempty"`
+	// LSPServers are language servers beside the ones Mayoi knows, by
+	// language, and ones of its own that a name it knows overrides.
+	LSPServers map[string]LSPServer `json:"lspServers,omitempty"`
 	// SyncIgnored is what settings sync leaves on this machine: keys of
 	// the preferences, "settings.json" for all of them, and
 	// "keybindings.json" for the keyboard shortcuts.
 	SyncIgnored []string `json:"syncIgnored,omitempty"`
+}
+
+// LSPServer is a language server in the settings: the files of its
+// language, its command, and the files that mark its project's root.
+// Extensions have a dot, as ".ts".
+type LSPServer struct {
+	Extensions []string `json:"extensions,omitempty"`
+	LanguageID string   `json:"languageId,omitempty"`
+	Command    string   `json:"command"`
+	Args       []string `json:"args,omitempty"`
+	Roots      []string `json:"roots,omitempty"`
 }
 
 // TabStyle is a project's own look on the rail: Label, up to two
@@ -810,12 +830,16 @@ func (s *Settings) ClearRecent() {
 }
 
 // SetPrefs makes p the preferences, as a change of the file has them,
-// and returns those it replaces. A change of WordWrap counts in WrapGen.
+// and returns those it replaces. A change of WordWrap counts in WrapGen,
+// and one of the language servers' settings in LSPGen.
 func (s *Settings) SetPrefs(p Prefs) (old Prefs) {
 	old = s.Prefs
 	s.Prefs = p
 	if p.WordWrap != old.WordWrap {
 		s.WrapGen++
+	}
+	if p.LSP != old.LSP || p.LSPCommand != old.LSPCommand || !reflect.DeepEqual(p.LSPServers, old.LSPServers) {
+		s.LSPGen++
 	}
 	return old
 }

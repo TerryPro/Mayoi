@@ -69,6 +69,9 @@ leave out takes its default.
 | `vim`                   | `false`       | `true`, `false`                                             | **View → Vim Mode**                            |
 | `vimCtrlKeys`           | `false`       | `true`, `false`                                             | Only this file                                 |
 | `blame`                 | `true`        | `true`, `false`                                             | **Git → Inline Blame**                         |
+| `lsp`                   | `false`       | `true`, `false`                                             | **File → Settings → Advanced**                 |
+| `lspCommand`            | `"gopls"`     | A command, or the path of one                               | Only this file                                 |
+| `lspServers`            | none          | Servers by language: `extensions`, `languageId`, `command`, `args`, `roots` | Only this file                  |
 | `diffLayout`            | `""`          | `""` (side by side when wide enough), `"split"`, `"inline"` | A diff's **Layout** button                     |
 | `diffCrossFiles`        | `""`          | `""` (say it, and cross on one more step), `"always"`, `"never"` | Only this file                            |
 | `diffHighlight`         | `""`          | `""` (changed words), `"line"`, `"char"`                       | A diff's **Highlight** menu                |
@@ -88,6 +91,29 @@ leave out takes its default.
   of the same language works too, as `"zh"` or `"ja-JP"`. The menus, the command palette and every window change at
   once. The command palette also finds commands by their English names. In Japanese, the parts that MyGo draws itself,
   as the editor's own menu and the native dialogs' buttons, stay in English.
+
+### Language server
+
+- **`lsp`** turns on the language servers of the files you open: Go (`gopls`), TypeScript and JavaScript
+  (`typescript-language-server`), Rust (`rust-analyzer`), Python (`pyright-langserver`) and C/C++ (`clangd`). A server
+  starts for the project it serves, found by markers such as `go.mod`, `package.json`, `Cargo.toml`, `pyproject.toml`
+  and `CMakeLists.txt`, so a folder within a folder gets a server of its own. The problems of the open file count in
+  the status bar, and **Go to Definition** (`F12`) jumps to where a symbol is defined. It is off until turned on in
+  **File → Settings → Advanced**, and a server whose command is not installed says so in the status bar.
+- **`lspCommand`** is Go's command, `gopls` by default. Mayoi finds it in Go's `bin` folder even when your shell's
+  `PATH` lacks it, and a path of your own works too.
+- **`lspServers`** adds a server Mayoi does not know, or overrides one of its own by its name, as `typescript`:
+
+  ```json
+  "lspServers": {
+    "ruby": { "extensions": [".rb"], "languageId": "ruby", "command": "ruby-lsp", "roots": ["Gemfile"] }
+  }
+  ```
+
+- **View → Toggle Problems** (`Ctrl+Shift+M`) lists the language servers' problems, grouped by file, and a click jumps
+  to one. The panel's **Problems** tab shows the same list beside its terminals. The list filters by errors and
+  warnings, searches its messages and paths, folds files by their headers, and moves its choice with the arrow keys;
+  Enter opens the problem, and Escape returns the keyboard to the editor.
 
 ### Window zoom
 

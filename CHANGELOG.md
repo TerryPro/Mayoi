@@ -16,6 +16,15 @@ needs a `## <version>` section here, or its build fails.
 - **File → Settings** opens a dialog with the settings grouped, and **File → Open Settings (JSON)** still opens the file.
 - The sidebar, sidebar-on-right and terminal buttons sit together at the right of the title bar, as VS Code's layout controls.
 - A Markdown preview lists its headings in a contents pane at its right, and a click scrolls to one.
+- **Go to Definition** (`F12`) jumps to where a Go symbol is defined, through `gopls`.
+- **File → Settings → Advanced** turns on the language server, whose problems count in the status bar.
+- The status bar says when the language server can't start, and clicking it opens the settings.
+- **View → Toggle Problems** (`Ctrl+Shift+M`) lists the language server's problems; a click jumps to one.
+- The problems panel filters by errors and warnings, searches, and folds files.
+- Arrow keys move the choice in the problems panel, Enter opens the problem, and Escape returns to the editor.
+- The language server serves TypeScript, JavaScript, Rust, Python and C/C++ as well as Go.
+- A language server starts for each project of a folder, as a nested module or a subproject.
+- `lspServers` in `settings.json` adds a language server, or overrides one of Mayoi's.
 
 ## 0.15.0
 

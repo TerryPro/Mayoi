@@ -99,6 +99,8 @@ func (a *app) view(c *ui.Context) {
 	switch {
 	case a.panelTerm != nil && a.panelTerm.view.FocusWithin(c):
 		a.focus = paneTerminal
+	case a.panelProblems && (a.problemsUI.listView.FocusWithin(c) || a.problemsUI.input.FocusWithin(c)):
+		a.focus = paneProblems
 	case a.files.List.FocusWithin(c):
 		a.focus = paneFiles
 	}
@@ -1246,6 +1248,18 @@ func (a *app) statusBar(c *ui.Context) {
 		if d == nil {
 			return
 		}
+		errors, warnings := a.lspProblems(d.path)
+		_, server := a.lspTarget(d.path)
+		switch {
+		case a.settings.LSP && server != nil && server.err != "" && server.client == nil:
+			// A language server that cannot start, its error a tooltip.
+			item("lsp", locales.LspUnavailable(), server.err, iconTriangleAlert, a.openSettingsDialog)
+		case errors+warnings > 0:
+			n := strconv.Itoa(errors + warnings)
+			item("lsp", n, locales.LspProblems(n), iconTriangleAlert, a.openProblems)
+		case server != nil && server.client != nil:
+			item("lsp", "LSP", locales.LspRunning(), iconBraces, a.openSettingsDialog)
+		}
 		if d.diskGone {
 			ui.Row(c).Padding(0, 6).Gap(5).AlignItems(ui.Center).Children(func() {
 				ui.Icon(c, iconTrash).FontSize(12).TextColor(p.danger)
@@ -1590,6 +1604,17 @@ func (a *app) toggleSidebarRight() {
 // first time it shows.
 func (a *app) togglePanel() {
 	w := a.window
+	if w.PanelOpen && a.panelProblems {
+		// Shown on its problems: show its terminal instead.
+		a.panelProblems = false
+		if a.panelTerm == nil {
+			a.newTerminal()
+		} else {
+			a.focusTerminal()
+		}
+		a.invalidate()
+		return
+	}
 	if w.PanelOpen && a.focus != paneTerminal && a.panelTerm != nil {
 		// Shown but not focused: focus it, as VS Code does.
 		a.focusTerminal()
@@ -1597,6 +1622,7 @@ func (a *app) togglePanel() {
 	}
 	w.PanelOpen = !w.PanelOpen
 	if w.PanelOpen {
+		a.panelProblems = false
 		if a.panelTerm == nil {
 			a.newTerminal()
 		}

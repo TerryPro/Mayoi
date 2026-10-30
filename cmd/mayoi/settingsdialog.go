@@ -146,6 +146,7 @@ func (a *app) settingsItems(c *ui.Context, tab int) {
 	case 3:
 		a.settingsBool(c, "blame", locales.CmdGitBlame, &a.settings.Blame)
 	case 4:
+		a.settingsBool(c, "lsp", locales.SettingsLSP, &a.settings.LSP)
 		a.settingsBool(c, "projectTabs", locales.CmdViewProjectTabs, &a.settings.ProjectTabs)
 	}
 }

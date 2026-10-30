@@ -278,10 +278,12 @@ type app struct {
 	// transfers are the copies to and from hosts running.
 	transfers []*transfer
 
-	panelMax    bool // the panel takes the editor's room
-	welcomeView ui.Handle
-	rain        rainState   // The Matrix's, behind the welcome page
-	mascot      mascotState // the theme's character, Claude's or Qoder's
+	panelMax      bool // the panel takes the editor's room
+	panelProblems bool // the panel shows its problems rather than its terminals
+	problemsUI    problemsPanel
+	welcomeView   ui.Handle
+	rain          rainState   // The Matrix's, behind the welcome page
+	mascot        mascotState // the theme's character, Claude's or Qoder's
 	// blurred is set while the window has not the keyboard.
 	blurred  bool
 	colsView ui.Handle // the columns, whose width their weights share
@@ -310,8 +312,18 @@ type app struct {
 	recents    recentPicker      // the box of the recent folders
 	themes     themePicker       // the box of the color themes
 	settingsUI settingsDialog    // the box of the settings
-	remotePick remotePicker      // the box that connects to a host
-	conflicts  conflictsList     // the box of the files in conflict
+	// lspServers are the language servers running, by their command,
+	// arguments and root, and lspDiags their diagnostics by file. lspReg
+	// are the servers the settings name, made for the settings' lspGen
+	// generation, and lspRoots a folder's project root by language.
+	lspServers map[string]*lspServer
+	lspDiags   map[string]lspFile
+	lspReg     *lspRegistry
+	lspGen     int
+	lspRoot    string
+	lspRoots   map[string]string
+	remotePick remotePicker  // the box that connects to a host
+	conflicts  conflictsList // the box of the files in conflict
 	find       findState
 	inFiles    searchState // search in the files, of the sidebar
 	prompt     *prompt
@@ -369,6 +381,7 @@ const (
 	paneFiles
 	paneEditor   // a column: its editor, or its terminal
 	paneTerminal // the panel
+	paneProblems // the panel, showing its problems
 )
 
 func newApp(h host, s *settings.Settings, w *settings.Window) *app {
@@ -871,6 +884,7 @@ func (a *app) tick() {
 	if a.tree != nil {
 		a.tree.SetIdle(a.blurred)
 	}
+	a.lspTick()
 	a.markOffline()
 	a.refreshIgnored()
 	a.refreshGit()

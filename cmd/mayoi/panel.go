@@ -234,6 +234,7 @@ func (a *app) newTerminalIn(dir string) {
 		return
 	}
 	a.panelTerm = s
+	a.panelProblems = false
 	a.window.PanelOpen, a.window.TerminalOpen = true, true
 	a.rememberTabs()
 	a.focusTerminal()
@@ -379,6 +380,7 @@ func (a *app) terminalToPanel(s *session) {
 	s.tab = nil
 	a.dropTab(t)
 	a.panelTerm = s
+	a.panelProblems = false
 	a.window.PanelOpen, a.window.TerminalOpen = true, true
 	a.rememberTabs()
 	a.focusTerminal()
@@ -434,6 +436,34 @@ func (a *app) panelMenu(m *ui.Menu) {
 	}
 }
 
+// panelTab is one of the panel's tabs, which shows its problems or its
+// terminals, underlined when it is the one shown.
+func (a *app) panelTab(c *ui.Context, key, label string, on bool, count int, fn func()) {
+	p := a.pal
+	b := ui.ButtonBase(c.Key("panel-tab:"+key)).Height(panelHeadH).Padding(0, 8).Gap(6).
+		Justify(ui.Center).AlignItems(ui.Center).Label(label)
+	if on {
+		b.BorderWidth(0, 0, 1.5, 0).BorderColor(p.accent)
+	} else if b.Hovered() {
+		b.Background(p.hover)
+	}
+	b.Transition(hoverFade)
+	b.Children(func() {
+		col := p.muted
+		if on {
+			col = p.text
+		}
+		ui.Text(c, label).FontSize(11).FontWeight(600).LetterSpacing(0.7).TextColor(col).SingleLine()
+		if count > 0 {
+			ui.Text(c, fmt.Sprintf("%d", count)).FontSize(10).TextColor(p.faint).
+				Padding(1, 5).Radius(7).Background(p.hover).SingleLine()
+		}
+	})
+	if b.Clicked() {
+		fn()
+	}
+}
+
 // panel is the terminal panel: a header of its terminals and its tools,
 // and the terminal shown. A terminal dragged from a tab is dropped on it,
 // and a file dragged from the sidebar types its path.
@@ -452,7 +482,7 @@ func (a *app) panel(c *ui.Context) {
 		switch s := a.panelTerm; {
 		case it.tab != nil && it.tab.term != nil && a.owns(it):
 			a.post(func() { a.terminalToPanel(it.tab.term) })
-		case it.file != nil && s != nil:
+		case it.file != nil && s != nil && !a.panelProblems:
 			// A file of the sidebar types its path, as one from the Finder.
 			a.post(func() { a.pastePaths(s, []string{it.file.path}) })
 		}
@@ -478,9 +508,12 @@ func (a *app) panel(c *ui.Context) {
 		head.ContextMenu(a.panelMenu)
 		head.Children(func() {
 			if titled {
-				ui.Column(c).Height(panelHeadH).Margin(0, 0, scrollbarH, 0).Justify(ui.Center).Children(func() {
-					ui.Text(c, strings.ToUpper(locales.TabTerminal())).FontSize(11).FontWeight(600).LetterSpacing(0.7).TextColor(p.text)
-					ui.Box(c).Absolute().Bottom(0).Left(0).Right(0).Height(1.5).Background(p.accent)
+				a.panelTab(c, "problems", strings.ToUpper(locales.TabProblems()), a.panelProblems, a.problemCount(), a.openProblems)
+				a.panelTab(c, "terminal", strings.ToUpper(locales.TabTerminal()), !a.panelProblems, 0, func() {
+					a.panelProblems = false
+					if a.panelTerm != nil {
+						a.focusTerminal()
+					}
 				})
 				ui.Box(c).Width(10)
 			}
@@ -512,6 +545,7 @@ func (a *app) panel(c *ui.Context) {
 							ui.Text(c, fmt.Sprintf("%d: %s", i+1, s.title)).FontSize(12).TextColor(col).SingleLine().MaxWidth(180)
 						})
 						if chip.Clicked() {
+							a.panelProblems = false
 							a.panelTerm = s
 							a.focusTerminal()
 						}
@@ -531,15 +565,17 @@ func (a *app) panel(c *ui.Context) {
 				})
 			})
 			ui.Row(c).Gap(4).AlignItems(ui.Center).Margin(0, 0, scrollbarH, 0).Children(func() {
-				if a.iconButton(c, iconPlus, a.withKey(locales.CmdViewNewTerminal(), "view.newTerminal"), false).Clicked() {
-					a.newTerminal()
-				}
-				if s := a.panelTerm; s != nil {
-					if a.iconButton(c, iconToEditor, locales.TermMoveToEditor(), false).Clicked() {
-						a.post(func() { a.terminalToColumn(s, a.column(), a.column().active+1) })
+				if !a.panelProblems {
+					if a.iconButton(c, iconPlus, a.withKey(locales.CmdViewNewTerminal(), "view.newTerminal"), false).Clicked() {
+						a.newTerminal()
 					}
-					if a.iconButton(c, iconTrash, locales.TermKill(), false).Clicked() {
-						a.post(func() { a.killTerminal(s) })
+					if s := a.panelTerm; s != nil {
+						if a.iconButton(c, iconToEditor, locales.TermMoveToEditor(), false).Clicked() {
+							a.post(func() { a.terminalToColumn(s, a.column(), a.column().active+1) })
+						}
+						if a.iconButton(c, iconTrash, locales.TermKill(), false).Clicked() {
+							a.post(func() { a.killTerminal(s) })
+						}
 					}
 				}
 				icon, label := iconMaximize, locales.PanelMaximize()
@@ -557,7 +593,7 @@ func (a *app) panel(c *ui.Context) {
 		term := ui.Box(c).Grow(1)
 		// Files from another app type their paths into the terminal shown.
 		filesOver := false
-		if s := a.panelTerm; s != nil {
+		if s := a.panelTerm; s != nil && !a.panelProblems {
 			if paths := term.DroppedFiles(); paths != nil {
 				paths = slices.Clone(paths)
 				a.post(func() { a.pastePaths(s, paths) })
@@ -565,6 +601,10 @@ func (a *app) panel(c *ui.Context) {
 			filesOver = term.FileDragOver()
 		}
 		term.Children(func() {
+			if a.panelProblems {
+				a.problemsView(c)
+				return
+			}
 			s := a.panelTerm
 			if s == nil {
 				ui.Column(c).Fill().Center().Children(func() {

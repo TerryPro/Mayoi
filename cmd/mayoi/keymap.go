@@ -237,6 +237,7 @@ var vscodeCommands = map[string]string{
 	"workbench.action.toggleSidebarVisibility":   "view.sidebar",
 	"workbench.view.explorer":                    "view.explorer",
 	"workbench.view.scm":                         "view.scm",
+	"workbench.action.problems.focus":            "view.problems",
 	"workbench.action.terminal.toggleTerminal":   "view.terminal",
 	"workbench.action.togglePanel":               "view.terminal",
 	"workbench.action.terminal.new":              "view.newTerminal",

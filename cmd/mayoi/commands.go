@@ -96,6 +96,7 @@ func (a *app) commandsIn(t locales.Messages) []command {
 		{"sel.sortAsc", t.CmdSelSortAsc(), "", a.editActive(func(d *editor) { sortLines(d, false) })},
 		{"sel.sortDesc", t.CmdSelSortDesc(), "", a.editActive(func(d *editor) { sortLines(d, true) })},
 		{"go.bracket", t.CmdGoBracket(), "Shift+CmdOrCtrl+\\", a.editActive(goToBracket)},
+		{"go.definition", t.CmdGoDefinition(), "F12", a.gotoDefinition},
 		{"go.quickOpen", t.CmdGoQuickOpen(), "CmdOrCtrl+P", func() { a.openQuick("") }},
 		{"go.commands", t.CmdGoCommands(), "Shift+CmdOrCtrl+P", func() { a.openQuick(">") }},
 		{"go.line", t.CmdGoLine(), "Ctrl+G", func() { a.openQuick(":") }},
@@ -162,6 +163,7 @@ func (a *app) commandsIn(t locales.Messages) []command {
 		{"review.copy", t.CmdReviewCopy(), "", a.copyReview},
 		{"review.send", t.CmdReviewSend(), "", a.sendReview},
 		{"review.clear", t.CmdReviewClear(), "", a.clearReview},
+		{"view.problems", t.CmdViewProblems(), "Shift+CmdOrCtrl+M", a.toggleProblems},
 		{"view.terminal", t.CmdViewTerminal(), "Ctrl+`", a.togglePanel},
 		{"view.newTerminal", t.CmdViewNewTerminal(), "Ctrl+Shift+`", func() { a.openTerminal(a.workDir()) }},
 		{"view.terminalTab", t.CmdViewTerminalTab(), "", func() { a.newTerminalTab(a.fileColumn(), a.workDir(), true) }},
@@ -570,7 +572,7 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 			checkbox("view.vim", a.settings.Vim), checkbox("view.projectTabs", a.settings.ProjectTabs), mygo.Separator(),
 			item("view.splitRight"), item("view.nextColumn"), item("view.prevColumn"),
 			item("view.moveTabNext"), item("view.moveTabPrev"), mygo.Separator(),
-			item("view.terminal"), item("view.newTerminal"), item("view.terminalTab"), item("view.terminalMove"), installHC,
+			item("view.problems"), item("view.terminal"), item("view.newTerminal"), item("view.terminalTab"), item("view.terminalMove"), installHC,
 			checkbox("view.terminalLocation", a.settings.TerminalLocation == "editor"),
 			{Label: locales.MenuPanelPosition(), Submenu: []*mygo.MenuItem{
 				radio("view.panelPosition.bottom", a.panelSide() == "bottom"),
@@ -589,7 +591,7 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 			{Role: mygo.RoleToggleFullScreen}, {Role: mygo.RoleToggleDevTools},
 		})},
 		{Label: locales.MenuGo(), Submenu: []*mygo.MenuItem{
-			item("go.quickOpen"), item("go.commands"), item("go.symbol"), item("go.line"), item("go.bracket"), mygo.Separator(),
+			item("go.quickOpen"), item("go.commands"), item("go.symbol"), item("go.line"), item("go.bracket"), item("go.definition"), mygo.Separator(),
 			item("go.nextTab"), item("go.prevTab"), mygo.Separator(),
 			item("go.nextProject"), item("go.prevProject"),
 		}},

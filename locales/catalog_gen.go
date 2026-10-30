@@ -3076,6 +3076,16 @@ func (msgs Messages) CmdViewPreviewToSide() string {
 	return Catalog.Format(msgs.locale, "cmdViewPreviewToSide", nil)
 }
 
+// CmdViewProblems says "Toggle Problems"
+// in the language the app shows.
+func CmdViewProblems() string { return In(i18n.Locale()).CmdViewProblems() }
+
+// CmdViewProblems says "Toggle Problems"
+// in the language of msgs.
+func (msgs Messages) CmdViewProblems() string {
+	return Catalog.Format(msgs.locale, "cmdViewProblems", nil)
+}
+
 // CmdViewProjectTabs says "Project Tabs"
 // in the language the app shows.
 func CmdViewProjectTabs() string { return In(i18n.Locale()).CmdViewProjectTabs() }
@@ -3294,6 +3304,136 @@ func SettingsTitle() string { return In(i18n.Locale()).SettingsTitle() }
 // in the language of msgs.
 func (msgs Messages) SettingsTitle() string {
 	return Catalog.Format(msgs.locale, "settingsTitle", nil)
+}
+
+// CmdGoDefinition says "Go to Definition"
+// in the language the app shows.
+func CmdGoDefinition() string { return In(i18n.Locale()).CmdGoDefinition() }
+
+// CmdGoDefinition says "Go to Definition"
+// in the language of msgs.
+func (msgs Messages) CmdGoDefinition() string {
+	return Catalog.Format(msgs.locale, "cmdGoDefinition", nil)
+}
+
+// SettingsLSP says "Language Server"
+// in the language the app shows.
+func SettingsLSP() string { return In(i18n.Locale()).SettingsLSP() }
+
+// SettingsLSP says "Language Server"
+// in the language of msgs.
+func (msgs Messages) SettingsLSP() string {
+	return Catalog.Format(msgs.locale, "settingsLSP", nil)
+}
+
+// LspUnavailable says "Language server unavailable"
+// in the language the app shows.
+func LspUnavailable() string { return In(i18n.Locale()).LspUnavailable() }
+
+// LspUnavailable says "Language server unavailable"
+// in the language of msgs.
+func (msgs Messages) LspUnavailable() string {
+	return Catalog.Format(msgs.locale, "lspUnavailable", nil)
+}
+
+// LspOff says "The language server is off. Turn it on in Settings."
+// in the language the app shows.
+func LspOff() string { return In(i18n.Locale()).LspOff() }
+
+// LspOff says "The language server is off. Turn it on in Settings."
+// in the language of msgs.
+func (msgs Messages) LspOff() string {
+	return Catalog.Format(msgs.locale, "lspOff", nil)
+}
+
+// LspRunning says "Language server running"
+// in the language the app shows.
+func LspRunning() string { return In(i18n.Locale()).LspRunning() }
+
+// LspRunning says "Language server running"
+// in the language of msgs.
+func (msgs Messages) LspRunning() string {
+	return Catalog.Format(msgs.locale, "lspRunning", nil)
+}
+
+// LspNoDefinition says "No definition found"
+// in the language the app shows.
+func LspNoDefinition() string { return In(i18n.Locale()).LspNoDefinition() }
+
+// LspNoDefinition says "No definition found"
+// in the language of msgs.
+func (msgs Messages) LspNoDefinition() string {
+	return Catalog.Format(msgs.locale, "lspNoDefinition", nil)
+}
+
+// LspProblems says "{count} language server problems"
+// in the language the app shows.
+func LspProblems(count string) string { return In(i18n.Locale()).LspProblems(count) }
+
+// LspProblems says "{count} language server problems"
+// in the language of msgs.
+func (msgs Messages) LspProblems(count string) string {
+	return Catalog.Format(msgs.locale, "lspProblems", map[string]any{"count": count})
+}
+
+// ProblemsNone says "No problems detected"
+// in the language the app shows.
+func ProblemsNone() string { return In(i18n.Locale()).ProblemsNone() }
+
+// ProblemsNone says "No problems detected"
+// in the language of msgs.
+func (msgs Messages) ProblemsNone() string {
+	return Catalog.Format(msgs.locale, "problemsNone", nil)
+}
+
+// ProblemsAll says "All"
+// in the language the app shows.
+func ProblemsAll() string { return In(i18n.Locale()).ProblemsAll() }
+
+// ProblemsAll says "All"
+// in the language of msgs.
+func (msgs Messages) ProblemsAll() string {
+	return Catalog.Format(msgs.locale, "problemsAll", nil)
+}
+
+// ProblemsErrors says "Errors"
+// in the language the app shows.
+func ProblemsErrors() string { return In(i18n.Locale()).ProblemsErrors() }
+
+// ProblemsErrors says "Errors"
+// in the language of msgs.
+func (msgs Messages) ProblemsErrors() string {
+	return Catalog.Format(msgs.locale, "problemsErrors", nil)
+}
+
+// ProblemsWarnings says "Warnings"
+// in the language the app shows.
+func ProblemsWarnings() string { return In(i18n.Locale()).ProblemsWarnings() }
+
+// ProblemsWarnings says "Warnings"
+// in the language of msgs.
+func (msgs Messages) ProblemsWarnings() string {
+	return Catalog.Format(msgs.locale, "problemsWarnings", nil)
+}
+
+// ProblemsSearch says "Filter problems"
+// in the language the app shows.
+func ProblemsSearch() string { return In(i18n.Locale()).ProblemsSearch() }
+
+// ProblemsSearch says "Filter problems"
+// in the language of msgs.
+func (msgs Messages) ProblemsSearch() string {
+	return Catalog.Format(msgs.locale, "problemsSearch", nil)
+}
+
+// ProblemsNoMatch says "No matching problems"
+// in the language the app shows.
+func ProblemsNoMatch() string { return In(i18n.Locale()).ProblemsNoMatch() }
+
+// ProblemsNoMatch says "No matching problems"
+// in the language of msgs.
+func (msgs Messages) ProblemsNoMatch() string {
+	return Catalog.Format(msgs.locale, "problemsNoMatch", nil)
 }
 
 // MarkdownContents says "Contents"
@@ -11760,6 +11900,16 @@ func TabCloseOthers() string { return In(i18n.Locale()).TabCloseOthers() }
 // in the language of msgs.
 func (msgs Messages) TabCloseOthers() string {
 	return Catalog.Format(msgs.locale, "tabCloseOthers", nil)
+}
+
+// TabProblems says "Problems"
+// in the language the app shows.
+func TabProblems() string { return In(i18n.Locale()).TabProblems() }
+
+// TabProblems says "Problems"
+// in the language of msgs.
+func (msgs Messages) TabProblems() string {
+	return Catalog.Format(msgs.locale, "tabProblems", nil)
 }
 
 // TabTerminal says "Terminal"

@@ -839,6 +839,7 @@ func (a *app) showTerminal(s *session) {
 		return
 	}
 	a.panelTerm = s
+	a.panelProblems = false
 	a.window.PanelOpen, a.window.TerminalOpen = true, true
 	a.settings.Changed()
 	a.focusTerminal()
