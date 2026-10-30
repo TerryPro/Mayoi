@@ -518,7 +518,7 @@ func (a *app) closeTab(t *colTab, then func()) {
 	}
 	if t.term != nil {
 		a.rememberClosed(t)
-		a.removeTerminal(t.term)
+		a.killTerminal(t.term)
 		done()
 		return
 	}

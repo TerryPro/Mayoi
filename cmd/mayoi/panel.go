@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/plugins/terminal"
 	mtransfer "github.com/egoist/mygo/transfer"
@@ -29,6 +30,11 @@ type session struct {
 	// lost is set while a terminal of a host waits for the connection
 	// that ended it, to start again.
 	lost bool
+	// hc is the address of the terminal of herdr-core the shell runs in,
+	// "" for one that runs here.
+	hc string
+	// attached is when the view last attached to it.
+	attached time.Time
 }
 
 type panelHeaderLayout struct {
@@ -82,6 +88,13 @@ func (a *app) startTerminal(dir string) *session {
 	s := &session{id: a.nextTerm, dir: dir, title: shellName()}
 	if c := sessionConn(s); c != nil {
 		s.title = c.Host
+	} else if a.hcBackend() {
+		// A shell in herdr-core, or one of Mayoi's own when it can't.
+		if addr, err := a.hcStart(dir); err == nil {
+			s.hc = addr
+		} else {
+			a.fail("%s", locales.FailStartHC(err.Error()))
+		}
 	}
 	term, err := a.spawnTerminal(s, dir)
 	if err != nil {
@@ -102,6 +115,11 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 	if c, rdir, ok := remote.Lookup(dir); ok {
 		command = c.TerminalCommand(rdir)
 		dir, _ = os.UserHomeDir()
+	}
+	// In herdr-core, its terminal there.
+	if s.hc != "" {
+		command = hcAttach(s.hc)
+		s.attached = time.Now()
 	}
 	// term is the terminal made, which OnExit tells from one that took
 	// its place.
@@ -133,6 +151,9 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 			a.keyTerm = s
 			st := keymap.Stroke{Mods: mods, Key: key}
 			if a.keyStroke(st, placeTerminal) {
+				return true
+			}
+			if hcDetachKey(s, mods, key) {
 				return true
 			}
 			id, ok := a.shellSkip(st)
@@ -461,7 +482,7 @@ func (a *app) panel(c *ui.Context) {
 								a.post(func() { a.terminalToColumn(s, a.column(), a.column().active+1) })
 							}
 							if m.Item(locales.TermKill()).Chosen() {
-								a.post(func() { a.removeTerminal(s) })
+								a.post(func() { a.killTerminal(s) })
 							}
 						})
 					}
@@ -476,7 +497,7 @@ func (a *app) panel(c *ui.Context) {
 						a.post(func() { a.terminalToColumn(s, a.column(), a.column().active+1) })
 					}
 					if a.iconButton(c, iconTrash, locales.TermKill(), false).Clicked() {
-						a.post(func() { a.removeTerminal(s) })
+						a.post(func() { a.killTerminal(s) })
 					}
 				}
 				icon, label := iconMaximize, locales.PanelMaximize()

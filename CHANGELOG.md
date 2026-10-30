@@ -3,6 +3,11 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
+## Unreleased
+
+- Set `terminalBackend` to `"hc"` to run terminals in herdr-core, where shells outlive Mayoi's windows.
+- Closing a terminal ends its shell in herdr-core, and `Ctrl+\` goes to the shell rather than detaching.
+
 ## 0.14.3
 
 - Mermaid diagrams in a Markdown preview open over the window from their hover button or a double-click.

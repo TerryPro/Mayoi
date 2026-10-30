@@ -388,6 +388,17 @@ func TestTerminalLocation(t *testing.T) {
 	}
 }
 
+// A terminal runs in Mayoi unless the file says "hc".
+func TestTerminalBackend(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "settings.json")
+	for in, want := range map[string]string{"": "", "hc": "hc", "herdr": "", "HC": ""} {
+		os.WriteFile(path, []byte(`{"terminalBackend": "`+in+`"}`), 0o644)
+		if got := Load(path).TerminalBackend; got != want {
+			t.Errorf("%q loaded as %q, want %q", in, got, want)
+		}
+	}
+}
+
 func TestScmRepositoryPreferencesRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "settings.json")
 	s := Load(path)

@@ -5134,6 +5134,16 @@ func (msgs Messages) FailReplaceIn(what string) string {
 	return Catalog.Format(msgs.locale, "failReplaceIn", map[string]any{"what": what})
 }
 
+// FailAttachHC says "Could not attach to {addr} in herdr-core. Its shell still runs there."
+// in the language the app shows.
+func FailAttachHC(addr string) string { return In(i18n.Locale()).FailAttachHC(addr) }
+
+// FailAttachHC says "Could not attach to {addr} in herdr-core. Its shell still runs there."
+// in the language of msgs.
+func (msgs Messages) FailAttachHC(addr string) string {
+	return Catalog.Format(msgs.locale, "failAttachHC", map[string]any{"addr": addr})
+}
+
 // FailRestartTerminal says "Could not start the terminal again: {err}"
 // in the language the app shows.
 func FailRestartTerminal(err string) string { return In(i18n.Locale()).FailRestartTerminal(err) }
@@ -5152,6 +5162,16 @@ func FailSave(name string, err string) string { return In(i18n.Locale()).FailSav
 // in the language of msgs.
 func (msgs Messages) FailSave(name string, err string) string {
 	return Catalog.Format(msgs.locale, "failSave", map[string]any{"name": name, "err": err})
+}
+
+// FailStartHC says "Could not start the terminal in herdr-core, so it runs in Mayoi: {err}"
+// in the language the app shows.
+func FailStartHC(err string) string { return In(i18n.Locale()).FailStartHC(err) }
+
+// FailStartHC says "Could not start the terminal in herdr-core, so it runs in Mayoi: {err}"
+// in the language of msgs.
+func (msgs Messages) FailStartHC(err string) string {
+	return Catalog.Format(msgs.locale, "failStartHC", map[string]any{"err": err})
 }
 
 // FailStartTerminal says "Could not start a terminal: {err}"

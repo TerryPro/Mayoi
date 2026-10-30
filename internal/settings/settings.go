@@ -186,6 +186,9 @@ type Prefs struct {
 	// TerminalLocation is where a new terminal opens: "" in the panel, or
 	// "editor" in a tab of the editor area.
 	TerminalLocation string `json:"terminalLocation,omitempty"`
+	// TerminalBackend is what runs a terminal's shell: "" Mayoi itself,
+	// or "hc" a terminal of herdr-core, which outlives the window.
+	TerminalBackend string `json:"terminalBackend,omitempty"`
 	// ProjectTabs keeps the folders open in one window, a rail on its left
 	// choosing which shows, rather than a window for each.
 	ProjectTabs bool `json:"projectTabs,omitempty"`
@@ -516,6 +519,9 @@ func (s *Settings) normalize() {
 	}
 	if s.TerminalLocation != "editor" {
 		s.TerminalLocation = ""
+	}
+	if s.TerminalBackend != "hc" {
+		s.TerminalBackend = ""
 	}
 	// The themes were appearances once.
 	if s.Appearance == "matrix" || s.Appearance == "claude" {

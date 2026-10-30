@@ -25,6 +25,10 @@ func (a *app) terminalExited(s *session, t *terminal.Terminal, code int) {
 	if s.term != t {
 		return // one restarted in its place
 	}
+	if s.hc != "" {
+		a.hcExited(s, t)
+		return
+	}
 	// ssh exits with 255 when the connection fails, which a shell does
 	// only if asked.
 	if c := sessionConn(s); c != nil && c == a.conn && (code == 255 || !c.Connected()) {
