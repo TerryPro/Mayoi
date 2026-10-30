@@ -2806,6 +2806,16 @@ func (msgs Messages) CmdSelIndentSpaces(count int) string {
 	return Catalog.Format(msgs.locale, "cmdSelIndentSpaces", map[string]any{"count": count})
 }
 
+// TabSize says "Tab Size {count}"
+// in the language the app shows.
+func TabSize(count int) string { return In(i18n.Locale()).TabSize(count) }
+
+// TabSize says "Tab Size {count}"
+// in the language of msgs.
+func (msgs Messages) TabSize(count int) string {
+	return Catalog.Format(msgs.locale, "tabSize", map[string]any{"count": count})
+}
+
 // CmdSelIndentTabs says "Indent Using Tabs"
 // in the language the app shows.
 func CmdSelIndentTabs() string { return In(i18n.Locale()).CmdSelIndentTabs() }
@@ -2964,6 +2974,16 @@ func CmdViewMarkdownPreview() string { return In(i18n.Locale()).CmdViewMarkdownP
 // in the language of msgs.
 func (msgs Messages) CmdViewMarkdownPreview() string {
 	return Catalog.Format(msgs.locale, "cmdViewMarkdownPreview", nil)
+}
+
+// CmdViewMenuBar says "Menu Bar"
+// in the language the app shows.
+func CmdViewMenuBar() string { return In(i18n.Locale()).CmdViewMenuBar() }
+
+// CmdViewMenuBar says "Menu Bar"
+// in the language of msgs.
+func (msgs Messages) CmdViewMenuBar() string {
+	return Catalog.Format(msgs.locale, "cmdViewMenuBar", nil)
 }
 
 // CmdViewMoveTabNext says "Move Tab to Next Column"

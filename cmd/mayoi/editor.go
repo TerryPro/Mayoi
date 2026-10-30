@@ -15,11 +15,22 @@ import (
 )
 
 const (
-	tabWidth   = 4
 	editorPadY = 8  // above the first line
 	gutterGap  = 10 // between the line numbers and the text
 	textPadR   = 32 // right of the widest line
 )
+
+// tabWidth is how many cells a tab spans, as the settings have it: 4
+// unless they say otherwise.
+var tabWidth = 4
+
+// tabSizeOf returns how many cells a tab spans, from the preferences.
+func tabSizeOf(p settings.Prefs) int {
+	if p.TabSize <= 0 {
+		return 4
+	}
+	return p.TabSize
+}
 
 // codeFont is the editor's font and the metrics of its monospaced cells.
 type codeFont struct {
@@ -33,28 +44,27 @@ type codeFont struct {
 	lineHeight float32
 	lineH      float32
 	charW      float32
-	// tabW is how far apart the platform's text layout puts its tab stops,
-	// which is not a number of cells: a tab ends at the next stop.
+	tabSize    int
+	// tabW is how far apart the text area's tab stops are: tabSize cells.
 	tabW float32
 }
 
 func newCodeFont(p settings.Prefs) codeFont {
+	size := tabSizeOf(p)
 	f := codeFont{
 		family: monoFallback(p.FontFamily), size: p.FontSize, weight: p.FontWeight, features: strings.Join(p.FontFeatures, ","),
-		lineHeight: p.LineHeight, lineH: float32(int(p.FontSize*p.LineHeight + 0.5)),
+		lineHeight: p.LineHeight, lineH: float32(int(p.FontSize*p.LineHeight + 0.5)), tabSize: size,
 	}
 	w, _ := ui.ShapeText(strings.Repeat("0", 64), f.font(), 0).Size()
 	f.charW = w / 64
-	if f.tabW, _ = ui.ShapeText("\t", f.font(), 0).Size(); f.tabW <= 0 {
-		f.tabW = tabWidth * f.charW
-	}
+	f.tabW = float32(size) * f.charW
 	return f
 }
 
 // is reports whether the font is the one the preferences choose.
 func (f codeFont) is(p settings.Prefs) bool {
 	return f.charW != 0 && f.family == monoFallback(p.FontFamily) && f.size == p.FontSize && f.weight == p.FontWeight &&
-		f.features == strings.Join(p.FontFeatures, ",") && f.lineHeight == p.LineHeight
+		f.features == strings.Join(p.FontFeatures, ",") && f.lineHeight == p.LineHeight && f.tabSize == tabSizeOf(p)
 }
 
 // monoFallback is a font family list that ends in the system's monospaced
@@ -211,7 +221,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 
 	ui.ScrollHorizontal(c).TrackScroll(&d.hscroll).Fill().Background(p.editor).Children(func() {
 		area := ui.TextAreaBufferBase(c, d.buf).
-			Font(f.family).FontSize(f.size).FontWeight(f.weight).FontFeatures(f.featureList()...).FixedLineHeight(f.lineH).TextColor(p.text).
+			Font(f.family).FontSize(f.size).FontWeight(f.weight).FontFeatures(f.featureList()...).FixedLineHeight(f.lineH).TabSize(tabSizeOf(a.settings.Prefs)).TextColor(p.text).
 			FillHeight().
 			Padding(editorPadY, textPadR, editorPadY, textX).
 			Label(locales.EditorLabel(d.name())).

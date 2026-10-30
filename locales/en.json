@@ -504,6 +504,14 @@
   "cmdSelDeleteLine": "Delete Line",
   "cmdSelIndent": "Indent Lines",
   "cmdSelIndentSpaces": "Indent Using {count, plural, one {# Space} other {# Spaces}}",
+  "tabSize": "Tab Size {count}",
+  "@tabSize": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cmdSelIndentTabs": "Indent Using Tabs",
   "cmdSelLine": "Select Line",
   "cmdSelLineAbove": "Insert Line Above",
@@ -520,6 +528,7 @@
   "cmdViewLocaleSystem": "System Language",
   "cmdViewLockColumn": "Toggle Column Lock",
   "cmdViewMarkdownPreview": "Preview Markdown on Open",
+  "cmdViewMenuBar": "Menu Bar",
   "cmdViewMoveTabNext": "Move Tab to Next Column",
   "cmdViewMoveTabPrev": "Move Tab to Previous Column",
   "cmdViewNewTerminal": "New Terminal",

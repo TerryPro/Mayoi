@@ -43,6 +43,7 @@ takes its default.
 | `zoomLevel`             | `0`           | -5 to 8, including decimals                                 | **View → Zoom In / Zoom Out / Reset Zoom**; [shortcuts](#window-zoom) |
 | `fontFamily`            | `"monospace"` | Font names, separated by commas                             |                                                |
 | `fontSize`              | `13`          | 9 to 28                                                     | **Increase / Decrease / Reset Editor Font Size** in the command palette |
+| `tabSize`               | `4`           | 1 to 8                                                      | The indentation menu in the status bar         |
 | `fontWeight`            | `400`         | 100 (thin) to 900 (black)                                   |                                                |
 | `fontFeatures`          | none          | A list of OpenType features                                 |                                                |
 | `lineHeight`            | `1.55`        | 1 to 3, as a multiple of `fontSize`                         |                                                |
@@ -52,6 +53,7 @@ takes its default.
 | `theme`                 | `""`          | `""` (Mayoi), `"matrix"`, `"claude"`, `"qoder"`, `"grokbot"`, `"cursor"`, `"purplegold"` | **View → Theme**, **Color Theme…**             |
 | `appearance`            | `""`          | `""` (follow the system), `"light"`, `"dark"`               | **View → Theme**                               |
 | `sidebarRight`          | `false`       | `true`, `false`                                             | **View → Sidebar on Right**                    |
+| `menuBarExpanded`       | `false`       | `true`, `false`                                             | **View → Menu Bar**                            |
 | `panelPosition`         | `""`          | `""` (bottom), `"left"`, `"right"`                          | **View → Panel Position**                      |
 | `terminalLocation`      | `""`          | `""` (the panel), `"editor"`                                | **View → New Terminals in Editor Area**        |
 | `terminalBackend`       | `""`          | `""` (Mayoi), `"hc"` (herdr-core)                           |                                                |

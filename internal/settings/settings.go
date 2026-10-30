@@ -92,6 +92,8 @@ type Prefs struct {
 	// ZoomLevel scales all window content by 1.2 to this power.
 	ZoomLevel  float32 `json:"zoomLevel"`
 	FontSize   float32 `json:"fontSize"`
+	// TabSize is how many cells a tab spans, 1 to 8, 4 unless set.
+	TabSize    int     `json:"tabSize,omitempty"`
 	FontFamily string  `json:"fontFamily"`
 	// FontWeight is how heavy the code's text is, from 100 to 900.
 	FontWeight int `json:"fontWeight"`
@@ -179,6 +181,9 @@ type Prefs struct {
 	Theme string `json:"theme,omitempty"`
 	// SidebarRight puts the sidebar right of the editors, rather than left.
 	SidebarRight bool `json:"sidebarRight,omitempty"`
+	// MenuBarExpanded shows the menus of the window across the title bar,
+	// rather than behind the menu button beside it, on Windows and Linux.
+	MenuBarExpanded bool `json:"menuBarExpanded,omitempty"`
 	// PanelPosition is where the terminal panel is: "" or "bottom"
 	// below the editors, "left" or "right" at the window's side, past
 	// the sidebar.
@@ -415,7 +420,7 @@ const MaxDiffContext = 100
 func Default() *Settings {
 	return &Settings{
 		Prefs: Prefs{
-			FontSize: 13, FontFamily: "monospace", FontWeight: 400, LineHeight: 1.55,
+			FontSize: 13, TabSize: 4, FontFamily: "monospace", FontWeight: 400, LineHeight: 1.55,
 			AutoSave: true, Blame: true, TerminalCopyOnSelect: true, PreviewMermaid: true, PreviewMath: true,
 			DiffAlignedRows: true, DiffContext: 3, DiffSyncScroll: true, MergeAutoApply: true,
 		},
@@ -493,6 +498,10 @@ const MinZoomLevel, MaxZoomLevel = -5, 8
 func (s *Settings) normalize() {
 	s.ZoomLevel = clamp(s.ZoomLevel, MinZoomLevel, MaxZoomLevel)
 	s.FontSize = clamp(s.FontSize, 9, 28)
+	if s.TabSize == 0 {
+		s.TabSize = 4
+	}
+	s.TabSize = min(max(s.TabSize, 1), 8)
 	if strings.TrimSpace(s.FontFamily) == "" {
 		s.FontFamily = "monospace"
 	}

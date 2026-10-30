@@ -44,6 +44,7 @@ func (a *app) view(c *ui.Context) {
 	// project moves to another window.
 	a.setServices(c.Services())
 	a.review.ctx = c
+	tabWidth = tabSizeOf(a.settings.Prefs)
 	// Restoring a preview uses font metrics to recover its scroll position.
 	if p := a.settings.Prefs; !a.font.is(p) {
 		a.font = newCodeFont(p)
@@ -380,7 +381,11 @@ func (a *app) titleBar(c *ui.Context) {
 		}
 		ui.Row(c).Basis(0).Grow(1).MinWidth(56).Gap(2).Children(func() {
 			if hostOS != "darwin" {
-				a.iconButton(c, iconMenu, locales.Menu(), false).Menu(a.appUIMenu)
+				if a.menuBarShown() {
+					a.menuBar(c)
+				} else {
+					a.iconButton(c, iconMenu, locales.Menu(), false).Menu(a.appUIMenu)
+				}
 			}
 			if panelLeft {
 				terminalButton()
@@ -1286,13 +1291,24 @@ func (a *app) statusBar(c *ui.Context) {
 				}
 			}
 			m.Separator()
+			for _, n := range []int{2, 4, 8} {
+				if m.Item(locales.TabSize(n)).Checked(a.settings.TabSize == n).Chosen() {
+					a.settings.TabSize = n
+					a.settings.Changed()
+					if d.indent.tabs {
+						d.indent.size = n
+					}
+					a.invalidate()
+				}
+			}
+			m.Separator()
 			if m.Item(locales.ConvertToTabs()).Chosen() {
-				a.editActive(func(d *editor) { reindent(d, indentStyle{tabs: true, size: tabWidth}) })()
+				a.editActive(func(d *editor) { reindent(d, indentStyle{tabs: true, size: a.settings.TabSize}) })()
 			}
 			if m.Item(locales.ConvertToSpaces()).Chosen() {
 				size := d.indent.size
 				if d.indent.tabs {
-					size = tabWidth
+					size = a.settings.TabSize
 				}
 				a.editActive(func(d *editor) { reindent(d, indentStyle{size: size}) })()
 			}
