@@ -6,6 +6,7 @@ needs a `## <version>` section here, or its build fails.
 ## Unreleased
 
 - Headings in the Markdown preview take the color theme's heading color, as the editor does.
+- Command-clicking a terminal path or URL followed by Chinese punctuation no longer takes the text after it.
 
 ## 0.15.0
 
