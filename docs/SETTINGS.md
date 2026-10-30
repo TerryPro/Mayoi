@@ -35,8 +35,9 @@ MAYOI_DATA_DIR=~/mayoi-test /Applications/Mayoi.app/Contents/MacOS/Mayoi
 
 ## settings.json
 
-**File → Open Settings** (⌘,) opens `settings.json` in a tab. Each key below is optional, and a key you leave out
-takes its default.
+**File → Settings** (⌘,) opens the settings dialog, where the common settings are grouped and changed as you go.
+**File → Open Settings (JSON)** opens `settings.json` in a tab instead. Each key below is optional, and a key you
+leave out takes its default.
 
 | Key                     | Default       | Values                                                      | Also set by                                    |
 | ----------------------- | ------------- | ----------------------------------------------------------- | ---------------------------------------------- |

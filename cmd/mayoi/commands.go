@@ -45,7 +45,8 @@ func (a *app) commandsIn(t locales.Messages) []command {
 		{"file.saveAs", t.CmdFileSaveAs(), "Shift+CmdOrCtrl+S", a.saveActiveAs},
 		{"file.saveAll", t.CmdFileSaveAll(), "Alt+CmdOrCtrl+S", a.saveAll},
 		{"file.autoSave", t.CmdFileAutoSave(), "", a.toggleAutoSave},
-		{"file.settings", t.CmdFileSettings(), "CmdOrCtrl+,", a.openSettings},
+		{"file.settings", t.CmdFileSettings(), "CmdOrCtrl+,", a.openSettingsDialog},
+		{"file.settingsJSON", t.CmdFileSettingsJSON(), "", a.openSettings},
 		{"file.keybindings", t.CmdFileKeybindings(), "", a.openKeybindings},
 		{"file.copyPath", t.CmdFileCopyPath(), "", func() { a.copyActivePath(false) }},
 		{"file.copyRelativePath", t.CmdFileCopyRelativePath(), "", func() { a.copyActivePath(true) }},
@@ -493,7 +494,7 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 		}})
 	}
 	file = append(file, mygo.Separator(),
-		item("file.save"), item("file.saveAs"), item("file.saveAll"), checkbox("file.autoSave", a.settings.AutoSave), item("file.settings"), item("file.keybindings"), mygo.Separator(),
+		item("file.save"), item("file.saveAs"), item("file.saveAll"), checkbox("file.autoSave", a.settings.AutoSave), item("file.settings"), item("file.settingsJSON"), item("file.keybindings"), mygo.Separator(),
 		item("file.close"), item("file.reopenClosed"), item("file.closeFolder"), item("file.closeProject"),
 	)
 	if cli {

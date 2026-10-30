@@ -172,6 +172,7 @@ func (a *app) view(c *ui.Context) {
 	a.repositoryPickerView(c)
 	a.recentPickerView(c)
 	a.themePickerView(c)
+	a.settingsDialogView(c)
 	a.remotePickerView(c)
 	a.conflictsView(c)
 	a.diagramOverlayView(c)
@@ -354,20 +355,17 @@ func (a *app) titleBar(c *ui.Context) {
 	}
 	ui.Row(c).Height(max(bar.Height, titleBarH)).Padding(0, rightPad, 0, bar.Left+10).AlignItems(ui.Center).
 		BorderWidth(0, 0, 1, 0).BorderColor(p.border).DragWindow().Children(func() {
-		// The sidebar's button is on its side. The terminal's is on the
-		// panel's: at the left of the bar when the panel is at the
-		// window's left, past the sidebar's button when the sidebar is
-		// there too, as the panel lies past the sidebar; at the right
-		// otherwise.
-		right := a.settings.SidebarRight
-		panelLeft := a.panelSide() == "left"
+		// The layout buttons are at the right of the bar, as VS Code's:
+		// the project's sidebar, the sidebar on the right, and the
+		// terminal.
 		sidebarButton := func() {
-			icon := iconSidebar
-			if right {
-				icon = iconSidebarRight
-			}
-			if a.iconButton(c, icon, a.withKey(locales.CmdViewSidebar(), "view.sidebar"), !a.window.SidebarClosed).Clicked() {
+			if a.iconButton(c, iconSidebar, a.withKey(locales.CmdViewSidebar(), "view.sidebar"), !a.window.SidebarClosed).Clicked() {
 				a.toggleSidebar()
+			}
+		}
+		sidebarRightButton := func() {
+			if a.iconButton(c, iconSidebarRight, a.withKey(locales.CmdViewSidebarRight(), "view.sidebarRight"), a.settings.SidebarRight).Clicked() {
+				a.toggleSidebarRight()
 			}
 		}
 		terminalButton := func() {
@@ -387,23 +385,14 @@ func (a *app) titleBar(c *ui.Context) {
 					a.iconButton(c, iconMenu, locales.Menu(), false).Menu(a.appUIMenu)
 				}
 			}
-			if panelLeft {
-				terminalButton()
-			}
-			if !right {
-				sidebarButton()
-			}
 		})
 		ui.Row(c).Width(420).MaxWidthPercent(68).Shrink(1).MinWidth(140).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
 			a.commandCenter(c)
 		})
 		ui.Row(c).Basis(0).Grow(1).MinWidth(56).Justify(ui.End).Gap(2).Children(func() {
-			if !panelLeft {
-				terminalButton()
-			}
-			if right {
-				sidebarButton()
-			}
+			sidebarButton()
+			sidebarRightButton()
+			terminalButton()
 		})
 	})
 }

@@ -13,6 +13,8 @@ needs a `## <version>` section here, or its build fails.
 - **View → Menu Bar** shows **File** through **Help** across the title bar, rather than behind the menu icon.
 - Tab-indented code now sits at the next tab stop, lined up with its indent guides.
 - Tab width is configurable with `tabSize` in `settings.json`, from 1 to 8.
+- **File → Settings** opens a dialog with the settings grouped, and **File → Open Settings (JSON)** still opens the file.
+- The sidebar, sidebar-on-right and terminal buttons sit together at the right of the title bar, as VS Code's layout controls.
 
 ## 0.15.0
 

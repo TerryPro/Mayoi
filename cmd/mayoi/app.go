@@ -309,6 +309,7 @@ type app struct {
 	checks     checksPicker      // the box of the checks of the pull request
 	recents    recentPicker      // the box of the recent folders
 	themes     themePicker       // the box of the color themes
+	settingsUI settingsDialog    // the box of the settings
 	remotePick remotePicker      // the box that connects to a host
 	conflicts  conflictsList     // the box of the files in conflict
 	find       findState

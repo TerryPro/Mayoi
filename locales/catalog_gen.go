@@ -3276,6 +3276,126 @@ func (msgs Messages) CmdViewZoomReset() string {
 	return Catalog.Format(msgs.locale, "cmdViewZoomReset", nil)
 }
 
+// CmdFileSettingsJSON says "Open Settings (JSON)"
+// in the language the app shows.
+func CmdFileSettingsJSON() string { return In(i18n.Locale()).CmdFileSettingsJSON() }
+
+// CmdFileSettingsJSON says "Open Settings (JSON)"
+// in the language of msgs.
+func (msgs Messages) CmdFileSettingsJSON() string {
+	return Catalog.Format(msgs.locale, "cmdFileSettingsJSON", nil)
+}
+
+// SettingsTitle says "Settings"
+// in the language the app shows.
+func SettingsTitle() string { return In(i18n.Locale()).SettingsTitle() }
+
+// SettingsTitle says "Settings"
+// in the language of msgs.
+func (msgs Messages) SettingsTitle() string {
+	return Catalog.Format(msgs.locale, "settingsTitle", nil)
+}
+
+// SettingsGroupEditor says "Editor"
+// in the language the app shows.
+func SettingsGroupEditor() string { return In(i18n.Locale()).SettingsGroupEditor() }
+
+// SettingsGroupEditor says "Editor"
+// in the language of msgs.
+func (msgs Messages) SettingsGroupEditor() string {
+	return Catalog.Format(msgs.locale, "settingsGroupEditor", nil)
+}
+
+// SettingsGroupAppearance says "Appearance"
+// in the language the app shows.
+func SettingsGroupAppearance() string { return In(i18n.Locale()).SettingsGroupAppearance() }
+
+// SettingsGroupAppearance says "Appearance"
+// in the language of msgs.
+func (msgs Messages) SettingsGroupAppearance() string {
+	return Catalog.Format(msgs.locale, "settingsGroupAppearance", nil)
+}
+
+// SettingsGroupTerminal says "Terminal"
+// in the language the app shows.
+func SettingsGroupTerminal() string { return In(i18n.Locale()).SettingsGroupTerminal() }
+
+// SettingsGroupTerminal says "Terminal"
+// in the language of msgs.
+func (msgs Messages) SettingsGroupTerminal() string {
+	return Catalog.Format(msgs.locale, "settingsGroupTerminal", nil)
+}
+
+// SettingsGroupGit says "Git"
+// in the language the app shows.
+func SettingsGroupGit() string { return In(i18n.Locale()).SettingsGroupGit() }
+
+// SettingsGroupGit says "Git"
+// in the language of msgs.
+func (msgs Messages) SettingsGroupGit() string {
+	return Catalog.Format(msgs.locale, "settingsGroupGit", nil)
+}
+
+// SettingsGroupAdvanced says "Advanced"
+// in the language the app shows.
+func SettingsGroupAdvanced() string { return In(i18n.Locale()).SettingsGroupAdvanced() }
+
+// SettingsGroupAdvanced says "Advanced"
+// in the language of msgs.
+func (msgs Messages) SettingsGroupAdvanced() string {
+	return Catalog.Format(msgs.locale, "settingsGroupAdvanced", nil)
+}
+
+// SettingsFontSize says "Font Size"
+// in the language the app shows.
+func SettingsFontSize() string { return In(i18n.Locale()).SettingsFontSize() }
+
+// SettingsFontSize says "Font Size"
+// in the language of msgs.
+func (msgs Messages) SettingsFontSize() string {
+	return Catalog.Format(msgs.locale, "settingsFontSize", nil)
+}
+
+// SettingsLineHeight says "Line Height"
+// in the language the app shows.
+func SettingsLineHeight() string { return In(i18n.Locale()).SettingsLineHeight() }
+
+// SettingsLineHeight says "Line Height"
+// in the language of msgs.
+func (msgs Messages) SettingsLineHeight() string {
+	return Catalog.Format(msgs.locale, "settingsLineHeight", nil)
+}
+
+// SettingsTabSize says "Tab Size"
+// in the language the app shows.
+func SettingsTabSize() string { return In(i18n.Locale()).SettingsTabSize() }
+
+// SettingsTabSize says "Tab Size"
+// in the language of msgs.
+func (msgs Messages) SettingsTabSize() string {
+	return Catalog.Format(msgs.locale, "settingsTabSize", nil)
+}
+
+// SettingsAppearance says "Appearance"
+// in the language the app shows.
+func SettingsAppearance() string { return In(i18n.Locale()).SettingsAppearance() }
+
+// SettingsAppearance says "Appearance"
+// in the language of msgs.
+func (msgs Messages) SettingsAppearance() string {
+	return Catalog.Format(msgs.locale, "settingsAppearance", nil)
+}
+
+// SettingsTerminalCopy says "Copy on Select"
+// in the language the app shows.
+func SettingsTerminalCopy() string { return In(i18n.Locale()).SettingsTerminalCopy() }
+
+// SettingsTerminalCopy says "Copy on Select"
+// in the language of msgs.
+func (msgs Messages) SettingsTerminalCopy() string {
+	return Catalog.Format(msgs.locale, "settingsTerminalCopy", nil)
+}
+
 // CmdEditorFontZoomIn says "Increase Editor Font Size"
 // in the language the app shows.
 func CmdEditorFontZoomIn() string { return In(i18n.Locale()).CmdEditorFontZoomIn() }
