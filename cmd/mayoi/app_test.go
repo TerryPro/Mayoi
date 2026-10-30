@@ -415,6 +415,67 @@ func TestExternalChangeReloadsCleanDocument(t *testing.T) {
 	}
 }
 
+// A file changed on disk, lines added above the view, keeps the editor on
+// the text it showed, and the caret on its text, where Select All and an
+// edit would scroll to the caret.
+func TestReloadKeepsTheViewAndTheCaret(t *testing.T) {
+	for _, wrap := range []bool{false, true} {
+		hs := newHarness(t, true)
+		a := hs.a
+		a.settings.WordWrap = wrap
+		p := hs.longFile("long.go", 400)
+		a.openFile(p, true)
+		hs.settle()
+		d := a.activeEditor()
+		s, _ := d.buf.Snapshot().LineRange(39) // "\treturn 9"
+		hs.place(d, s+2, s+2)
+		d.vscroll.Y = editorPadY + 300*a.font.lineH
+		hs.settle()
+		topLine := func() int {
+			return a.geometry(d, d.buf.Snapshot().LineCount()).at(d.vscroll.Y - editorPadY)
+		}
+		if got := topLine(); got != 300 {
+			t.Fatalf("wrap %v: line %d at the top", wrap, got)
+		}
+		data, _ := os.ReadFile(p)
+		os.WriteFile(p, []byte("// a\n// b\n// c\n"+string(data)), 0o644)
+		deadline := time.Now().Add(5 * time.Second)
+		for !strings.HasPrefix(d.buf.String(), "// a") && time.Now().Before(deadline) {
+			hs.settle()
+		}
+		hs.settle()
+		snap := d.buf.Snapshot()
+		if s, _ := snap.LineRange(42); d.caret != s+2 || d.sel[0] != d.sel[1] {
+			t.Errorf("wrap %v: selection %v on line %d, want the caret at %d", wrap, d.sel, snap.LineAt(d.caret), s+2)
+		}
+		if got := topLine(); got != 303 {
+			t.Errorf("wrap %v: line %d at the top, want 303", wrap, got)
+		}
+		if d.dirty() {
+			t.Errorf("wrap %v: dirty after the reload", wrap)
+		}
+	}
+}
+
+func TestReloadEdit(t *testing.T) {
+	for _, c := range []struct {
+		old, now string
+		want     textEdit
+		from, to int
+	}{
+		{"a\nb\nc\n", "a\nB\nc\n", textEdit{2, 3, "B"}, 1, 1},
+		{"a\nb\n", "x\na\nb\n", textEdit{0, 0, "x\n"}, 0, 0},
+		{"日本\n語\n", "日本\n五語\n", textEdit{3, 3, "五"}, 1, 1},
+		{"é", "è", textEdit{0, 1, "è"}, 0, 0},
+		{"a\nb\nc", "a\nc", textEdit{2, 4, ""}, 1, 2},
+	} {
+		e, from, to := reloadEdit(c.old, c.now)
+		if e != c.want || from != c.from || to != c.to {
+			t.Errorf("reloadEdit(%q, %q) = %+v, %d, %d; want %+v, %d, %d", c.old, c.now, e, from, to, c.want, c.from, c.to)
+		}
+	}
+}
+
 func TestQuickOpenAndGoToLine(t *testing.T) {
 	hs := newHarness(t, true)
 	a, tt := hs.a, hs.tt

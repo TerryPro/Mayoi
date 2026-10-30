@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/ui"
@@ -706,16 +707,64 @@ func (a *app) reloadDoc(d *document) {
 }
 
 // takeText makes a document's text data, read from its file, as a step of
-// undo, and clean.
+// undo, and clean. Only the part that changed is replaced, so that the
+// selections stay on their text, and the editors stay where they are
+// scrolled, the line at the top of each on its text too.
 func (d *document) takeText(data []byte) {
 	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
-	if string(data) != d.buf.String() {
+	if old := d.buf.String(); string(data) != old {
 		if ed := d.main(); ed != nil {
-			ed.edit(ed.sel, textEdit{0, d.buf.Len(), string(data)})
+			e, from, to := reloadEdit(old, string(data))
+			n := utf8.RuneCountInString(e.text)
+			moved := func(x int) int {
+				switch {
+				case x <= e.start:
+					return x
+				case x >= e.end:
+					return x + n - (e.end - e.start)
+				}
+				return e.start + min(x-e.start, n) // in what changed
+			}
+			ed.edit([2]int{moved(ed.sel[0]), moved(ed.sel[1])}, e)
+			ed.quiet = true
+			delta := strings.Count(e.text, "\n") - (to - from)
+			for _, o := range d.views {
+				o.reloaded = &reloadShift{from: from, to: to, delta: delta}
+			}
 		}
 		d.measureWidest()
 	}
 	d.markSaved()
+}
+
+// reloadShift is where a reload changed the lines of a document: lines
+// from up to to of the text before, which became delta lines more.
+type reloadShift struct{ from, to, delta int }
+
+// reloadEdit returns the edit that makes old now: the runes between the
+// text the two start and end with, and the lines of old they are on.
+func reloadEdit(old, now string) (e textEdit, from, to int) {
+	boundary := func(s string, i int) bool { return i >= len(s) || utf8.RuneStart(s[i]) }
+	p := 0
+	for p < len(old) && p < len(now) && old[p] == now[p] {
+		p++
+	}
+	for p > 0 && !(boundary(old, p) && boundary(now, p)) {
+		p--
+	}
+	k := 0
+	for k < len(old)-p && k < len(now)-p && old[len(old)-1-k] == now[len(now)-1-k] {
+		k++
+	}
+	for k > 0 && !(boundary(old, len(old)-k) && boundary(now, len(now)-k)) {
+		k--
+	}
+	e.start = utf8.RuneCountInString(old[:p])
+	e.end = e.start + utf8.RuneCountInString(old[p:len(old)-k])
+	e.text = now[p : len(now)-k]
+	from = strings.Count(old[:p], "\n")
+	to = from + strings.Count(old[p:len(old)-k], "\n")
+	return e, from, to
 }
 
 // imageViewers returns the viewers of the image files open in tabs.

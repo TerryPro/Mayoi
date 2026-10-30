@@ -179,6 +179,13 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 	gutterW := f.gutterWidth(lines)
 	d.gutterW = gutterW
 	view := d.hscroll.Bounds(c)
+	if view.H > 0 {
+		d.lastView = view
+	} else {
+		// A tab shown again builds a new container, which has no bounds
+		// until it is laid out: it takes the place of the one before.
+		view = d.lastView
+	}
 	d.vim.viewH = view.H
 	textX := gutterW + gutterGap
 	// Vim's normal and visual modes take the keys as commands: the area
@@ -189,6 +196,17 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 	wrap := g.lines != nil
 	if wrap {
 		d.hscroll.X = 0
+	}
+	if r := d.reloaded; r != nil {
+		// The line at the top, found where the lines were before, stays at
+		// the top, below the lines the reload added or took above it.
+		d.reloaded = nil
+		top := g.at(d.vscroll.Y - editorPadY)
+		keepY = editorPadY + g.top(top) - d.vscroll.Y
+		if top > r.to {
+			top += r.delta
+		}
+		keepLine = min(max(top, 0), lines-1)
 	}
 
 	ui.ScrollHorizontal(c).TrackScroll(&d.hscroll).Fill().Background(p.editor).Children(func() {
@@ -217,6 +235,9 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 			}
 		} else {
 			area.NoWrap()
+			if keepLine >= 0 {
+				d.vscroll.Y = max(0, editorPadY+g.top(keepLine)-keepY)
+			}
 		}
 
 		// A new area puts the caret at the end: at the editor's selection,
@@ -228,10 +249,10 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 		// the view too; an edit's selection only from out of view.
 		center := jump && (d.center || !a.inView(d, g, snap, d.pending[1], view.H))
 		if r := d.pending; quiet {
-			// The view stays where it is: a pin puts it back.
+			// The view stays where it is, as it does for an edit made in
+			// another column.
 			d.sel = *r
-			a.setSelection(d, area)
-			d.pending, d.quiet, d.resync, d.parked = nil, false, false, -1
+			d.pending, d.quiet, d.resync, d.parked = nil, false, true, -1
 		} else if r != nil {
 			// A jump asked for goes where it goes: no pin puts it back.
 			area.SetTextSelection(r[0], r[1])
@@ -240,6 +261,10 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 				d.landing, d.landLine, d.landAt = false, snap.LineAt(min(r[0], snap.Len())), c.Now()
 			}
 		}
+		// The frame a hidden tab comes back in builds it a new text area,
+		// which scrolls to a caret it is given out of view: it is covered
+		// for that frame, until the pin puts it back.
+		shown := d.shownFrame == a.frame
 		if d.resync {
 			// The area scrolls to its caret when it is given one, and when
 			// its text changes under it: out of view, and the keyboard
@@ -251,6 +276,9 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 				area.SetTextSelection(d.parked, d.parked)
 			} else {
 				a.setSelection(d, area)
+				if shown && (wrap || view.H <= 0 || !a.inView(d, g, snap, d.sel[1], view.H)) {
+					d.coverFrame = a.frame
+				}
 			}
 		}
 		anchor, caret := area.TextAnchorCaret()
@@ -263,6 +291,9 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 				// The keyboard is back: so is the caret.
 				d.parked = -1
 				a.setSelection(d, area)
+				if shown {
+					d.coverFrame = a.frame
+				}
 				anchor, caret = d.sel[0], d.sel[1]
 			default:
 				anchor, caret = d.sel[0], d.sel[1]
@@ -302,7 +333,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 		}
 		// Show the caret's line before the area takes the offset, so that
 		// it finds the caret in view and leaves the offset be.
-		d.sticky = append(d.sticky[:0], a.scrollToCaret(d, g, snap, caret, view.H, center, jump || caretMoved || edited && follows)...)
+		d.sticky = append(d.sticky[:0], a.scrollToCaret(d, g, snap, caret, view.H, center, jump || caretMoved || edited && follows && !quiet)...)
 		var sticky []stickyRow
 		if len(d.sticky) > 0 {
 			sticky = d.stuck.rows(a, d, snap, d.sticky)
@@ -661,7 +692,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 			}
 		})
 	})
-	if d.shownFrame == a.frame {
+	if d.coverFrame == a.frame {
 		// Built again, the text area scrolls to the selection it is given:
 		// it is covered for that frame, until the pin puts it back.
 		ui.Box(c).Absolute().Top(0).Left(0).Right(0).Bottom(0).Background(p.editor)
