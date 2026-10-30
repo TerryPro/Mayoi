@@ -462,7 +462,7 @@ func (a *app) start() {
 		}
 	}
 	a.restoreTabs()
-	if w.TerminalOpen && w.PanelOpen && a.root != "" {
+	if !a.restorePanel(w.PanelTerms, w.PanelTerm) && w.TerminalOpen && w.PanelOpen && a.root != "" {
 		a.newTerminal()
 	}
 }

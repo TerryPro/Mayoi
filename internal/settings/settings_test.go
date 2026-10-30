@@ -158,6 +158,29 @@ func TestStateMovesToItsFile(t *testing.T) {
 	}
 }
 
+// The addresses of terminals in herdr-core, of tabs and of the panel,
+// last to the next start.
+func TestHCTerminalsKept(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "settings.json")
+	s := Load(path)
+	w := s.NewWindow()
+	w.Folder = "/tmp/x"
+	w.Columns = []Column{{Tabs: []Tab{{Terminal: true, HC: "t3"}, {Terminal: true}}}}
+	w.PanelTerms, w.PanelTerm = []string{"t4", "vps/t5"}, 1
+	s.Flush()
+	got := Load(path).Windows
+	if len(got) != 1 {
+		t.Fatalf("windows %+v", got)
+	}
+	g := got[0]
+	if tabs := g.Columns[0].Tabs; len(tabs) != 2 || tabs[0].HC != "t3" || tabs[1].HC != "" || !tabs[1].Terminal {
+		t.Errorf("tabs %+v", tabs)
+	}
+	if len(g.PanelTerms) != 2 || g.PanelTerms[1] != "vps/t5" || g.PanelTerm != 1 {
+		t.Errorf("panel %q, showing %d", g.PanelTerms, g.PanelTerm)
+	}
+}
+
 // A window that closes keeps its folder's session while the folder is a
 // recent one, which the next window of the folder takes.
 func TestSessions(t *testing.T) {
@@ -383,6 +406,17 @@ func TestTerminalLocation(t *testing.T) {
 	for in, want := range map[string]string{"": "", "editor": "editor", "panel": "", "editorArea": ""} {
 		os.WriteFile(path, []byte(`{"terminalLocation": "`+in+`"}`), 0o644)
 		if got := Load(path).TerminalLocation; got != want {
+			t.Errorf("%q loaded as %q, want %q", in, got, want)
+		}
+	}
+}
+
+// A terminal runs in Mayoi unless the file says "hc".
+func TestTerminalBackend(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "settings.json")
+	for in, want := range map[string]string{"": "", "hc": "hc", "herdr": "", "HC": ""} {
+		os.WriteFile(path, []byte(`{"terminalBackend": "`+in+`"}`), 0o644)
+		if got := Load(path).TerminalBackend; got != want {
 			t.Errorf("%q loaded as %q, want %q", in, got, want)
 		}
 	}

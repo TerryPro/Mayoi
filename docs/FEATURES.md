@@ -438,7 +438,8 @@ terminal button is on the panel's side too: left of the sidebar's button when bo
 bar otherwise. You can run several terminals, move one between the panel and a column by dragging it or from its menu,
 and maximize the panel. **View → New Terminals in Editor Area**, `terminalLocation` in `settings.json`, has New Terminal
 and the Explorer's **Open in Terminal** open a tab of the editor area rather than the panel; Toggle Terminal and the
-panel's **+** still use the panel. Terminal colors follow the theme.
+panel's **+** still use the panel. Terminal colors follow the theme. With `terminalBackend` set to `"hc"`, shells run in
+herdr-core and keep running after Mayoi quits, and the next start attaches to them again.
 Files dropped on a terminal type their paths, quoted for the shell. ⌘V with only an image on the clipboard sends an empty
 bracketed paste, as VS Code's terminal does, so that Claude Code pastes the screenshot. Selecting text copies it, as
 in Ghostty and iTerm2: a drag, a double click for a word, a triple click for a line, Shift with a drag in a program

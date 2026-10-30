@@ -1,0 +1,301 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"os/exec"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/egoist/mygo/plugins/terminal"
+	"github.com/egoist/mygo/ui"
+
+	"mayoi/internal/bg"
+	"mayoi/internal/remote"
+	"mayoi/locales"
+)
+
+// With terminalBackend "hc", a terminal's shell runs in a terminal of
+// herdr-core, and the view runs hc attach on it: the shell outlives the
+// window. Closing a terminal ends it there; closing the window or
+// quitting only ends the attach, and the shell runs on.
+
+// hcRun runs hc with args and returns what it printed, or the message
+// of the error it printed instead. Tests replace it.
+var hcRun = func(args ...string) ([]byte, error) {
+	var stderr bytes.Buffer
+	cmd := exec.Command("hc", args...)
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return out, hcError(stderr.Bytes(), err)
+	}
+	return out, nil
+}
+
+// hcErr is an error hc printed, of a kind such as "not_found".
+type hcErr struct{ kind, message string }
+
+func (e *hcErr) Error() string { return e.message }
+
+// hcError is the error hc printed, {"error": {"kind": ..., "message":
+// ...}}, or fallback when it printed none.
+func hcError(out []byte, fallback error) error {
+	var e struct {
+		Error struct{ Kind, Message string } `json:"error"`
+	}
+	if json.Unmarshal(out, &e) == nil && e.Error.Message != "" {
+		return &hcErr{e.Error.Kind, e.Error.Message}
+	}
+	if msg := strings.TrimSpace(string(out)); msg != "" {
+		return errors.New(msg)
+	}
+	return fallback
+}
+
+// hcGone reports whether an error of hc says the terminal is gone, not
+// that hc could not tell, as when it can't reach the terminal's machine.
+func hcGone(err error) bool {
+	var e *hcErr
+	return errors.As(err, &e) && (e.kind == "not_found" || e.kind == "finished")
+}
+
+// hcBackend reports whether new terminals run in herdr-core: the
+// settings ask for it, and hc is there.
+func (a *app) hcBackend() bool {
+	if a.settings.TerminalBackend != "hc" {
+		return false
+	}
+	_, err := lookPath("hc")
+	return err == nil
+}
+
+// hcStart starts a shell in dir in a terminal of herdr-core, on machine
+// unless it is "", labeled with the window's folder, and returns its
+// address. It is removed once its shell exits.
+func (a *app) hcStart(dir, machine string) (string, error) {
+	args := []string{"run", "--bg", "--json", "--no-parent", "--rm", "--cwd", dir, "--label", "mayoi.folder=" + a.root}
+	if machine != "" {
+		args = append(args, "--on", machine)
+	}
+	out, err := hcRun(args...)
+	if err != nil {
+		return "", err
+	}
+	var t struct{ Address string }
+	if err := json.Unmarshal(out, &t); err != nil || t.Address == "" {
+		return "", errors.New("hc run printed no address")
+	}
+	if machine != "" && !strings.Contains(t.Address, "/") {
+		t.Address = machine + "/" + t.Address
+	}
+	return t.Address, nil
+}
+
+// hcBegin starts the shell of a terminal in herdr-core, on machine
+// unless it is "", or leaves the terminal to run as it would without
+// when it can't.
+func (a *app) hcBegin(s *session, machine string) {
+	dir := s.dir
+	if _, rdir, ok := remote.Lookup(dir); ok {
+		dir = rdir
+	}
+	addr, err := a.hcStart(dir, machine)
+	if err != nil {
+		a.fail("%s", locales.FailStartHC(err.Error()))
+		return
+	}
+	s.hc, s.hcNew = addr, true
+}
+
+// hcAttach is the command that shows the terminal of herdr-core at addr,
+// with what scrolled off its screen when history is set. Tests replace
+// it.
+var hcAttach = func(addr string, history bool) []string {
+	if history {
+		return []string{"hc", "attach", "--history", "1000", addr}
+	}
+	return []string{"hc", "attach", addr}
+}
+
+// hcKill ends the shell of a terminal of herdr-core, in the background.
+func hcKill(addr string) {
+	bg.Go(func() { hcRun("kill", "--json", addr) })
+}
+
+// hcDetachKey reports whether a key is the one hc attach detaches with,
+// Ctrl+\, which Mayoi takes so that a terminal can't come off its shell:
+// the shell gets it from hc keys instead.
+func hcDetachKey(s *session, mods ui.Modifiers, key ui.Key) bool {
+	if s.hc == "" || mods != ui.Ctrl || key != ui.KeyBackslash {
+		return false
+	}
+	addr := s.hc
+	bg.Go(func() { hcRun("keys", "--json", addr, `ctrl+\`) })
+	return true
+}
+
+// killTerminal ends a terminal the user closes: its shell in herdr-core
+// too, which closing the window leaves running.
+func (a *app) killTerminal(s *session) {
+	if s.hc != "" {
+		hcKill(s.hc)
+	}
+	a.removeTerminal(s)
+}
+
+// hcGet returns the state of the terminal of herdr-core at addr, "live"
+// while it runs, and the folder it is in.
+func hcGet(addr string) (state, cwd string, err error) {
+	out, err := hcRun("get", "--json", addr)
+	if err != nil {
+		return "", "", err
+	}
+	var t struct{ State, Cwd string }
+	if err := json.Unmarshal(out, &t); err != nil {
+		return "", "", err
+	}
+	return t.State, t.Cwd, nil
+}
+
+// hcExited takes the end of hc attach in a terminal: it closes once its
+// shell ended, and attaches again while the shell runs on, as after
+// herdr-core restarts. One that ends as soon as it attached closes, to
+// not attach again and again. One of another machine that hc can't
+// reach waits for it, saying so, as a terminal of a host does for its
+// connection.
+func (a *app) hcExited(s *session, t *terminal.Terminal) {
+	if !slices.Contains(a.terms, s) {
+		return // closed here, or its window closed
+	}
+	addr, quick := s.hc, time.Since(s.attached) < time.Second
+	bg.Go(func() {
+		state, _, err := hcGet(addr)
+		a.post(func() {
+			if s.term != t || !slices.Contains(a.terms, s) {
+				return
+			}
+			switch {
+			case state == "live" && quick:
+				a.fail("%s", locales.FailAttachHC(addr))
+			case state == "live":
+				a.hcReattach(s)
+				return
+			case err != nil && !hcGone(err) && sessionConn(s) != nil:
+				a.hcLost(s, t)
+				return
+			}
+			a.removeTerminal(s)
+		})
+	})
+}
+
+// hcRetry is how long a terminal of another machine that hc can't reach
+// waits before it looks again.
+var hcRetry = 5 * time.Second
+
+// hcLost has a terminal of another machine that hc can't reach say so,
+// and look again in a while; the connection coming back attaches it
+// again sooner, as restartTerminals does.
+func (a *app) hcLost(s *session, t *terminal.Terminal) {
+	if !s.lost {
+		s.lost = true
+		t.Feed([]byte(lostNote(sessionConn(s).Host)))
+	}
+	bg.AfterFunc(hcRetry, func() {
+		a.post(func() {
+			if s.lost && s.term == t {
+				a.hcExited(s, t)
+			}
+		})
+	})
+}
+
+// hcReattach attaches a terminal again to its shell in herdr-core.
+func (a *app) hcReattach(s *session) {
+	old := s.term
+	t, err := a.spawnTerminal(s, s.dir)
+	if err != nil {
+		a.fail("%s", locales.FailRestartTerminal(err.Error()))
+		a.removeTerminal(s)
+		return
+	}
+	s.term, s.lost = t, false
+	old.Close()
+}
+
+// hcTerms returns those of the terminals of herdr-core at addrs that
+// run, by address, with the folder each is in, as a path of the window's
+// host for one of another machine: none when hc is not there.
+func (a *app) hcTerms(addrs []string) map[string]string {
+	if _, err := lookPath("hc"); err != nil {
+		return nil
+	}
+	live := map[string]string{}
+	if out, err := hcRun("ls", "--json"); err == nil {
+		var l struct {
+			Terminals []struct{ Address, Cwd, State string }
+		}
+		if json.Unmarshal(out, &l) == nil {
+			for _, t := range l.Terminals {
+				if t.State == "live" && !strings.Contains(t.Address, "/") {
+					live[t.Address] = t.Cwd
+				}
+			}
+		}
+	}
+	// Those of other machines, one by one, their folders the host's.
+	for _, addr := range addrs {
+		if _, ok := live[addr]; ok || !strings.Contains(addr, "/") {
+			continue
+		}
+		if state, cwd, err := hcGet(addr); err == nil && state == "live" {
+			live[addr] = cwd
+			if c, _, ok := remote.Lookup(a.root); ok && cwd != "" {
+				live[addr] = remote.Path(c.Host, cwd)
+			}
+		}
+	}
+	return live
+}
+
+// hcShown reports whether a terminal here shows the shell at addr in
+// herdr-core already.
+func (a *app) hcShown(addr string) bool {
+	return slices.ContainsFunc(a.terms, func(s *session) bool { return s.hc == addr })
+}
+
+// attachTerminal shows the shell at addr in herdr-core, in dir, in a
+// terminal: one of a window before it closed.
+func (a *app) attachTerminal(addr, dir string) *session {
+	return a.addTerminal(&session{dir: dir, title: shellName(), hc: addr})
+}
+
+// restorePanel attaches the panel again to those of its terminals at
+// addrs whose shells run on in herdr-core, showing the one at shown,
+// and reports whether there were any. The panel stays as it was, shown
+// or hidden.
+func (a *app) restorePanel(addrs []string, shown int) bool {
+	if len(addrs) == 0 {
+		return false
+	}
+	live := a.hcTerms(addrs)
+	var show *session
+	for i, addr := range addrs {
+		dir, ok := live[addr]
+		if !ok || a.hcShown(addr) {
+			continue
+		}
+		if s := a.attachTerminal(addr, dir); s != nil && (show == nil || i == shown) {
+			show = s
+		}
+	}
+	if show == nil {
+		return false
+	}
+	a.panelTerm = show
+	a.rememberTabs()
+	return true
+}

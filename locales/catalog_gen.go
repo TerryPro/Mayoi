@@ -5134,6 +5134,28 @@ func (msgs Messages) FailReplaceIn(what string) string {
 	return Catalog.Format(msgs.locale, "failReplaceIn", map[string]any{"what": what})
 }
 
+// FailAttachHC says "Could not attach to {addr} in herdr-core. Its shell still runs there."
+// in the language the app shows.
+func FailAttachHC(addr string) string { return In(i18n.Locale()).FailAttachHC(addr) }
+
+// FailAttachHC says "Could not attach to {addr} in herdr-core. Its shell still runs there."
+// in the language of msgs.
+func (msgs Messages) FailAttachHC(addr string) string {
+	return Catalog.Format(msgs.locale, "failAttachHC", map[string]any{"addr": addr})
+}
+
+// FailHCAdd says "Could not add {host} to hc: {err}. If it asks for a password, run hc machine login {machine}."
+// in the language the app shows.
+func FailHCAdd(host string, err string, machine string) string {
+	return In(i18n.Locale()).FailHCAdd(host, err, machine)
+}
+
+// FailHCAdd says "Could not add {host} to hc: {err}. If it asks for a password, run hc machine login {machine}."
+// in the language of msgs.
+func (msgs Messages) FailHCAdd(host string, err string, machine string) string {
+	return Catalog.Format(msgs.locale, "failHCAdd", map[string]any{"host": host, "err": err, "machine": machine})
+}
+
 // FailRestartTerminal says "Could not start the terminal again: {err}"
 // in the language the app shows.
 func FailRestartTerminal(err string) string { return In(i18n.Locale()).FailRestartTerminal(err) }
@@ -5152,6 +5174,16 @@ func FailSave(name string, err string) string { return In(i18n.Locale()).FailSav
 // in the language of msgs.
 func (msgs Messages) FailSave(name string, err string) string {
 	return Catalog.Format(msgs.locale, "failSave", map[string]any{"name": name, "err": err})
+}
+
+// FailStartHC says "Could not start the terminal in herdr-core, so it runs in Mayoi: {err}"
+// in the language the app shows.
+func FailStartHC(err string) string { return In(i18n.Locale()).FailStartHC(err) }
+
+// FailStartHC says "Could not start the terminal in herdr-core, so it runs in Mayoi: {err}"
+// in the language of msgs.
+func (msgs Messages) FailStartHC(err string) string {
+	return Catalog.Format(msgs.locale, "failStartHC", map[string]any{"err": err})
 }
 
 // FailStartTerminal says "Could not start a terminal: {err}"
@@ -11576,6 +11608,46 @@ func TermKill() string { return In(i18n.Locale()).TermKill() }
 // in the language of msgs.
 func (msgs Messages) TermKill() string {
 	return Catalog.Format(msgs.locale, "termKill", nil)
+}
+
+// HcAddTitle says "Run Terminals of {host} in herdr-core?"
+// in the language the app shows.
+func HcAddTitle(host string) string { return In(i18n.Locale()).HcAddTitle(host) }
+
+// HcAddTitle says "Run Terminals of {host} in herdr-core?"
+// in the language of msgs.
+func (msgs Messages) HcAddTitle(host string) string {
+	return Catalog.Format(msgs.locale, "hcAddTitle", map[string]any{"host": host})
+}
+
+// HcAddDetail says "Mayoi adds {host} to hc as a machine, which may copy hc to it. Its shells then keep running after Mayoi quits. Until …"
+// in the language the app shows.
+func HcAddDetail(host string) string { return In(i18n.Locale()).HcAddDetail(host) }
+
+// HcAddDetail says "Mayoi adds {host} to hc as a machine, which may copy hc to it. Its shells then keep running after Mayoi quits. Until …"
+// in the language of msgs.
+func (msgs Messages) HcAddDetail(host string) string {
+	return Catalog.Format(msgs.locale, "hcAddDetail", map[string]any{"host": host})
+}
+
+// HcAdd says "Add to hc"
+// in the language the app shows.
+func HcAdd() string { return In(i18n.Locale()).HcAdd() }
+
+// HcAdd says "Add to hc"
+// in the language of msgs.
+func (msgs Messages) HcAdd() string {
+	return Catalog.Format(msgs.locale, "hcAdd", nil)
+}
+
+// HcAdded says "{host} was added to hc. New terminals there run in herdr-core."
+// in the language the app shows.
+func HcAdded(host string) string { return In(i18n.Locale()).HcAdded(host) }
+
+// HcAdded says "{host} was added to hc. New terminals there run in herdr-core."
+// in the language of msgs.
+func (msgs Messages) HcAdded(host string) string {
+	return Catalog.Format(msgs.locale, "hcAdded", map[string]any{"host": host})
 }
 
 // TermLost says "[The connection to {host} was lost. The terminal starts again once it is back.]"

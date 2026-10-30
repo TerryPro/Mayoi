@@ -186,6 +186,9 @@ type Prefs struct {
 	// TerminalLocation is where a new terminal opens: "" in the panel, or
 	// "editor" in a tab of the editor area.
 	TerminalLocation string `json:"terminalLocation,omitempty"`
+	// TerminalBackend is what runs a terminal's shell: "" Mayoi itself,
+	// or "hc" a terminal of herdr-core, which outlives the window.
+	TerminalBackend string `json:"terminalBackend,omitempty"`
 	// ProjectTabs keeps the folders open in one window, a rail on its left
 	// choosing which shows, rather than a window for each.
 	ProjectTabs bool `json:"projectTabs,omitempty"`
@@ -287,6 +290,11 @@ type Session struct {
 	FileColumn   int      `json:"fileColumn,omitempty"`
 	PanelOpen    bool     `json:"panelOpen,omitempty"`
 	TerminalOpen bool     `json:"terminalOpen,omitempty"`
+	// PanelTerms are the addresses in herdr-core of the panel's terminals
+	// whose shells run there, which the next start attaches to again, and
+	// PanelTerm the one of them the panel showed.
+	PanelTerms []string `json:"panelTerms,omitempty"`
+	PanelTerm  int      `json:"panelTerm,omitempty"`
 	// Expanded are the explorer's folders showing their files, relative to
 	// the window's folder.
 	Expanded []string `json:"expanded,omitempty"`
@@ -363,10 +371,12 @@ type Column struct {
 }
 
 // Tab is a tab: the file it shows, or a terminal, which the next
-// start opens anew.
+// start opens anew, or attaches to again while its shell runs in
+// herdr-core at HC.
 type Tab struct {
 	File     string `json:"file,omitempty"`
 	Terminal bool   `json:"terminal,omitempty"`
+	HC       string `json:"hc,omitempty"`
 	// Preview is set for an SVG shown as a picture rather than as text.
 	Preview bool `json:"preview,omitempty"`
 	// Transient is set for the preview tab of its column, which the next
@@ -516,6 +526,9 @@ func (s *Settings) normalize() {
 	}
 	if s.TerminalLocation != "editor" {
 		s.TerminalLocation = ""
+	}
+	if s.TerminalBackend != "hc" {
+		s.TerminalBackend = ""
 	}
 	// The themes were appearances once.
 	if s.Appearance == "matrix" || s.Appearance == "claude" {

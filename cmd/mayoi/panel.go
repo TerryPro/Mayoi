@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/plugins/terminal"
 	mtransfer "github.com/egoist/mygo/transfer"
@@ -29,6 +30,14 @@ type session struct {
 	// lost is set while a terminal of a host waits for the connection
 	// that ended it, to start again.
 	lost bool
+	// hc is the address of the terminal of herdr-core the shell runs in,
+	// "" for one that runs here.
+	hc string
+	// attached is when the view last attached to it, and hcNew is set
+	// until the first attach of a shell just started, which has no
+	// history to show.
+	attached time.Time
+	hcNew    bool
 }
 
 type panelHeaderLayout struct {
@@ -78,12 +87,27 @@ func (a *app) workDir() string {
 
 // startTerminal starts a terminal in dir, nil when it cannot.
 func (a *app) startTerminal(dir string) *session {
-	a.nextTerm++
-	s := &session{id: a.nextTerm, dir: dir, title: shellName()}
+	s := &session{dir: dir, title: shellName()}
+	// A shell in herdr-core: of the host in a remote folder, as one of
+	// hc's machines.
 	if c := sessionConn(s); c != nil {
 		s.title = c.Host
+		if a.hcBackend() {
+			if machine := a.hcRemote(c.Host); machine != "" {
+				a.hcBegin(s, machine)
+			}
+		}
+	} else if a.hcBackend() {
+		a.hcBegin(s, "")
 	}
-	term, err := a.spawnTerminal(s, dir)
+	return a.addTerminal(s)
+}
+
+// addTerminal starts the program of a terminal, nil when it cannot.
+func (a *app) addTerminal(s *session) *session {
+	a.nextTerm++
+	s.id = a.nextTerm
+	term, err := a.spawnTerminal(s, s.dir)
 	if err != nil {
 		a.fail("%s", locales.FailStartTerminal(err.Error()))
 		return nil
@@ -102,6 +126,11 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 	if c, rdir, ok := remote.Lookup(dir); ok {
 		command = c.TerminalCommand(rdir)
 		dir, _ = os.UserHomeDir()
+	}
+	// In herdr-core, its terminal there.
+	if s.hc != "" {
+		command = hcAttach(s.hc, !s.hcNew)
+		s.attached, s.hcNew = time.Now(), false
 	}
 	// term is the terminal made, which OnExit tells from one that took
 	// its place.
@@ -133,6 +162,9 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 			a.keyTerm = s
 			st := keymap.Stroke{Mods: mods, Key: key}
 			if a.keyStroke(st, placeTerminal) {
+				return true
+			}
+			if hcDetachKey(s, mods, key) {
 				return true
 			}
 			id, ok := a.shellSkip(st)
@@ -182,7 +214,7 @@ func (a *app) newTerminalIn(dir string) {
 	}
 	a.panelTerm = s
 	a.window.PanelOpen, a.window.TerminalOpen = true, true
-	a.settings.Changed()
+	a.rememberTabs()
 	a.focusTerminal()
 }
 
@@ -205,7 +237,12 @@ func (a *app) newTerminalTab(col *column, dir string, focus bool) bool {
 // newTerminalTabAt starts a terminal in dir in a tab at place at of a
 // column.
 func (a *app) newTerminalTabAt(col *column, at int, dir string, focus bool) bool {
-	s := a.startTerminal(dir)
+	return a.terminalTab(col, at, a.startTerminal(dir), focus)
+}
+
+// terminalTab shows a terminal started in a tab at place at of a column,
+// and reports whether there was one.
+func (a *app) terminalTab(col *column, at int, s *session, focus bool) bool {
 	if s == nil {
 		return false
 	}
@@ -288,6 +325,7 @@ func (a *app) removeTerminal(s *session) {
 	}
 	a.leavePanel(s)
 	a.terms = slices.Delete(a.terms, i, i+1)
+	a.rememberTabs()
 	if a.panelTerm == nil {
 		a.focusColumn()
 	} else {
@@ -461,7 +499,7 @@ func (a *app) panel(c *ui.Context) {
 								a.post(func() { a.terminalToColumn(s, a.column(), a.column().active+1) })
 							}
 							if m.Item(locales.TermKill()).Chosen() {
-								a.post(func() { a.removeTerminal(s) })
+								a.post(func() { a.killTerminal(s) })
 							}
 						})
 					}
@@ -476,7 +514,7 @@ func (a *app) panel(c *ui.Context) {
 						a.post(func() { a.terminalToColumn(s, a.column(), a.column().active+1) })
 					}
 					if a.iconButton(c, iconTrash, locales.TermKill(), false).Clicked() {
-						a.post(func() { a.removeTerminal(s) })
+						a.post(func() { a.killTerminal(s) })
 					}
 				}
 				icon, label := iconMaximize, locales.PanelMaximize()

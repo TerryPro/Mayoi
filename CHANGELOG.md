@@ -6,6 +6,11 @@ needs a `## <version>` section here, or its build fails.
 ## Unreleased
 
 - The Homebrew install steps add `brew trust sorrycc/mayoi`, which recent Homebrew needs to load the cask.
+- Set `terminalBackend` to `"hc"` to run terminals in herdr-core, where shells outlive Mayoi's windows.
+- Closing a terminal ends its shell in herdr-core, and `Ctrl+\` goes to the shell rather than detaching.
+- Terminals in herdr-core attach again when Mayoi starts, with their scrollback, in their tabs and the panel.
+- In a remote folder, terminals in herdr-core run on the host as one of hc's machines.
+- Mayoi asks once before adding a host to hc, and its terminals use ssh until then.
 
 ## 0.14.3
 
