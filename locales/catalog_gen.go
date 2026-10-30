@@ -5156,6 +5156,28 @@ func (msgs Messages) FailHCAdd(host string, err string, machine string) string {
 	return Catalog.Format(msgs.locale, "failHCAdd", map[string]any{"host": host, "err": err, "machine": machine})
 }
 
+// FailHCAddPlain says "Could not add {host} to hc: {err}."
+// in the language the app shows.
+func FailHCAddPlain(host string, err string) string {
+	return In(i18n.Locale()).FailHCAddPlain(host, err)
+}
+
+// FailHCAddPlain says "Could not add {host} to hc: {err}."
+// in the language of msgs.
+func (msgs Messages) FailHCAddPlain(host string, err string) string {
+	return Catalog.Format(msgs.locale, "failHCAddPlain", map[string]any{"host": host, "err": err})
+}
+
+// FailHCInstall says "Could not add {host} to hc: {err}. Install hc on {host} yourself, then open a terminal again; its terminals use ssh u…"
+// in the language the app shows.
+func FailHCInstall(host string, err string) string { return In(i18n.Locale()).FailHCInstall(host, err) }
+
+// FailHCInstall says "Could not add {host} to hc: {err}. Install hc on {host} yourself, then open a terminal again; its terminals use ssh u…"
+// in the language of msgs.
+func (msgs Messages) FailHCInstall(host string, err string) string {
+	return Catalog.Format(msgs.locale, "failHCInstall", map[string]any{"host": host, "err": err})
+}
+
 // FailRestartTerminal says "Could not start the terminal again: {err}"
 // in the language the app shows.
 func FailRestartTerminal(err string) string { return In(i18n.Locale()).FailRestartTerminal(err) }

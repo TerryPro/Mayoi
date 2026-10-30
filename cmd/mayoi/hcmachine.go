@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"mayoi/internal/bg"
@@ -15,7 +16,8 @@ import (
 // user agrees, which may copy hc to it; its terminals use ssh until then.
 
 // hcAsked are the hosts asked about adding to hc as Mayoi runs: those
-// declined keep ssh until it quits. The main thread's.
+// declined keep ssh until it quits, those that failed are asked again.
+// The main thread's.
 var hcAsked = map[string]bool{}
 
 // hcMachineName is the name Mayoi gives a host as one of hc's machines:
@@ -100,10 +102,25 @@ func (a *app) hcAdd(host string) {
 		a.post(func() {
 			hcAdding = ""
 			if err != nil {
-				a.fail("%s", locales.FailHCAdd(host, err.Error(), hcMachineName(host)))
+				delete(hcAsked, host)
+				a.fail("%s", hcAddFailure(host, err))
 				return
 			}
 			a.tell(note{message: locales.HcAdded(host)})
 		})
 	})
+}
+
+// hcAddFailure says why adding host to hc failed, and what to do: log
+// in when hc needs a password, install hc there when it could not.
+func hcAddFailure(host string, err error) string {
+	var e *hcErr
+	errors.As(err, &e)
+	switch {
+	case e != nil && e.kind == "needs_login":
+		return locales.FailHCAdd(host, err.Error(), hcMachineName(host))
+	case e != nil && e.kind == "install_failed":
+		return locales.FailHCInstall(host, err.Error())
+	}
+	return locales.FailHCAddPlain(host, err.Error())
 }

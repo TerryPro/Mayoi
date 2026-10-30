@@ -736,6 +736,8 @@
   "failReplaceIn": "Could not replace in {what}",
   "failAttachHC": "Could not attach to {addr} in herdr-core. Its shell still runs there.",
   "failHCAdd": "Could not add {host} to hc: {err}. If it asks for a password, run hc machine login {machine}.",
+  "failHCAddPlain": "Could not add {host} to hc: {err}.",
+  "failHCInstall": "Could not add {host} to hc: {err}. Install hc on {host} yourself, then open a terminal again; its terminals use ssh until then.",
   "failRestartTerminal": "Could not start the terminal again: {err}",
   "failSave": "Could not save {name}: {err}",
   "failStartHC": "Could not start the terminal in herdr-core, so it runs in Mayoi: {err}",
