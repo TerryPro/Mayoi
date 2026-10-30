@@ -11650,6 +11650,86 @@ func (msgs Messages) HcAdded(host string) string {
 	return Catalog.Format(msgs.locale, "hcAdded", map[string]any{"host": host})
 }
 
+// CmdViewInstallHC says "Install hc…"
+// in the language the app shows.
+func CmdViewInstallHC() string { return In(i18n.Locale()).CmdViewInstallHC() }
+
+// CmdViewInstallHC says "Install hc…"
+// in the language of msgs.
+func (msgs Messages) CmdViewInstallHC() string {
+	return Catalog.Format(msgs.locale, "cmdViewInstallHC", nil)
+}
+
+// HcInstalling says "Installing hc…"
+// in the language the app shows.
+func HcInstalling() string { return In(i18n.Locale()).HcInstalling() }
+
+// HcInstalling says "Installing hc…"
+// in the language of msgs.
+func (msgs Messages) HcInstalling() string {
+	return Catalog.Format(msgs.locale, "hcInstalling", nil)
+}
+
+// HcInstalled says "hc is installed in {dir}. New terminals run in herdr-core."
+// in the language the app shows.
+func HcInstalled(dir string) string { return In(i18n.Locale()).HcInstalled(dir) }
+
+// HcInstalled says "hc is installed in {dir}. New terminals run in herdr-core."
+// in the language of msgs.
+func (msgs Messages) HcInstalled(dir string) string {
+	return Catalog.Format(msgs.locale, "hcInstalled", map[string]any{"dir": dir})
+}
+
+// HcInstalledSetBackend says "hc is installed in {dir}. Set terminalBackend to \"hc\" in settings to run terminals in herdr-core."
+// in the language the app shows.
+func HcInstalledSetBackend(dir string) string { return In(i18n.Locale()).HcInstalledSetBackend(dir) }
+
+// HcInstalledSetBackend says "hc is installed in {dir}. Set terminalBackend to \"hc\" in settings to run terminals in herdr-core."
+// in the language of msgs.
+func (msgs Messages) HcInstalledSetBackend(dir string) string {
+	return Catalog.Format(msgs.locale, "hcInstalledSetBackend", map[string]any{"dir": dir})
+}
+
+// FailInstallHC says "Could not install hc: {err}"
+// in the language the app shows.
+func FailInstallHC(err string) string { return In(i18n.Locale()).FailInstallHC(err) }
+
+// FailInstallHC says "Could not install hc: {err}"
+// in the language of msgs.
+func (msgs Messages) FailInstallHC(err string) string {
+	return Catalog.Format(msgs.locale, "failInstallHC", map[string]any{"err": err})
+}
+
+// HcInstallTitle says "Install hc to Run Terminals in herdr-core?"
+// in the language the app shows.
+func HcInstallTitle() string { return In(i18n.Locale()).HcInstallTitle() }
+
+// HcInstallTitle says "Install hc to Run Terminals in herdr-core?"
+// in the language of msgs.
+func (msgs Messages) HcInstallTitle() string {
+	return Catalog.Format(msgs.locale, "hcInstallTitle", nil)
+}
+
+// HcInstallDetail says "terminalBackend is \"hc\", but hc isn't installed, so terminals run in Mayoi. Mayoi can run herdr's installer, which pu…"
+// in the language the app shows.
+func HcInstallDetail() string { return In(i18n.Locale()).HcInstallDetail() }
+
+// HcInstallDetail says "terminalBackend is \"hc\", but hc isn't installed, so terminals run in Mayoi. Mayoi can run herdr's installer, which pu…"
+// in the language of msgs.
+func (msgs Messages) HcInstallDetail() string {
+	return Catalog.Format(msgs.locale, "hcInstallDetail", nil)
+}
+
+// HcInstall says "Install hc"
+// in the language the app shows.
+func HcInstall() string { return In(i18n.Locale()).HcInstall() }
+
+// HcInstall says "Install hc"
+// in the language of msgs.
+func (msgs Messages) HcInstall() string {
+	return Catalog.Format(msgs.locale, "hcInstall", nil)
+}
+
 // TermLost says "[The connection to {host} was lost. The terminal starts again once it is back.]"
 // in the language the app shows.
 func TermLost(host string) string { return In(i18n.Locale()).TermLost(host) }

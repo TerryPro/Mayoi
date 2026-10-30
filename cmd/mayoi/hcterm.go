@@ -2,9 +2,12 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"errors"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -26,7 +29,7 @@ import (
 // of the error it printed instead. Tests replace it.
 var hcRun = func(args ...string) ([]byte, error) {
 	var stderr bytes.Buffer
-	cmd := exec.Command("hc", args...)
+	cmd := exec.Command(cmp.Or(hcPath(), "hc"), args...)
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
 	if err != nil {
@@ -62,14 +65,35 @@ func hcGone(err error) bool {
 	return errors.As(err, &e) && (e.kind == "not_found" || e.kind == "finished")
 }
 
+// hcLocalBin is the folder herdr's installer puts hc in, which tests
+// replace.
+var hcLocalBin = func() string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".local", "bin")
+}
+
+// hcPath is the hc Mayoi runs: "hc" on the path, else the one herdr's
+// installer put in hcLocalBin, which the path of a Mayoi opened from the
+// Finder may lack. That is herdr-core when another hc was on the path as
+// it installed. "" when there is none.
+func hcPath() string {
+	if _, err := lookPath("hc"); err == nil {
+		return "hc"
+	}
+	dir := hcLocalBin()
+	for _, name := range []string{"hc", "herdr-core"} {
+		p := filepath.Join(dir, name)
+		if fi, err := os.Stat(p); err == nil && !fi.IsDir() && fi.Mode()&0o111 != 0 {
+			return p
+		}
+	}
+	return ""
+}
+
 // hcBackend reports whether new terminals run in herdr-core: the
 // settings ask for it, and hc is there.
 func (a *app) hcBackend() bool {
-	if a.settings.TerminalBackend != "hc" {
-		return false
-	}
-	_, err := lookPath("hc")
-	return err == nil
+	return a.settings.TerminalBackend == "hc" && hcPath() != ""
 }
 
 // hcStart starts a shell in dir in a terminal of herdr-core, on machine
@@ -114,10 +138,11 @@ func (a *app) hcBegin(s *session, machine string) {
 // with what scrolled off its screen when history is set. Tests replace
 // it.
 var hcAttach = func(addr string, history bool) []string {
+	hc := cmp.Or(hcPath(), "hc")
 	if history {
-		return []string{"hc", "attach", "--history", "1000", addr}
+		return []string{hc, "attach", "--history", "1000", addr}
 	}
-	return []string{"hc", "attach", addr}
+	return []string{hc, "attach", addr}
 }
 
 // hcKill ends the shell of a terminal of herdr-core, in the background.
@@ -230,7 +255,7 @@ func (a *app) hcReattach(s *session) {
 // run, by address, with the folder each is in, as a path of the window's
 // host for one of another machine: none when hc is not there.
 func (a *app) hcTerms(addrs []string) map[string]string {
-	if _, err := lookPath("hc"); err != nil {
+	if hcPath() == "" {
 		return nil
 	}
 	live := map[string]string{}

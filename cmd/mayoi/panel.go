@@ -88,6 +88,7 @@ func (a *app) workDir() string {
 // startTerminal starts a terminal in dir, nil when it cannot.
 func (a *app) startTerminal(dir string) *session {
 	s := &session{dir: dir, title: shellName()}
+	a.offerHC()
 	// A shell in herdr-core: of the host in a remote folder, as one of
 	// hc's machines.
 	if c := sessionConn(s); c != nil {
