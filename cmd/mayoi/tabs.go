@@ -78,11 +78,14 @@ func (a *app) tabStrip(c *ui.Context, col *column) {
 					_, over := ui.DragOver[dragItem](tab)
 					over = over || tab.FileDragOver()
 					hovered := tab.Hovered()
+					under := p.chrome
 					switch {
 					case active:
-						tab.Background(p.editor)
+						under = p.editor
+						tab.Background(under)
 					case hovered:
-						tab.Background(mix(p.chrome, p.editor, 0.5))
+						under = mix(p.chrome, p.editor, 0.5)
+						tab.Background(under)
 					}
 					if tab.Pressed() && a.middle != t && (!active || !focused) {
 						a.activate(col, i, true)
@@ -127,7 +130,7 @@ func (a *app) tabStrip(c *ui.Context, col *column) {
 							icon, tint = fileIcon(p, t.name())
 						}
 						if t.term != nil {
-							a.termIcon(c, t.term, 14, tint)
+							a.termIcon(c, t.term, 14, tint, under)
 						} else {
 							ui.Icon(c, icon).FontSize(14).TextColor(tint)
 						}

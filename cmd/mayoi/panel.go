@@ -43,6 +43,13 @@ type session struct {
 	// background, and the terminal shows nothing.
 	hcStarting bool
 	hcWait     *hcWait
+	// hcReady is when its shell in herdr-core last came to be attached,
+	// having started or its machine come back, which the terminal shows
+	// for a moment.
+	hcReady time.Time
+	// waitSince is when it last began to wait, to start in herdr-core or
+	// for its connection or machine.
+	waitSince time.Time
 }
 
 type panelHeaderLayout struct {
@@ -104,6 +111,7 @@ func (a *app) startTerminal(dir string) *session {
 		return nil
 	}
 	if s.hcStarting {
+		a.beginWait(s)
 		a.hcBegin(s)
 	}
 	return s
@@ -487,13 +495,16 @@ func (a *app) panel(c *ui.Context) {
 							a.dragNow = true
 						}
 						on := s == a.panelTerm
+						under := p.panel
 						if on {
 							chip.Background(p.active)
+							under = p.active.Over(p.panel)
 						} else if chip.Hovered() {
 							chip.Background(p.hover)
+							under = p.hover.Over(p.panel)
 						}
 						chip.Children(func() {
-							a.termIcon(c, s, 12, p.muted)
+							a.termIcon(c, s, 12, p.muted, under)
 							col := p.muted
 							if on {
 								col = p.text
@@ -571,10 +582,19 @@ func (a *app) panel(c *ui.Context) {
 	})
 }
 
-// terminalView shows a terminal, in the panel or in a tab.
+// terminalView shows a terminal, in the panel or in a tab: faded while it
+// waits for its connection or its machine, as what it shows may be old,
+// or while its shell starts, which it shows once attached.
 func (a *app) terminalView(c *ui.Context, s *session) {
 	ui.Box(c).Fill().Padding(2, 4, 4, 14).Background(a.pal.panel).Children(func() {
-		terminal.View(c.Key(s.id), s.term).Fill().Bind(&s.view)
+		v := terminal.View(c.Key(s.id), s.term).Fill().Bind(&s.view)
+		shown := float32(1)
+		if s.lost || s.hcStarting {
+			shown = 0.55
+		}
+		if o := v.Animate("shown", shown, 220*time.Millisecond); o < 1 {
+			v.Opacity(o)
+		}
 		a.waitPill(c, s)
 	})
 }

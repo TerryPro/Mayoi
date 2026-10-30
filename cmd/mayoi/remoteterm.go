@@ -34,6 +34,7 @@ func (a *app) terminalExited(s *session, t *terminal.Terminal, code int) {
 	if c := sessionConn(s); c != nil && c == a.conn && (code == 255 || !c.Connected()) {
 		if !s.lost {
 			s.lost = true
+			a.beginWait(s)
 			t.Feed([]byte(lostNote(c.Host)))
 		}
 		return

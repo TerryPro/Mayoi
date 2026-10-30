@@ -210,6 +210,9 @@ func (a *app) hcBegun(s *session, host string, known bool, addr string, err erro
 	wait := s.hcWait
 	s.hcWait = nil
 	a.hcReattach(s)
+	if s.hc != "" {
+		a.hcGotThere(s)
+	}
 	if wait != nil && slices.Contains(a.terms, s) {
 		if typed := wait.take(); len(typed) > 0 {
 			s.term.Send(typed)
@@ -301,6 +304,11 @@ func (a *app) hcExited(s *session, t *terminal.Terminal) {
 	})
 }
 
+// hcLookFor is how long a start waits for hc to say whether the
+// terminals of other machines run, before it attaches to those that did
+// not answer anyway.
+var hcLookFor = 1500 * time.Millisecond
+
 // hcRetry is how long a terminal of another machine that hc can't reach
 // waits before it looks again.
 var hcRetry = 5 * time.Second
@@ -311,7 +319,8 @@ var hcRetry = 5 * time.Second
 func (a *app) hcLost(s *session, t *terminal.Terminal) {
 	if !s.lost {
 		s.lost = true
-		t.Feed([]byte(lostNote(sessionConn(s).Host)))
+		a.beginWait(s)
+		t.Feed([]byte(hcLostNote(sessionConn(s).Host)))
 	}
 	bg.AfterFunc(hcRetry, func() {
 		a.post(func() {
@@ -322,9 +331,16 @@ func (a *app) hcLost(s *session, t *terminal.Terminal) {
 	})
 }
 
-// hcReattach attaches a terminal again to its shell in herdr-core.
+// hcLostNote is what a terminal of another machine that hc can't reach
+// shows: its shell runs on there, unlike that of a terminal over ssh.
+func hcLostNote(host string) string {
+	return "\r\n\x1b[0;2m" + locales.HcLost(host) + "\x1b[0m\r\n"
+}
+
+// hcReattach attaches a terminal again to its shell in herdr-core: one
+// that waited for its machine says it got there.
 func (a *app) hcReattach(s *session) {
-	old := s.term
+	old, waited := s.term, s.lost
 	t, err := a.spawnTerminal(s, s.dir)
 	if err != nil {
 		a.fail("%s", locales.FailRestartTerminal(err.Error()))
@@ -333,6 +349,17 @@ func (a *app) hcReattach(s *session) {
 	}
 	s.term, s.lost = t, false
 	old.Close()
+	if waited && s.hc != "" {
+		a.hcGotThere(s)
+	}
+}
+
+// hcGotThere has a terminal say for a moment that its shell in
+// herdr-core is attached, having started or waited, and builds the view
+// again once it stops saying so.
+func (a *app) hcGotThere(s *session) {
+	s.hcReady = time.Now()
+	bg.AfterFunc(hcReadyFor, func() { a.post(func() {}) })
 }
 
 // hcTerms returns those of the terminals of herdr-core at addrs that
@@ -356,31 +383,51 @@ func (a *app) hcTerms(addrs []string) map[string]string {
 		}
 	}
 	// Those of other machines, all at once, as hc may wait on each to
-	// answer, their folders the host's.
+	// answer, their folders the host's. One whose machine hc can't reach,
+	// or that doesn't answer in hcLookFor, may run on there: it attaches
+	// in the window's folder, and waits for its machine.
 	c, _, isRemote := remote.Lookup(a.root)
-	var mu sync.Mutex
-	var wg sync.WaitGroup
-	var others []string
-	for _, addr := range addrs {
-		if _, ok := live[addr]; !ok && strings.Contains(addr, "/") {
-			others = append(others, addr)
-		}
+	type look struct {
+		addr, cwd string
+		live      bool
 	}
-	for _, addr := range others {
-		wg.Go(func() {
+	looks := make(chan look, len(addrs))
+	pending := map[string]bool{}
+	for _, addr := range addrs {
+		if _, ok := live[addr]; ok || !strings.Contains(addr, "/") || pending[addr] {
+			continue
+		}
+		pending[addr] = true
+		bg.Go(func() {
 			state, cwd, err := hcGet(addr)
-			if err != nil || state != "live" {
-				return
+			switch {
+			case err == nil && state == "live":
+				if isRemote && cwd != "" {
+					cwd = remote.Path(c.Host, cwd)
+				}
+				looks <- look{addr, cmp.Or(cwd, a.root), true}
+			case err != nil && !hcGone(err):
+				looks <- look{addr, a.root, true}
+			default:
+				looks <- look{addr: addr}
 			}
-			if isRemote && cwd != "" {
-				cwd = remote.Path(c.Host, cwd)
-			}
-			mu.Lock()
-			live[addr] = cwd
-			mu.Unlock()
 		})
 	}
-	wg.Wait()
+	timeout := time.After(hcLookFor)
+	for len(pending) > 0 {
+		select {
+		case l := <-looks:
+			delete(pending, l.addr)
+			if l.live {
+				live[l.addr] = l.cwd
+			}
+		case <-timeout:
+			for addr := range pending {
+				live[addr] = a.root
+			}
+			return live
+		}
+	}
 	return live
 }
 

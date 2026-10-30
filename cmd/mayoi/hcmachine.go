@@ -88,11 +88,17 @@ func (a *app) hcOffer(host string) {
 	}
 }
 
+// hcAdding is the host being added to hc, which the status bar shows,
+// "" while none is. The main thread's.
+var hcAdding string
+
 // hcAdd adds host to hc in the background, and says how it went.
 func (a *app) hcAdd(host string) {
+	hcAdding = host
 	bg.Go(func() {
 		err := hcAddMachine(host)
 		a.post(func() {
+			hcAdding = ""
 			if err != nil {
 				a.fail("%s", locales.FailHCAdd(host, err.Error(), hcMachineName(host)))
 				return

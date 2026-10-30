@@ -1192,6 +1192,12 @@ func (a *app) statusBar(c *ui.Context) {
 		}
 		repo.gitSyncStatus(c, visible.gitSyncCounts)
 		a.transferStatus(c, text)
+		if busy := hcBusy(); busy != "" {
+			ui.Row(c.Key("status:hc")).Height(statusBarH).Padding(0, 6).Gap(5).AlignItems(ui.Center).Transition(revealFade).Children(func() {
+				ui.Spinner(c).Size(11, 11)
+				text(busy)
+			})
+		}
 		if busy := repo.git.busy; busy != "" {
 			ui.Row(c.Key("status:busy")).Height(statusBarH).Padding(0, 6).Gap(5).AlignItems(ui.Center).Children(func() {
 				// In a theme with a character, it hops for it instead.

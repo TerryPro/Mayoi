@@ -11630,6 +11630,16 @@ func (msgs Messages) HcAddDetail(host string) string {
 	return Catalog.Format(msgs.locale, "hcAddDetail", map[string]any{"host": host})
 }
 
+// HcAdding says "Adding {host} to hc…"
+// in the language the app shows.
+func HcAdding(host string) string { return In(i18n.Locale()).HcAdding(host) }
+
+// HcAdding says "Adding {host} to hc…"
+// in the language of msgs.
+func (msgs Messages) HcAdding(host string) string {
+	return Catalog.Format(msgs.locale, "hcAdding", map[string]any{"host": host})
+}
+
 // HcAdd says "Add to hc"
 // in the language the app shows.
 func HcAdd() string { return In(i18n.Locale()).HcAdd() }
@@ -11710,11 +11720,11 @@ func (msgs Messages) HcInstallTitle() string {
 	return Catalog.Format(msgs.locale, "hcInstallTitle", nil)
 }
 
-// HcInstallDetail says "terminalBackend is \"hc\", but hc isn't installed, so terminals run in Mayoi. Mayoi can run herdr's installer, which pu…"
+// HcInstallDetail says "terminalBackend is \"hc\", but hc isn't installed, so terminals run in Mayoi. herdr's installer puts hc in ~/.local/bin…"
 // in the language the app shows.
 func HcInstallDetail() string { return In(i18n.Locale()).HcInstallDetail() }
 
-// HcInstallDetail says "terminalBackend is \"hc\", but hc isn't installed, so terminals run in Mayoi. Mayoi can run herdr's installer, which pu…"
+// HcInstallDetail says "terminalBackend is \"hc\", but hc isn't installed, so terminals run in Mayoi. herdr's installer puts hc in ~/.local/bin…"
 // in the language of msgs.
 func (msgs Messages) HcInstallDetail() string {
 	return Catalog.Format(msgs.locale, "hcInstallDetail", nil)
@@ -11728,6 +11738,16 @@ func HcInstall() string { return In(i18n.Locale()).HcInstall() }
 // in the language of msgs.
 func (msgs Messages) HcInstall() string {
 	return Catalog.Format(msgs.locale, "hcInstall", nil)
+}
+
+// HcReady says "Running in herdr-core"
+// in the language the app shows.
+func HcReady() string { return In(i18n.Locale()).HcReady() }
+
+// HcReady says "Running in herdr-core"
+// in the language of msgs.
+func (msgs Messages) HcReady() string {
+	return Catalog.Format(msgs.locale, "hcReady", nil)
 }
 
 // HcStarting says "Starting in herdr-core…"
@@ -11768,6 +11788,16 @@ func TermCopyHC() string { return In(i18n.Locale()).TermCopyHC() }
 // in the language of msgs.
 func (msgs Messages) TermCopyHC() string {
 	return Catalog.Format(msgs.locale, "termCopyHC", nil)
+}
+
+// HcLost says "[{host} is away. Its shell runs on there, and the terminal attaches again once it is back.]"
+// in the language the app shows.
+func HcLost(host string) string { return In(i18n.Locale()).HcLost(host) }
+
+// HcLost says "[{host} is away. Its shell runs on there, and the terminal attaches again once it is back.]"
+// in the language of msgs.
+func (msgs Messages) HcLost(host string) string {
+	return Catalog.Format(msgs.locale, "hcLost", map[string]any{"host": host})
 }
 
 // TermLost says "[The connection to {host} was lost. The terminal starts again once it is back.]"
