@@ -3,6 +3,10 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
+## Unreleased
+
+- Command-clicking a terminal path or URL followed by Chinese punctuation no longer takes the text after it.
+
 ## 0.15.0
 
 - The Homebrew install steps add `brew trust sorrycc/mayoi`, which recent Homebrew needs to load the cask.
