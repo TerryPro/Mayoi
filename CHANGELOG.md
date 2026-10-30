@@ -3,6 +3,10 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
+## Unreleased
+
+- Headings in the Markdown preview take the color theme's heading color, as the editor does.
+
 ## 0.15.0
 
 - The Homebrew install steps add `brew trust sorrycc/mayoi`, which recent Homebrew needs to load the cask.

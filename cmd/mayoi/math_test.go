@@ -198,7 +198,7 @@ func TestShotMath(t *testing.T) {
 		"onto the next line with $\\sqrt{x}$ there."), "", "", nil, &markdownCache{math: true})
 	img := ui.Render(func(c *ui.Context) {
 		ui.Box(c).Fill().Background(hs.a.pal.editor).Padding(16).Children(func() {
-			hs.a.markdownText(c, nil, "", blocks[0].runs, 18, false, false, nil)
+			hs.a.markdownText(c, nil, "", blocks[0].runs, 18, hs.a.pal.text, false, nil)
 		})
 	}, 520, 140, 2)
 	f, err := os.Create(filepath.Join(os.Getenv("SHOTS"), "mayoi-math-inline.png"))

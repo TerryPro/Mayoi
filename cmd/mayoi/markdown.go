@@ -1527,12 +1527,8 @@ func markdownAlertHead(k markdownAlert) (*ui.SVG, string) {
 	return iconInfo, locales.AlertNote()
 }
 
-func (a *app) markdownText(c *ui.Context, m *markdownPreview, path string, runs []markdownInline, size float32, muted, blockCode bool, hits []markdownHit) {
+func (a *app) markdownText(c *ui.Context, m *markdownPreview, path string, runs []markdownInline, size float32, color ui.Color, blockCode bool, hits []markdownHit) {
 	p := a.pal
-	color := p.text
-	if muted {
-		color = p.muted
-	}
 	text := ui.RichText(c).FontSize(size).LineHeight(a.settings.LineHeight).TextColor(color).DecorationColor(color).WidthPercent(100)
 	font := ui.Font{Family: c.Theme().Font, Size: size}
 	if blockCode || p.mono {
@@ -1789,7 +1785,7 @@ func (a *app) markdownCodeCard(c *ui.Context, m *markdownPreview, path string, b
 	card := ui.Column(c.Key("code")).WidthPercent(100).Padding(size*0.85, size).Background(p.chrome).Border(1, p.border).Radius(8)
 	over := card.Hovered()
 	card.Children(func() {
-		a.markdownText(c, m, path, b.runs, size*0.93, false, true, hits)
+		a.markdownText(c, m, path, b.runs, size*0.93, p.text, true, hits)
 		if b.kind != markdownCodeBlock || !over && b.language == "" {
 			return
 		}
@@ -1928,7 +1924,7 @@ func (a *app) markdownTableRow(c *ui.Context, m *markdownPreview, path string, i
 							n++
 						}
 						if n > 0 {
-							a.markdownText(c, m, path, cell[:n], size, false, false, a.previewHits(m, i, k, base))
+							a.markdownText(c, m, path, cell[:n], size, p.text, false, a.previewHits(m, i, k, base))
 							base += len(markdownFindText(cell[:n]))
 						}
 						if n < len(cell) {
@@ -2055,13 +2051,20 @@ func (a *app) markdownView(c *ui.Context, v *viewer, name string) {
 						})
 					default:
 						// Quotes and the smallest headings are muted, as on
-						// GitHub; the text of an alert is not.
-						muted := b.quote > b.alertAt || b.kind == markdownHeading && b.level == 6 || b.footnote
+						// GitHub; the text of an alert is not. The other
+						// headings take the theme's color for them, as the
+						// editor gives their lines.
+						color := p.text
+						if b.quote > b.alertAt || b.kind == markdownHeading && b.level == 6 || b.footnote {
+							color = p.muted
+						} else if b.kind == markdownHeading {
+							color = p.syntax[highlight.Heading]
+						}
 						if r := b.runs[0]; b.kind == markdownParagraph && len(b.runs) == 1 && r.image != "" && r.bitmap == nil {
 							a.markdownNoImage(c, m, path, r, size, align)
 							return
 						}
-						a.markdownText(c, m, path, b.runs, a.markdownSize(b), muted, false, a.previewHits(m, row.Index, -1, 0))
+						a.markdownText(c, m, path, b.runs, a.markdownSize(b), color, false, a.previewHits(m, row.Index, -1, 0))
 						if b.kind == markdownHeading && b.level <= 2 {
 							// A hairline under the largest headings, as GitHub draws it.
 							ui.Box(c).Height(1).WidthPercent(100).Background(p.border).Margin(size*0.4, 0, 0, 0)
