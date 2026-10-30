@@ -3,7 +3,7 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
-## Unreleased
+## 0.15.0
 
 - The Homebrew install steps add `brew trust sorrycc/mayoi`, which recent Homebrew needs to load the cask.
 - Set `terminalBackend` to `"hc"` to run terminals in herdr-core, where shells outlive Mayoi's windows.
