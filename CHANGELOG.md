@@ -7,6 +7,7 @@ needs a `## <version>` section here, or its build fails.
 
 - Headings in the Markdown preview take the color theme's heading color, as the editor does.
 - Command-clicking a terminal path or URL followed by Chinese punctuation no longer takes the text after it.
+- Switching back to a tab no longer flashes a blank editor for a frame before its text shows.
 
 ## 0.15.0
 

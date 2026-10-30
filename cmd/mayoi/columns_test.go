@@ -170,6 +170,46 @@ func TestHiddenTabComesBackInPlace(t *testing.T) {
 	t.Fatalf("back at %v", d.vscroll.Y)
 }
 
+// TestHiddenTabComesBackWithItsText: a tab shown again with its caret in
+// view, which its new text area leaves where it is, shows its text from
+// the first frame, not a blank one.
+func TestHiddenTabComesBackWithItsText(t *testing.T) {
+	hs := newHarness(t, true)
+	a, tt := hs.a, hs.tt
+	a.openFile(hs.longFile("long.go", 400), true)
+	hs.settle()
+	d := a.activeEditor()
+	s, _ := d.buf.Snapshot().LineRange(300)
+	hs.place(d, s, s)
+	gutter := func() []byte {
+		t.Helper()
+		box, ok := tt.Find("Editor long.go")
+		if !ok {
+			t.Fatal("no editor")
+		}
+		img := tt.Image()
+		r := image.Rect(int(box.X), int(box.Y), int(box.X+d.gutterW), int(box.Y+box.H)).Intersect(img.Bounds())
+		var out []byte
+		for y := r.Min.Y; y < r.Max.Y; y++ {
+			for x := r.Min.X; x < r.Max.X; x++ {
+				c := img.RGBAAt(x, y)
+				out = append(out, c.R, c.G, c.B)
+			}
+		}
+		return out
+	}
+	want := string(gutter())
+	a.openFile(hs.path("README.md"), true)
+	hs.settle()
+	a.activate(a.column(), 0, true)
+	for i := range 3 {
+		step(tt)
+		if string(gutter()) != want {
+			t.Fatalf("frame %d shows other line numbers, scrolled to %v", i, d.vscroll.Y)
+		}
+	}
+}
+
 func TestClosingAsksForTheLastTabOfADocument(t *testing.T) {
 	hs, _, right := splitHarness(t, func(hs *harness) string { return hs.path("README.md") })
 	a, tt := hs.a, hs.tt
