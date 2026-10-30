@@ -5,11 +5,13 @@ import (
 	"cmp"
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/egoist/mygo/plugins/terminal"
@@ -97,10 +99,11 @@ func (a *app) hcBackend() bool {
 }
 
 // hcStart starts a shell in dir in a terminal of herdr-core, on machine
-// unless it is "", labeled with the window's folder, and returns its
-// address. It is removed once its shell exits.
-func (a *app) hcStart(dir, machine string) (string, error) {
-	args := []string{"run", "--bg", "--json", "--no-parent", "--rm", "--cwd", dir, "--label", "mayoi.folder=" + a.root}
+// unless it is "", labeled with root, the window's folder, and returns
+// its address. It is removed once its shell exits. It may take a while,
+// as for another machine: run it in the background.
+func hcStart(root, dir, machine string) (string, error) {
+	args := []string{"run", "--bg", "--json", "--no-parent", "--rm", "--cwd", dir, "--label", "mayoi.folder=" + root}
 	if machine != "" {
 		args = append(args, "--on", machine)
 	}
@@ -118,20 +121,101 @@ func (a *app) hcStart(dir, machine string) (string, error) {
 	return t.Address, nil
 }
 
-// hcBegin starts the shell of a terminal in herdr-core, on machine
-// unless it is "", or leaves the terminal to run as it would without
-// when it can't.
-func (a *app) hcBegin(s *session, machine string) {
-	dir := s.dir
-	if _, rdir, ok := remote.Lookup(dir); ok {
-		dir = rdir
+// hcWait is what a terminal shows while its shell starts in herdr-core:
+// nothing, until it is closed. What is typed meanwhile goes to the shell
+// once the terminal attached to it.
+type hcWait struct {
+	done  chan struct{}
+	once  sync.Once
+	mu    sync.Mutex
+	typed []byte
+}
+
+// hcTypedMax is as much as a terminal keeps of what is typed while its
+// shell starts, which the shell gets once attached.
+const hcTypedMax = 4 << 10
+
+func newHCWait() *hcWait { return &hcWait{done: make(chan struct{})} }
+
+func (w *hcWait) Read([]byte) (int, error) {
+	<-w.done
+	return 0, io.EOF
+}
+
+func (w *hcWait) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.typed = append(w.typed, p[:min(len(p), hcTypedMax-len(w.typed))]...)
+	return len(p), nil
+}
+
+// take returns what was typed, once.
+func (w *hcWait) take() []byte {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	typed := w.typed
+	w.typed = nil
+	return typed
+}
+
+func (w *hcWait) Close() error {
+	w.once.Do(func() { close(w.done) })
+	return nil
+}
+
+// hcBegin starts the shell of a terminal in herdr-core in the
+// background, on the host's machine in a remote folder, while the
+// terminal shows that it starts, and then attaches to it. A host hc
+// doesn't know, or a shell that can't start, leaves the terminal to run
+// as it would without.
+func (a *app) hcBegin(s *session) {
+	dir, host := s.dir, ""
+	if c, rdir, ok := remote.Lookup(dir); ok {
+		dir, host = rdir, c.Host
 	}
-	addr, err := a.hcStart(dir, machine)
-	if err != nil {
-		a.fail("%s", locales.FailStartHC(err.Error()))
+	root := a.root
+	bg.Go(func() {
+		machine, known := "", true
+		if host != "" {
+			machine, known = hcMachine(host)
+		}
+		var addr string
+		var err error
+		if known {
+			addr, err = hcStart(root, dir, machine)
+		}
+		a.post(func() { a.hcBegun(s, host, known, addr, err) })
+	})
+}
+
+// hcBegun takes the shell hcBegin started at addr, or why it didn't: the
+// terminal attaches to it, or runs as it would without. A terminal closed
+// meanwhile ends the shell.
+func (a *app) hcBegun(s *session, host string, known bool, addr string, err error) {
+	if !s.hcStarting || !slices.Contains(a.terms, s) {
+		if addr != "" {
+			hcKill(addr)
+		}
 		return
 	}
-	s.hc, s.hcNew = addr, true
+	s.hcStarting = false
+	switch {
+	case !known:
+		a.hcOffer(host)
+	case err != nil:
+		a.fail("%s", locales.FailStartHC(err.Error()))
+	default:
+		s.hc, s.hcNew = addr, true
+	}
+	wait := s.hcWait
+	s.hcWait = nil
+	a.hcReattach(s)
+	if wait != nil && slices.Contains(a.terms, s) {
+		if typed := wait.take(); len(typed) > 0 {
+			s.term.Send(typed)
+		}
+	}
+	a.rememberTabs()
 }
 
 // hcAttach is the command that shows the terminal of herdr-core at addr,
@@ -259,7 +343,7 @@ func (a *app) hcTerms(addrs []string) map[string]string {
 		return nil
 	}
 	live := map[string]string{}
-	if out, err := hcRun("ls", "--json"); err == nil {
+	if out, err := a.hcList(); err == nil {
 		var l struct {
 			Terminals []struct{ Address, Cwd, State string }
 		}
@@ -271,19 +355,50 @@ func (a *app) hcTerms(addrs []string) map[string]string {
 			}
 		}
 	}
-	// Those of other machines, one by one, their folders the host's.
+	// Those of other machines, all at once, as hc may wait on each to
+	// answer, their folders the host's.
+	c, _, isRemote := remote.Lookup(a.root)
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	var others []string
 	for _, addr := range addrs {
-		if _, ok := live[addr]; ok || !strings.Contains(addr, "/") {
-			continue
-		}
-		if state, cwd, err := hcGet(addr); err == nil && state == "live" {
-			live[addr] = cwd
-			if c, _, ok := remote.Lookup(a.root); ok && cwd != "" {
-				live[addr] = remote.Path(c.Host, cwd)
-			}
+		if _, ok := live[addr]; !ok && strings.Contains(addr, "/") {
+			others = append(others, addr)
 		}
 	}
+	for _, addr := range others {
+		wg.Go(func() {
+			state, cwd, err := hcGet(addr)
+			if err != nil || state != "live" {
+				return
+			}
+			if isRemote && cwd != "" {
+				cwd = remote.Path(c.Host, cwd)
+			}
+			mu.Lock()
+			live[addr] = cwd
+			mu.Unlock()
+		})
+	}
+	wg.Wait()
 	return live
+}
+
+// hcListFor is how long hcList keeps what hc ls printed: a start
+// restores the tabs and then the panel, and asks once.
+const hcListFor = 2 * time.Second
+
+// hcList returns what hc ls --json printed, once for every restore that
+// follows within hcListFor. The main thread's.
+func (a *app) hcList() ([]byte, error) {
+	if l := &a.hcListed; l.out != nil && time.Since(l.at) < hcListFor {
+		return l.out, nil
+	}
+	out, err := hcRun("ls", "--json")
+	if err == nil {
+		a.hcListed.out, a.hcListed.at = out, time.Now()
+	}
+	return out, err
 }
 
 // hcShown reports whether a terminal here shows the shell at addr in

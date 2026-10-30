@@ -14,6 +14,13 @@ needs a `## <version>` section here, or its build fails.
 - **View → Install hc…** installs or updates `hc` in `~/.local/bin` with herdr's installer, on macOS and Linux.
 - With `terminalBackend` `"hc"` and no `hc` installed, the first new terminal offers to install it.
 - Mayoi finds `hc` in `~/.local/bin` even when your shell's PATH lacks it, so it works right after installing.
+- New terminals in herdr-core open at once and say they are starting, rather than freezing the window.
+- A dot on a terminal's tab and panel chip shows that its shell runs in herdr-core; hover it for its address.
+- The dot pulses, and a pill over the terminal says what it waits for, while it starts or its machine is away.
+- Mayoi starts faster with terminals of other machines to attach, looking them all up at once.
+- What you type in a terminal while it starts in herdr-core reaches the shell once it attaches.
+- **Copy hc Address** in a terminal's menu copies its address in herdr-core, for `hc attach` elsewhere.
+- The panel's terminals in herdr-core attach again when Mayoi starts, rather than starting new shells.
 
 ## 0.14.3
 

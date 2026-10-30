@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -31,11 +32,12 @@ func useFakeHC(t *testing.T, reply func(args []string) ([]byte, error)) *fakeHC 
 	hcRun = func(args ...string) ([]byte, error) {
 		f.mu.Lock()
 		f.calls = append(f.calls, args)
+		reply := f.reply
 		f.mu.Unlock()
-		if f.reply == nil {
+		if reply == nil {
 			return []byte("{}"), nil
 		}
-		return f.reply(args)
+		return reply(args)
 	}
 	lookPath = func(name string) (string, error) {
 		if name == "hc" {
@@ -44,6 +46,14 @@ func useFakeHC(t *testing.T, reply func(args []string) ([]byte, error)) *fakeHC 
 		return oldLook(name)
 	}
 	return f
+}
+
+// answer has hc answer with reply from now on, as commands may be
+// running in the background.
+func (f *fakeHC) answer(reply func(args []string) ([]byte, error)) {
+	f.mu.Lock()
+	f.reply = reply
+	f.mu.Unlock()
 }
 
 // ran returns the commands run whose name is cmd, waiting a moment for
@@ -117,7 +127,7 @@ func TestHCStart(t *testing.T) {
 	if !a.hcBackend() {
 		t.Fatal("no hc with terminalBackend hc")
 	}
-	addr, err := a.hcStart(hs.root, "")
+	addr, err := hcStart(hs.root, hs.root, "")
 	if err != nil || addr != "t9" {
 		t.Fatalf("hcStart: %q, %v", addr, err)
 	}
@@ -132,13 +142,51 @@ func TestHCStart(t *testing.T) {
 	if got := hcAttach("t9", true); !slices.Equal(got, []string{"hc", "attach", "--history", "1000", "t9"}) {
 		t.Errorf("attach command with history %q", got)
 	}
-	f.reply = func([]string) ([]byte, error) { return nil, errors.New("no core") }
-	if _, err := a.hcStart(hs.root, ""); err == nil || err.Error() != "no core" {
+	f.answer(func([]string) ([]byte, error) { return nil, errors.New("no core") })
+	if _, err := hcStart(hs.root, hs.root, ""); err == nil || err.Error() != "no core" {
 		t.Errorf("hcStart with no core: %v", err)
 	}
 	lookPath = func(string) (string, error) { return "", errors.New("not found") }
 	if a.hcBackend() {
 		t.Error("hc backend without hc")
+	}
+}
+
+// A new terminal shows at once, saying that it starts, while its shell
+// starts in herdr-core in the background, and then attaches to it. One
+// closed before its shell started ends the shell.
+func TestHCStartAsync(t *testing.T) {
+	if testing.Short() {
+		t.Skip("starts a program")
+	}
+	hs := newHarness(t, true)
+	a := hs.a
+	t.Cleanup(a.closeTerminals)
+	a.settings.TerminalBackend = "hc"
+	f := useFakeHC(t, func(args []string) ([]byte, error) {
+		return []byte(`{"address":"t9","state":"live"}`), nil
+	})
+	attached := fakeAttach(t)
+	s := a.startTerminal(a.root)
+	if s == nil || termStatus(s) != termStarting || termWait(s) == "" || s.hc != "" {
+		t.Fatalf("a starting terminal: %+v", s)
+	}
+	hs.settle()
+	if s.hc != "t9" || termStatus(s) != termKept || termWait(s) != "" || !slices.Equal(*attached, []string{"t9"}) {
+		t.Fatalf("address %q, state %d, attached %q", s.hc, termStatus(s), *attached)
+	}
+	gone := a.startTerminal(a.root)
+	a.killTerminal(gone)
+	hs.settle()
+	if kill := f.ran("kill"); len(kill) != 1 || kill[0][len(kill[0])-1] != "t9" {
+		t.Errorf("closing a starting terminal ran %q", kill)
+	}
+	f.answer(func([]string) ([]byte, error) { return nil, errors.New("no core") })
+	fails := a.fails
+	here := a.startTerminal(a.root)
+	hs.settle()
+	if here.hc != "" || here.hcStarting || !slices.Contains(a.terms, here) || a.fails != fails+1 {
+		t.Errorf("a shell that can't start: address %q, starting %v, %d errors", here.hc, here.hcStarting, a.fails-fails)
 	}
 }
 
@@ -301,7 +349,7 @@ func TestHCRestore(t *testing.T) {
 	a := hs.a
 	t.Cleanup(a.closeTerminals)
 	sub := hs.path("web")
-	useFakeHC(t, func(args []string) ([]byte, error) {
+	f := useFakeHC(t, func(args []string) ([]byte, error) {
 		return []byte(`{"terminals":[{"address":"t3","cwd":"` + sub + `","state":"live"},` +
 			`{"address":"t4","state":"finished"},{"address":"t6","state":"live"},{"address":"t7","state":"live"}]}`), nil
 	})
@@ -334,5 +382,114 @@ func TestHCRestore(t *testing.T) {
 	}
 	if a.restorePanel([]string{"t5"}, 0) {
 		t.Error("attached to a shell that ended")
+	}
+	if ls := f.ran("ls"); len(ls) != 1 {
+		t.Errorf("asked hc ls %d times", len(ls))
+	}
+}
+
+// What is typed while a shell starts in herdr-core is kept, up to a
+// limit, for the shell, and taken once.
+func TestHCWaitTyped(t *testing.T) {
+	w := newHCWait()
+	w.Write([]byte("ls"))
+	w.Write([]byte(" -la\r"))
+	if got := string(w.take()); got != "ls -la\r" {
+		t.Errorf("typed %q", got)
+	}
+	if got := w.take(); got != nil {
+		t.Errorf("taken again: %q", got)
+	}
+	w.Write(make([]byte, hcTypedMax+10))
+	if got := len(w.take()); got != hcTypedMax {
+		t.Errorf("kept %d bytes", got)
+	}
+	w.Close()
+	if n, err := w.Read(make([]byte, 1)); n != 0 || err == nil {
+		t.Errorf("read %d, %v after closing", n, err)
+	}
+}
+
+// A terminal whose shell starts in herdr-core, or that waits for its
+// machine, says so in a pill over it, which goes once it attached.
+func TestTermWaitPill(t *testing.T) {
+	hs := newHarness(t, true)
+	a := hs.a
+	useFakeHC(t, nil)
+	s := hcSession(t, a, "")
+	s.hcStarting = true
+	a.window.PanelOpen, a.window.TerminalOpen = true, true
+	shows := func(text string) bool {
+		step(hs.tt)
+		return slices.ContainsFunc(hs.tt.Texts(), func(s string) bool { return strings.Contains(s, text) })
+	}
+	if !shows("Starting in herdr-core") {
+		t.Errorf("no pill as it starts: %q", hs.tt.Texts())
+	}
+	s.hcStarting, s.hc, s.lost = false, "vps/t2", true
+	if !shows("Waiting for vps") {
+		t.Errorf("no pill as it waits: %q", hs.tt.Texts())
+	}
+	s.lost = false
+	if shows("Waiting for") || shows("Starting in") {
+		t.Error("the pill stays once attached")
+	}
+	if termStatus(s) != termKept {
+		t.Errorf("state %d", termStatus(s))
+	}
+}
+
+// The menu of a terminal whose shell runs in herdr-core copies its
+// address; that of one of Mayoi's has no such item.
+func TestHCCopyAddress(t *testing.T) {
+	hs := newHarness(t, true)
+	a := hs.a
+	useFakeHC(t, nil)
+	s := hcSession(t, a, "vps/t2")
+	s.title = "vps"
+	a.window.PanelOpen, a.window.TerminalOpen = true, true
+	hs.settle()
+	if err := hs.tt.RightClick("1: vps"); err != nil {
+		t.Fatal(err)
+	}
+	if err := hs.tt.ChooseMenuItem("Copy hc Address"); err != nil {
+		t.Fatal(err)
+	}
+	hs.settle()
+	if got := hs.tt.Clipboard(); got != "vps/t2" {
+		t.Errorf("copied %q", got)
+	}
+	s.hc = ""
+	hs.settle()
+	if err := hs.tt.RightClick("1: vps"); err != nil {
+		t.Fatal(err)
+	}
+	if err := hs.tt.ChooseMenuItem("Copy hc Address"); err == nil {
+		t.Error("a terminal of Mayoi's copies an address")
+	}
+}
+
+// Starting, a window attaches its panel again to the terminals it had,
+// though restoring its tabs remembers them first.
+func TestHCStartRestoresPanel(t *testing.T) {
+	if testing.Short() {
+		t.Skip("starts a program")
+	}
+	hs := newHarness(t, true)
+	a := hs.a
+	t.Cleanup(a.closeTerminals)
+	useFakeHC(t, func(args []string) ([]byte, error) {
+		return []byte(`{"terminals":[{"address":"t6","cwd":"` + hs.root + `","state":"live"}]}`), nil
+	})
+	attached := fakeAttach(t)
+	a.window.PanelTerms, a.window.PanelTerm = []string{"t6"}, 0
+	a.window.PanelOpen, a.window.TerminalOpen = true, true
+	a.start()
+	hs.settle()
+	if a.panelTerm == nil || a.panelTerm.hc != "t6" || !slices.Equal(*attached, []string{"t6+history"}) {
+		t.Fatalf("panel shows %+v, attached %q", a.panelTerm, *attached)
+	}
+	if !slices.Equal(a.window.PanelTerms, []string{"t6"}) {
+		t.Errorf("remembered %q", a.window.PanelTerms)
 	}
 }

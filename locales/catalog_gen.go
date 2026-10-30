@@ -11730,6 +11730,46 @@ func (msgs Messages) HcInstall() string {
 	return Catalog.Format(msgs.locale, "hcInstall", nil)
 }
 
+// HcStarting says "Starting in herdr-core…"
+// in the language the app shows.
+func HcStarting() string { return In(i18n.Locale()).HcStarting() }
+
+// HcStarting says "Starting in herdr-core…"
+// in the language of msgs.
+func (msgs Messages) HcStarting() string {
+	return Catalog.Format(msgs.locale, "hcStarting", nil)
+}
+
+// TermWaiting says "Waiting for {host}…"
+// in the language the app shows.
+func TermWaiting(host string) string { return In(i18n.Locale()).TermWaiting(host) }
+
+// TermWaiting says "Waiting for {host}…"
+// in the language of msgs.
+func (msgs Messages) TermWaiting(host string) string {
+	return Catalog.Format(msgs.locale, "termWaiting", map[string]any{"host": host})
+}
+
+// HcRunsIn says "Runs in herdr-core as {addr}, and keeps running when the window closes"
+// in the language the app shows.
+func HcRunsIn(addr string) string { return In(i18n.Locale()).HcRunsIn(addr) }
+
+// HcRunsIn says "Runs in herdr-core as {addr}, and keeps running when the window closes"
+// in the language of msgs.
+func (msgs Messages) HcRunsIn(addr string) string {
+	return Catalog.Format(msgs.locale, "hcRunsIn", map[string]any{"addr": addr})
+}
+
+// TermCopyHC says "Copy hc Address"
+// in the language the app shows.
+func TermCopyHC() string { return In(i18n.Locale()).TermCopyHC() }
+
+// TermCopyHC says "Copy hc Address"
+// in the language of msgs.
+func (msgs Messages) TermCopyHC() string {
+	return Catalog.Format(msgs.locale, "termCopyHC", nil)
+}
+
 // TermLost says "[The connection to {host} was lost. The terminal starts again once it is back.]"
 // in the language the app shows.
 func TermLost(host string) string { return In(i18n.Locale()).TermLost(host) }

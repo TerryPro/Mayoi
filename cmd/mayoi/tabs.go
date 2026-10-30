@@ -126,7 +126,11 @@ func (a *app) tabStrip(c *ui.Context, col *column) {
 						case t.term == nil:
 							icon, tint = fileIcon(p, t.name())
 						}
-						ui.Icon(c, icon).FontSize(14).TextColor(tint)
+						if t.term != nil {
+							a.termIcon(c, t.term, 14, tint)
+						} else {
+							ui.Icon(c, icon).FontSize(14).TextColor(tint)
+						}
 						name := ui.Text(c, t.name()).FontSize(12.5).SingleLine().MaxWidth(220)
 						if t.transient {
 							// A preview, which the next file chosen replaces.
@@ -262,6 +266,7 @@ func (a *app) tabMenu(m *ui.Menu, col *column, t *colTab, closing **colTab) {
 		if m.Item(locales.MoveToPanel()).Chosen() {
 			a.post(func() { a.terminalToPanel(t.term) })
 		}
+		a.hcMenu(m, t.term)
 		return
 	}
 	m.Separator()

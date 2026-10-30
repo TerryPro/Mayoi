@@ -269,6 +269,11 @@ type app struct {
 	termFont terminal.Font
 	// termCopy is whether the terminals copy what is selected.
 	termCopy bool
+	// hcListed is what hc ls printed last, and when (hcList).
+	hcListed struct {
+		out []byte
+		at  time.Time
+	}
 	// transfers are the copies to and from hosts running.
 	transfers []*transfer
 
@@ -453,6 +458,9 @@ func (a *app) tell(n note) { a.notes = append(a.notes, n) }
 // had open.
 func (a *app) start() {
 	w := a.window
+	// Restoring the tabs remembers them, and the panel's terminals with
+	// them, which are not restored yet: keep those to attach to.
+	terms, shown := slices.Clone(w.PanelTerms), w.PanelTerm
 	if w.Folder != "" {
 		// A remote folder opens at once, as its host connects.
 		if remote.Is(w.Folder) {
@@ -462,7 +470,7 @@ func (a *app) start() {
 		}
 	}
 	a.restoreTabs()
-	if !a.restorePanel(w.PanelTerms, w.PanelTerm) && w.TerminalOpen && w.PanelOpen && a.root != "" {
+	if !a.restorePanel(terms, shown) && w.TerminalOpen && w.PanelOpen && a.root != "" {
 		a.newTerminal()
 	}
 }

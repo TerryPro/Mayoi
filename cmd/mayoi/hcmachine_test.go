@@ -4,6 +4,7 @@ import (
 	"errors"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -35,7 +36,7 @@ func TestHCMachine(t *testing.T) {
 			t.Errorf("%q: %q %v, want %q", host, got, ok, want)
 		}
 	}
-	f.reply = func([]string) ([]byte, error) { return nil, nil }
+	f.answer(func([]string) ([]byte, error) { return nil, nil })
 	hcAddMachine("me@box:2222")
 	hcAddMachine("vps")
 	add := f.ran("machine")
@@ -67,12 +68,16 @@ func TestHCRemote(t *testing.T) {
 		}
 		return []byte(`{}`), nil
 	})
-	if m := a.hcRemote("vps"); m != "" || a.confirm == nil {
-		t.Fatalf("machine %q, asked %v", m, a.confirm != nil)
+	if _, ok := hcMachine("vps"); ok {
+		t.Fatal("a machine hc doesn't know")
+	}
+	a.hcOffer("vps")
+	if a.confirm == nil {
+		t.Fatal("not asked")
 	}
 	add := a.confirm.run
 	a.confirm = nil
-	if a.hcRemote("vps"); a.confirm != nil {
+	if a.hcOffer("vps"); a.confirm != nil {
 		t.Error("asked again")
 	}
 	add()
@@ -84,14 +89,24 @@ func TestHCRemote(t *testing.T) {
 		t.Errorf("no toast: %q", hs.tt.Texts())
 	}
 	known = true
-	if m := a.hcRemote("vps"); m != "vps" {
+	if m, ok := hcMachine("vps"); !ok || m != "vps" {
 		t.Fatalf("machine %q", m)
 	}
-	s := &session{dir: remote.Path("vps", "/srv/app")}
-	a.hcBegin(s, "vps")
+	if testing.Short() {
+		return
+	}
+	attached := fakeAttach(t)
+	t.Cleanup(a.closeTerminals)
+	s := hcSession(t, a, "")
+	s.dir, s.hcStarting = remote.Path("vps", "/srv/app"), true
+	a.hcBegin(s)
+	hs.settle()
 	run := f.ran("run")
-	if s.hc != "vps/t2" || !s.hcNew || !slices.Contains(run[0], "--on") || !slices.Contains(run[0], "/srv/app") {
+	if s.hc != "vps/t2" || s.hcStarting || !slices.Contains(run[0], "--on") || !slices.Contains(run[0], "/srv/app") {
 		t.Errorf("address %q, ran %q", s.hc, run)
+	}
+	if !slices.Equal(*attached, []string{"vps/t2"}) {
+		t.Errorf("attached %q", *attached)
 	}
 }
 
@@ -116,9 +131,9 @@ func TestHCLost(t *testing.T) {
 	old := hcRetry
 	hcRetry = 10 * time.Millisecond
 	t.Cleanup(func() { hcRetry = old })
-	gone := false
+	var gone atomic.Bool
 	useFakeHC(t, func(args []string) ([]byte, error) {
-		if gone {
+		if gone.Load() {
 			return nil, &hcErr{"not_found", "no terminal"}
 		}
 		return nil, &hcErr{"unreachable", "vps is not connected"}
@@ -138,7 +153,7 @@ func TestHCLost(t *testing.T) {
 	if !slices.Contains(a.terms, s) || !s.lost || !strings.Contains(s.term.Text(), "vps") {
 		t.Fatalf("open %v, lost %v, text %q", slices.Contains(a.terms, s), s.lost, s.term.Text())
 	}
-	gone = true
+	gone.Store(true)
 	until(func() bool { return !slices.Contains(a.terms, s) })
 	if slices.Contains(a.terms, s) {
 		t.Error("a terminal whose shell is gone stays")

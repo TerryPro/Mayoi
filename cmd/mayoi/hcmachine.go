@@ -75,20 +75,17 @@ func hcAddMachine(host string) error {
 	return err
 }
 
-// hcRemote returns the machine of hc a terminal of host runs on, or ""
-// for ssh: once for a host hc doesn't know, it asks whether to add it.
-func (a *app) hcRemote(host string) string {
-	if m, ok := hcMachine(host); ok {
-		return m
+// hcOffer asks, once for a host as Mayoi runs, whether to add a host hc
+// doesn't know as one of its machines: its terminals use ssh until then.
+func (a *app) hcOffer(host string) {
+	if hcAsked[host] || a.confirm != nil {
+		return
 	}
-	if !hcAsked[host] && a.confirm == nil {
-		hcAsked[host] = true
-		a.confirm = &confirm{
-			title: locales.HcAddTitle(host), message: locales.HcAddDetail(host), ok: locales.HcAdd(),
-			run: func() { a.hcAdd(host) },
-		}
+	hcAsked[host] = true
+	a.confirm = &confirm{
+		title: locales.HcAddTitle(host), message: locales.HcAddDetail(host), ok: locales.HcAdd(),
+		run: func() { a.hcAdd(host) },
 	}
-	return ""
 }
 
 // hcAdd adds host to hc in the background, and says how it went.

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"mayoi/internal/keymap"
 	"mayoi/internal/remote"
 	"mayoi/internal/settings"
@@ -38,6 +39,10 @@ type session struct {
 	// history to show.
 	attached time.Time
 	hcNew    bool
+	// hcStarting is set while its shell starts in herdr-core, in the
+	// background, and the terminal shows nothing.
+	hcStarting bool
+	hcWait     *hcWait
 }
 
 type panelHeaderLayout struct {
@@ -89,19 +94,19 @@ func (a *app) workDir() string {
 func (a *app) startTerminal(dir string) *session {
 	s := &session{dir: dir, title: shellName()}
 	a.offerHC()
-	// A shell in herdr-core: of the host in a remote folder, as one of
-	// hc's machines.
 	if c := sessionConn(s); c != nil {
 		s.title = c.Host
-		if a.hcBackend() {
-			if machine := a.hcRemote(c.Host); machine != "" {
-				a.hcBegin(s, machine)
-			}
-		}
-	} else if a.hcBackend() {
-		a.hcBegin(s, "")
 	}
-	return a.addTerminal(s)
+	// A shell in herdr-core, of the host in a remote folder as one of hc's
+	// machines, starts in the background: the terminal shows meanwhile.
+	s.hcStarting = a.hcBackend()
+	if a.addTerminal(s) == nil {
+		return nil
+	}
+	if s.hcStarting {
+		a.hcBegin(s)
+	}
+	return s
 }
 
 // addTerminal starts the program of a terminal, nil when it cannot.
@@ -133,11 +138,18 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 		command = hcAttach(s.hc, !s.hcNew)
 		s.attached, s.hcNew = time.Now(), false
 	}
+	// Its shell still starting in herdr-core, nothing yet.
+	var conn io.ReadWriteCloser
+	if s.hcStarting {
+		s.hcWait = newHCWait()
+		conn = s.hcWait
+	}
 	// term is the terminal made, which OnExit tells from one that took
 	// its place.
 	var term *terminal.Terminal
 	term, err := terminal.New(terminal.Options{
 		Command:   command,
+		Conn:      conn,
 		Dir:       dir,
 		Font:      termFont(a.settings),
 		Theme:     light,
@@ -481,7 +493,7 @@ func (a *app) panel(c *ui.Context) {
 							chip.Background(p.hover)
 						}
 						chip.Children(func() {
-							ui.Icon(c, iconTerminal).FontSize(12).TextColor(p.muted)
+							a.termIcon(c, s, 12, p.muted)
 							col := p.muted
 							if on {
 								col = p.text
@@ -499,6 +511,7 @@ func (a *app) panel(c *ui.Context) {
 							if m.Item(locales.TermMoveEditorArea()).Chosen() {
 								a.post(func() { a.terminalToColumn(s, a.column(), a.column().active+1) })
 							}
+							a.hcMenu(m, s)
 							if m.Item(locales.TermKill()).Chosen() {
 								a.post(func() { a.killTerminal(s) })
 							}
@@ -562,6 +575,7 @@ func (a *app) panel(c *ui.Context) {
 func (a *app) terminalView(c *ui.Context, s *session) {
 	ui.Box(c).Fill().Padding(2, 4, 4, 14).Background(a.pal.panel).Children(func() {
 		terminal.View(c.Key(s.id), s.term).Fill().Bind(&s.view)
+		a.waitPill(c, s)
 	})
 }
 
