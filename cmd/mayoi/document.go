@@ -178,6 +178,9 @@ type editor struct {
 	shownFrame, coverFrame int
 	// lastView is where the editor showed last.
 	lastView ui.Rect
+	// reloaded is where the file read again last changed the text, which
+	// the next frame keeps the line at the top of the view on.
+	reloaded *reloadShift
 	// pinFrame is the frame that gave the text area a selection the view
 	// is not to follow, 0 for none, and pinY where the editor was scrolled
 	// then, which the frame after puts back.

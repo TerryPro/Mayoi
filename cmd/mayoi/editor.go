@@ -197,6 +197,17 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 	if wrap {
 		d.hscroll.X = 0
 	}
+	if r := d.reloaded; r != nil {
+		// The line at the top, found where the lines were before, stays at
+		// the top, below the lines the reload added or took above it.
+		d.reloaded = nil
+		top := g.at(d.vscroll.Y - editorPadY)
+		keepY = editorPadY + g.top(top) - d.vscroll.Y
+		if top > r.to {
+			top += r.delta
+		}
+		keepLine = min(max(top, 0), lines-1)
+	}
 
 	ui.ScrollHorizontal(c).TrackScroll(&d.hscroll).Fill().Background(p.editor).Children(func() {
 		area := ui.TextAreaBufferBase(c, d.buf).
@@ -224,6 +235,9 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 			}
 		} else {
 			area.NoWrap()
+			if keepLine >= 0 {
+				d.vscroll.Y = max(0, editorPadY+g.top(keepLine)-keepY)
+			}
 		}
 
 		// A new area puts the caret at the end: at the editor's selection,
@@ -235,10 +249,10 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 		// the view too; an edit's selection only from out of view.
 		center := jump && (d.center || !a.inView(d, g, snap, d.pending[1], view.H))
 		if r := d.pending; quiet {
-			// The view stays where it is: a pin puts it back.
+			// The view stays where it is, as it does for an edit made in
+			// another column.
 			d.sel = *r
-			a.setSelection(d, area)
-			d.pending, d.quiet, d.resync, d.parked = nil, false, false, -1
+			d.pending, d.quiet, d.resync, d.parked = nil, false, true, -1
 		} else if r != nil {
 			// A jump asked for goes where it goes: no pin puts it back.
 			area.SetTextSelection(r[0], r[1])
@@ -319,7 +333,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 		}
 		// Show the caret's line before the area takes the offset, so that
 		// it finds the caret in view and leaves the offset be.
-		d.sticky = append(d.sticky[:0], a.scrollToCaret(d, g, snap, caret, view.H, center, jump || caretMoved || edited && follows)...)
+		d.sticky = append(d.sticky[:0], a.scrollToCaret(d, g, snap, caret, view.H, center, jump || caretMoved || edited && follows && !quiet)...)
 		var sticky []stickyRow
 		if len(d.sticky) > 0 {
 			sticky = d.stuck.rows(a, d, snap, d.sticky)
