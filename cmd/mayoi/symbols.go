@@ -52,6 +52,10 @@ func (a *app) symbolIcon(kind string) (*ui.SVG, ui.Color) {
 		return iconBraces, p.syntax[highlight.Type]
 	case "type", "enum":
 		return iconType, p.syntax[highlight.Type]
+	case "variable":
+		return iconVariable, p.syntax[highlight.Variable]
+	case "namespace":
+		return iconBox, p.syntax[highlight.Type]
 	case "heading":
 		return iconHash, p.syntax[highlight.Heading]
 	}

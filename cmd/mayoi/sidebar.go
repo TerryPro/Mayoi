@@ -24,17 +24,22 @@ func (a *app) sidebar(c *ui.Context) {
 	sb := ui.Column(c).Fill().Background(p.chrome)
 	hovered := sb.Hovered()
 	view := a.window.SidebarView
-	if a.root == "" {
+	if a.root == "" && view != "outline" {
 		view = ""
 	}
-	scm, search := view == "git", view == "search"
+	scm, search, outline := view == "git", view == "search", view == "outline"
+	switches := 1 // the outline's
+	if a.root != "" {
+		switches += 3
+	}
 	sb.Children(func() {
 		ui.Row(c).Height(34).Padding(0, 6, 0, 8).Gap(2).AlignItems(ui.Center).Children(func() {
 			if a.root != "" {
-				a.sidebarSwitch(c, iconFiles, a.withKey(locales.SidebarExplorer(), "view.explorer"), !scm && !search, 0, a.showExplorer)
+				a.sidebarSwitch(c, iconFiles, a.withKey(locales.SidebarExplorer(), "view.explorer"), !scm && !search && !outline, 0, a.showExplorer)
 				a.sidebarSwitch(c, iconSearch, a.withKey(locales.SidebarSearch(), "edit.findInFiles"), search, 0, func() { a.showSearch(false) })
 				a.sidebarSwitch(c, iconBranch, a.withKey(locales.SidebarScm(), "view.scm"), scm, a.changeCount(), a.showSourceControl)
 			}
+			a.sidebarSwitch(c, iconListTree, locales.SidebarOutline(), outline, 0, a.showOutline)
 			title, short, actions := locales.SidebarTitleExplorer(), "", 0
 			switch {
 			case scm:
@@ -47,13 +52,13 @@ func (a *app) sidebar(c *ui.Context) {
 				if hovered {
 					actions = 3
 				}
+			case outline:
+				title = locales.SidebarTitleOutline()
 			}
 			// The switches, the gaps, the paddings and the actions' buttons
 			// take the rest of the row.
 			room := a.window.SidebarWidth - 1 - 14 - 6 - float32(actions)*28
-			if a.root != "" {
-				room -= 3*26 + 2*3
-			}
+			room -= float32(switches)*26 + float32(switches-1)*3
 			title = fitTitle(c, title, short, room)
 			ui.Text(c, title).FontSize(11).FontWeight(600).LetterSpacing(titleSpacing).TextColor(p.muted).Grow(1).
 				Padding(0, 0, 0, 6).SingleLine()
@@ -70,6 +75,10 @@ func (a *app) sidebar(c *ui.Context) {
 		pane := ui.Column(c.Key("view:" + view)).Grow(1).MinHeight(0)
 		pane.Opacity(pane.Keyframes("in", []ui.Keyframe{{Value: 0}, {At: 150 * time.Millisecond, Value: 1, Ease: ui.EaseOut}}))
 		pane.Children(func() {
+			if outline {
+				a.outlineView(c)
+				return
+			}
 			if a.root == "" {
 				a.noFolder(c)
 				return
@@ -82,39 +91,58 @@ func (a *app) sidebar(c *ui.Context) {
 				a.searchView(c)
 				return
 			}
-			// The folder's row, with the explorer's actions while the pointer
-			// is over the sidebar or the tree has the keyboard: on the title's
-			// row, they would leave the title no room.
-			ui.Row(c).Height(24).Padding(0, 6, 0, 16).Gap(2).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, strings.ToUpper(filepath.Base(a.root))).FontSize(11).FontWeight(700).LetterSpacing(0.4).
-					TextColor(p.text).SingleLine().Grow(1)
-				if !hovered && !a.files.List.FocusWithin(c) {
-					return
-				}
-				if a.iconButton(c, iconFilePlus, locales.NewFileEllipsis(), false).Clicked() {
-					a.askNewEntry(a.targetDir(), false)
-				}
-				if a.iconButton(c, iconFolderPlus, locales.NewFolderEllipsis(), false).Clicked() {
-					a.askNewEntry(a.targetDir(), true)
-				}
-				if a.iconButton(c, iconRefresh, locales.RefreshExplorer(), false).Clicked() {
-					a.tree.Refresh()
-					a.indexStale = true
-				}
-				if a.iconButton(c, iconCollapse, locales.CollapseFolders(), false).Clicked() {
-					a.files.Open.Clear()
-				}
-			})
-			if t := a.tree; t.Loaded(a.root) && len(t.Children(a.root)) == 0 {
-				a.emptyFolder(c)
-			}
-			if a.conn != nil && !a.tree.Loaded(a.root) {
-				a.remoteTreeWaits(c)
-				return
-			}
-			a.fileTree(c)
+			a.explorerView(c, hovered)
 		})
 	})
+}
+
+// explorerView is the Explorer's files, and the outline of the document
+// shown under them, above them, or in a view of its own.
+func (a *app) explorerView(c *ui.Context, hovered bool) {
+	p := a.pal
+	// The folder's row, with the explorer's actions while the pointer
+	// is over the sidebar or the tree has the keyboard: on the title's
+	// row, they would leave the title no room.
+	ui.Row(c).Height(24).Padding(0, 6, 0, 16).Gap(2).AlignItems(ui.Center).Children(func() {
+		ui.Text(c, strings.ToUpper(filepath.Base(a.root))).FontSize(11).FontWeight(700).LetterSpacing(0.4).
+			TextColor(p.text).SingleLine().Grow(1)
+		if !hovered && !a.files.List.FocusWithin(c) {
+			return
+		}
+		if a.iconButton(c, iconFilePlus, locales.NewFileEllipsis(), false).Clicked() {
+			a.askNewEntry(a.targetDir(), false)
+		}
+		if a.iconButton(c, iconFolderPlus, locales.NewFolderEllipsis(), false).Clicked() {
+			a.askNewEntry(a.targetDir(), true)
+		}
+		if a.iconButton(c, iconRefresh, locales.RefreshExplorer(), false).Clicked() {
+			a.tree.Refresh()
+			a.indexStale = true
+		}
+		if a.iconButton(c, iconCollapse, locales.CollapseFolders(), false).Clicked() {
+			a.files.Open.Clear()
+		}
+	})
+	if t := a.tree; t.Loaded(a.root) && len(t.Children(a.root)) == 0 {
+		a.emptyFolder(c)
+	}
+	if a.conn != nil && !a.tree.Loaded(a.root) {
+		a.remoteTreeWaits(c)
+		return
+	}
+	// The outline is beside the files unless it has a view of its own.
+	above := a.settings.OutlinePosition == "above"
+	if a.settings.OutlinePosition == "view" {
+		a.fileTree(c)
+		return
+	}
+	if above {
+		a.outlineSection(c, true)
+		a.fileTree(c)
+		return
+	}
+	a.fileTree(c)
+	a.outlineSection(c, false)
 }
 
 // emptyFolder is what the explorer shows of a folder with no files yet,
@@ -441,7 +469,7 @@ func (a *app) fileTree(c *ui.Context) {
 			ui.Text(c, string(letter)).FontSize(11).FontWeight(600).Font(a.font.family).Padding(0, 4, 0, 0).
 				TextColor(gitColor(p, letter)).Shrink(0)
 		})
-	}).Grow(1).Padding(0, 6, 8, 6).Gap(0)
+	}).Grow(1).MinHeight(0).Padding(0, 6, 8, 6).Gap(0)
 	if first, _ := a.files.List.Visible(); a.files.Rows() > 0 && (first > 0 || top >= 0 && top < out.Bounds().Y-0.5) {
 		// A shadow under the folder's row, as the files scroll up under it.
 		out.DrawOver(func(pt *ui.Painter, r ui.Rect) {

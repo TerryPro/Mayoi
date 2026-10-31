@@ -293,8 +293,9 @@ type edge int
 
 const (
 	edgeRight edge = iota // the sidebar's, on the left
-	edgeTop               // the panel's
+	edgeTop               // the panel's, or the outline's under the files
 	edgeLeft              // a column's, after the first, or the sidebar's on the right
+	edgeBottom            // the outline's above the files
 )
 
 // splitter is the handle along an edge of a pane that resizes it. drag
@@ -304,6 +305,8 @@ func (a *app) splitter(c *ui.Context, at edge, drag func(d float32)) ui.Element 
 	switch at {
 	case edgeTop:
 		h.Top(0).Left(0).Right(0).Height(5).Cursor(ui.CursorResizeNS)
+	case edgeBottom:
+		h.Bottom(0).Left(0).Right(0).Height(5).Cursor(ui.CursorResizeNS)
 	case edgeLeft:
 		h.Top(0).Bottom(0).Left(0).Width(5).Cursor(ui.CursorResizeEW)
 	default:
@@ -330,6 +333,8 @@ func (a *app) splitter(c *ui.Context, at edge, drag func(d float32)) ui.Element 
 		switch at {
 		case edgeTop:
 			line.Top(0).Left(0).Right(0).Height(2)
+		case edgeBottom:
+			line.Bottom(0).Left(0).Right(0).Height(2)
 		case edgeLeft:
 			line.Top(0).Bottom(0).Left(0).Width(2)
 		default:
@@ -338,7 +343,7 @@ func (a *app) splitter(c *ui.Context, at edge, drag func(d float32)) ui.Element 
 	})
 	dx, dy, held := h.Dragged()
 	if held && (dx != 0 || dy != 0) {
-		if at == edgeTop {
+		if at == edgeTop || at == edgeBottom {
 			drag(dy)
 		} else {
 			drag(dx)

@@ -128,6 +128,9 @@ func (a *app) settingsItems(c *ui.Context, tab int) {
 		a.settingsBool(c, "autoSave", locales.CmdFileAutoSave, &a.settings.AutoSave)
 		a.settingsBool(c, "wordWrap", locales.CmdViewWordWrap, &a.settings.WordWrap)
 		a.settingsShowFoldingControls(c)
+		a.settingsOutlinePosition(c)
+		a.settingsOutlineSort(c)
+		a.settingsOutlineKinds(c)
 		a.settingsBool(c, "vim", locales.CmdViewVim, &a.settings.Vim)
 		a.settingsTabSize(c)
 		a.settingsFloat(c, "fontSize", locales.SettingsFontSize,
@@ -272,6 +275,55 @@ func (a *app) settingsShowFoldingControls(c *ui.Context) {
 	a.settingsPick(c, "showFoldingControls", locales.SettingsFoldingControls, &a.settings.ShowFoldingControls,
 		[]string{"", "always"},
 		[]string{locales.FoldOnHover(), locales.FoldAlways()})
+}
+
+// settingsOutlinePosition shows where the outline is: under the files of
+// the Explorer, above them, or in a sidebar view of its own.
+func (a *app) settingsOutlinePosition(c *ui.Context) {
+	was := a.settings.OutlinePosition
+	a.settingsPick(c, "outlinePosition", locales.SettingsOutlinePosition, &a.settings.OutlinePosition,
+		[]string{"", "above", "view"},
+		[]string{locales.OutlineBelow(), locales.OutlineAbove(), locales.OutlineView()})
+	if a.settings.OutlinePosition != was {
+		a.invalidate()
+	}
+}
+
+// settingsOutlineSort shows how each run of the outline is ordered.
+func (a *app) settingsOutlineSort(c *ui.Context) {
+	a.settingsPick(c, "outlineSort", locales.SettingsOutlineSort, &a.settings.OutlineSort,
+		[]string{"", "name", "kind"},
+		[]string{locales.OutlineSortPosition(), locales.OutlineSortName(), locales.OutlineSortKind()})
+}
+
+// settingsOutlineKinds shows the groups of declarations the outline shows.
+func (a *app) settingsOutlineKinds(c *ui.Context) {
+	p := a.pal
+	a.settingsRow(c, "outlineKinds", locales.SettingsOutlineKinds, func() {
+		ui.Row(c).Width(340).Shrink(0).Gap(4).Wrap().Children(func() {
+			for _, g := range outlineKindGroups {
+				on := a.outlineKindOn(g)
+				b := ui.ButtonBase(c.Key("setting:outlineKinds:"+g.key)).Height(24).Padding(0, 8).Radius(4).
+					Label(g.label())
+				if on {
+					b.Background(p.active)
+				} else if b.Hovered() {
+					b.Background(p.hover)
+				}
+				b.Transition(hoverFade)
+				b.Children(func() {
+					col := p.muted
+					if on {
+						col = p.text
+					}
+					ui.Text(c, g.label()).FontSize(11.5).TextColor(col).SingleLine()
+				})
+				if b.Clicked() {
+					a.toggleOutlineKind(g)
+				}
+			}
+		})
+	})
 }
 
 // settingsPanelPosition shows where the panel is.

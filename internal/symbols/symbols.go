@@ -24,7 +24,7 @@ type Symbol struct {
 
 // declaration finds the lines that declare something, in most languages:
 // a keyword, after modifiers, then a name.
-var declaration = regexp.MustCompile(`^(\s*)(?:(?:export|pub(?:\([^)]*\))?|public|private|protected|internal|static|async|abstract|final|default|override|open|sealed|data|inline|unsafe|extern|declare)\s+)*(func|def|class|type|fn|function|interface|struct|enum|trait|impl|module|object|protocol|extension|union|macro)\b\s*(.*)$`)
+var declaration = regexp.MustCompile(`^(\s*)(?:(?:export|pub(?:\([^)]*\))?|public|private|protected|internal|static|async|abstract|final|default|override|open|sealed|data|inline|unsafe|extern|declare|mut|readonly)\s+)*(func|fun|def|class|type|fn|function|interface|struct|enum|trait|impl|module|object|protocol|extension|union|macro|namespace|mod|var|let|const|val)\b\s*(.*)$`)
 
 // mdHeading finds a heading of Markdown.
 var mdHeading = regexp.MustCompile(`^(#{1,6})\s+(.+?)\s*#*\s*$`)
@@ -38,13 +38,19 @@ func Find(snap ui.TextSnapshot, markdown bool) []Symbol {
 		return nil
 	}
 	var out []Symbol
+	// outer are the declarations above the line read, to tell a local
+	// variable from one of a class or a namespace.
+	var outer []Symbol
 	fence := false
-	for i := range snap.LineCount() {
-		s, e := snap.LineRange(i)
-		if e-s > 400 {
+	// The text is read whole, which is a copy, rather than line by line,
+	// which walks the buffer for each: a document of many lines is found
+	// faster so.
+	text := snap.String()
+	lines := strings.Split(text, "\n")
+	for i, text := range lines {
+		if len(text) > 400 {
 			continue
 		}
-		text := snap.Slice(s, e)
 		if markdown {
 			if strings.HasPrefix(text, "```") {
 				fence = !fence
@@ -54,15 +60,70 @@ func Find(snap ui.TextSnapshot, markdown bool) []Symbol {
 			}
 			continue
 		}
-		if sym, ok := declare(text); ok {
-			sym.Line = i
-			if at := strings.Index(text, sym.Name); at >= 0 {
-				sym.Col = utf8.RuneCountInString(text[:at])
-			}
-			out = append(out, sym)
+		if !startsDeclaration(text) {
+			continue
 		}
+		sym, ok := declare(text)
+		if !ok {
+			continue
+		}
+		for len(outer) > 0 && outer[len(outer)-1].Depth >= sym.Depth {
+			outer = outer[:len(outer)-1]
+		}
+		if sym.Kind == "variable" && len(outer) > 0 {
+			last := outer[len(outer)-1].Kind
+			if last == "function" || last == "method" {
+				// A variable of a function is a local, which lists of the
+				// document's declarations leave out.
+				continue
+			}
+		}
+		sym.Line = i
+		if at := strings.Index(text, sym.Name); at >= 0 {
+			sym.Col = utf8.RuneCountInString(text[:at])
+		}
+		outer = append(outer, sym)
+		out = append(out, sym)
 	}
 	return out
+}
+
+// keywordStarts are the words a declaration or its modifiers start with,
+// which a line may declare something by.
+var keywordStarts = map[string]bool{
+	"func": true, "fun": true, "def": true, "class": true, "type": true,
+	"fn": true, "function": true, "interface": true, "struct": true,
+	"enum": true, "trait": true, "impl": true, "module": true,
+	"object": true, "protocol": true, "extension": true, "union": true,
+	"macro": true, "namespace": true, "mod": true, "var": true, "let": true,
+	"const": true, "val": true,
+	"export": true, "pub": true, "public": true, "private": true,
+	"protected": true, "internal": true, "static": true, "async": true,
+	"abstract": true, "final": true, "default": true, "override": true,
+	"open": true, "sealed": true, "data": true, "inline": true,
+	"unsafe": true, "extern": true, "declare": true, "mut": true,
+	"readonly": true,
+}
+
+// startsDeclaration reports whether a line begins with a word that may
+// declare something, which most lines of a document do not, so that the
+// declaration's pattern is not tried on each of them.
+func startsDeclaration(text string) bool {
+	i := 0
+	for i < len(text) && (text[i] == ' ' || text[i] == '\t') {
+		i++
+	}
+	start := i
+	for i < len(text) && isWordByte(text[i]) {
+		i++
+	}
+	return keywordStarts[text[start:i]]
+}
+
+// isWordByte reports whether b may be in a keyword: letters, digits and
+// underscores.
+func isWordByte(b byte) bool {
+	return b == '_' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9'
 }
 
 // declare reads a line declaring something: its name and kind.
@@ -89,9 +150,16 @@ func declare(text string) (Symbol, bool) {
 	if name == "" || kw == "type" && rest != "" && rest[0] == '(' {
 		return Symbol{}, false // an anonymous function, or a group of types
 	}
+	after := strings.TrimSpace(rest[len(name):])
+	if kw == "const" && after != "" && !strings.HasPrefix(after, "=") && !strings.HasPrefix(after, ":") &&
+		after[0] != ';' && after[0] != ',' {
+		// A constant needs its value next, or its type: C's const char *
+		// names a type, not a declaration.
+		return Symbol{}, false
+	}
 	// The rest of the declaration, as a function's parameters, and the
 	// type a method is of.
-	detail := strings.TrimSpace(strings.TrimRight(strings.TrimSpace(rest[len(name):]), "{:"))
+	detail := strings.TrimSpace(strings.TrimRight(after, "{:;"))
 	if len(detail) > 100 {
 		detail = detail[:97] + "…"
 	}
@@ -100,15 +168,19 @@ func declare(text string) (Symbol, bool) {
 	}
 	kind := kw
 	switch kw {
-	case "def", "fn", "function", "func":
+	case "def", "fn", "fun", "function", "func":
 		kind = "function"
 		if strings.Contains(m[0], "func (") || len(m[1]) > 0 && kw == "def" {
 			kind = "method"
 		}
-	case "struct", "union", "object", "class", "impl", "extension", "module":
+	case "struct", "union", "object", "class", "impl", "extension":
 		kind = "class"
 	case "interface", "trait", "protocol":
 		kind = "interface"
+	case "namespace", "module", "mod":
+		kind = "namespace"
+	case "var", "let", "const", "val":
+		kind = "variable"
 	case "type":
 		// Go's types say what they are after their name.
 		switch f := strings.Fields(detail); {

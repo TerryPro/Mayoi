@@ -283,6 +283,7 @@ type app struct {
 	problemsUI    problemsPanel
 	problemsCache problemsCache // what the panel last worked out
 	problemsGen   int           // counts the changes of the diagnostics
+	outline       outlineState  // the declarations of the document shown
 	complete      completionState
 	hover         hoverState
 	fix           fixState

@@ -5,6 +5,11 @@ needs a `## <version>` section here, or its build fails.
 
 ## Unreleased
 
+- The Explorer shows an outline of the file shown under the files, with its declarations nested.
+- A click on an outline declaration goes to its line, and its arrow folds the declarations under it.
+- The outline's header folds the section, and dragging its splitter sets how tall it is.
+- **File → Settings → Editor** sets where the outline shows, which declarations it lists, and their order.
+- The sidebar's **Outline** switch shows the declarations of the file in a view of their own.
 - Folding stays in place as you type in a file folded whole or by level, which no longer lags.
 - Folds are found again when `tabSize` changes, so their blocks line up with the new indent.
 - A large file opens without holding the window, read in the background as its tab shows.

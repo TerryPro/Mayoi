@@ -121,6 +121,17 @@ type Prefs struct {
 	// ShowFoldingControls shows the fold markers of the gutter always, as
 	// "always", or only while the pointer is over it, as "" or "mouseover".
 	ShowFoldingControls string `json:"showFoldingControls,omitempty"`
+	// OutlinePosition is where the outline of the document shown shows in
+	// the Explorer: "" or "below" under the files, "above" above them, or
+	// "view" in a sidebar view of its own.
+	OutlinePosition string `json:"outlinePosition,omitempty"`
+	// OutlineSort orders each run of the outline's declarations: "" in the
+	// order of the document, "name" by name, or "kind" by kind.
+	OutlineSort string `json:"outlineSort,omitempty"`
+	// OutlineKinds are the kinds of declaration the outline shows, as
+	// "function", "method", "class", "interface", "type", "enum",
+	// "variable", "namespace" and "heading"; empty shows them all.
+	OutlineKinds []string `json:"outlineKinds,omitempty"`
 	// PreviewMermaid draws the blocks of Mermaid of a Markdown preview as
 	// the diagrams they make, rather than their source.
 	PreviewMermaid bool `json:"previewMermaid"`
@@ -367,10 +378,14 @@ type Layout struct {
 	// ScmChangesRatio is the share of the multi-repository view for changes.
 	// Zero fits the changes to their content, up to half the view.
 	ScmChangesRatio float32 `json:"scmChangesRatio,omitempty"`
+	// OutlineHeight is how tall the outline shows under the files of the
+	// Explorer, or above them, and OutlineClosed hides it behind its header.
+	OutlineHeight float32 `json:"outlineHeight,omitempty"`
+	OutlineClosed bool    `json:"outlineClosed,omitempty"`
 }
 
 // DefaultLayout is the layout of a first launch.
-var DefaultLayout = Layout{SidebarWidth: 248, PanelHeight: 260, PanelWidth: 400, CommitFilesWidth: 240}
+var DefaultLayout = Layout{SidebarWidth: 248, PanelHeight: 260, PanelWidth: 400, CommitFilesWidth: 240, OutlineHeight: 220}
 
 // Normalize keeps the layout in its bounds, as base has it where it has
 // none, as a session an older version kept.
@@ -384,10 +399,14 @@ func (l *Layout) Normalize(base Layout) {
 	if l.CommitFilesWidth == 0 {
 		l.CommitFilesWidth = base.CommitFilesWidth
 	}
+	if l.OutlineHeight == 0 {
+		l.OutlineHeight = base.OutlineHeight
+	}
 	l.SidebarWidth = clamp(l.SidebarWidth, 160, 600)
 	l.PanelWidth = clamp(l.PanelWidth, 160, 2000)
 	l.CommitFilesWidth = clamp(l.CommitFilesWidth, 140, 800)
 	l.PanelHeight = clamp(l.PanelHeight, 100, 2000)
+	l.OutlineHeight = clamp(l.OutlineHeight, 80, 2000)
 }
 
 // Column is a column of the editor area, as the settings keep it.

@@ -11320,6 +11320,206 @@ func (msgs Messages) SidebarTitleSearch() string {
 	return Catalog.Format(msgs.locale, "sidebarTitleSearch", nil)
 }
 
+// SidebarOutline says "Outline"
+// in the language the app shows.
+func SidebarOutline() string { return In(i18n.Locale()).SidebarOutline() }
+
+// SidebarOutline says "Outline"
+// in the language of msgs.
+func (msgs Messages) SidebarOutline() string {
+	return Catalog.Format(msgs.locale, "sidebarOutline", nil)
+}
+
+// SidebarTitleOutline says "OUTLINE"
+// in the language the app shows.
+func SidebarTitleOutline() string { return In(i18n.Locale()).SidebarTitleOutline() }
+
+// SidebarTitleOutline says "OUTLINE"
+// in the language of msgs.
+func (msgs Messages) SidebarTitleOutline() string {
+	return Catalog.Format(msgs.locale, "sidebarTitleOutline", nil)
+}
+
+// OutlineTitle says "OUTLINE"
+// in the language the app shows.
+func OutlineTitle() string { return In(i18n.Locale()).OutlineTitle() }
+
+// OutlineTitle says "OUTLINE"
+// in the language of msgs.
+func (msgs Messages) OutlineTitle() string {
+	return Catalog.Format(msgs.locale, "outlineTitle", nil)
+}
+
+// OutlineNoFile says "Open a file to see its outline."
+// in the language the app shows.
+func OutlineNoFile() string { return In(i18n.Locale()).OutlineNoFile() }
+
+// OutlineNoFile says "Open a file to see its outline."
+// in the language of msgs.
+func (msgs Messages) OutlineNoFile() string {
+	return Catalog.Format(msgs.locale, "outlineNoFile", nil)
+}
+
+// OutlineNoSymbols says "This file has no outline."
+// in the language the app shows.
+func OutlineNoSymbols() string { return In(i18n.Locale()).OutlineNoSymbols() }
+
+// OutlineNoSymbols says "This file has no outline."
+// in the language of msgs.
+func (msgs Messages) OutlineNoSymbols() string {
+	return Catalog.Format(msgs.locale, "outlineNoSymbols", nil)
+}
+
+// OutlineLoading says "Reading the outline…"
+// in the language the app shows.
+func OutlineLoading() string { return In(i18n.Locale()).OutlineLoading() }
+
+// OutlineLoading says "Reading the outline…"
+// in the language of msgs.
+func (msgs Messages) OutlineLoading() string {
+	return Catalog.Format(msgs.locale, "outlineLoading", nil)
+}
+
+// SettingsOutlinePosition says "Outline position"
+// in the language the app shows.
+func SettingsOutlinePosition() string { return In(i18n.Locale()).SettingsOutlinePosition() }
+
+// SettingsOutlinePosition says "Outline position"
+// in the language of msgs.
+func (msgs Messages) SettingsOutlinePosition() string {
+	return Catalog.Format(msgs.locale, "settingsOutlinePosition", nil)
+}
+
+// OutlineBelow says "Under files"
+// in the language the app shows.
+func OutlineBelow() string { return In(i18n.Locale()).OutlineBelow() }
+
+// OutlineBelow says "Under files"
+// in the language of msgs.
+func (msgs Messages) OutlineBelow() string {
+	return Catalog.Format(msgs.locale, "outlineBelow", nil)
+}
+
+// OutlineAbove says "Above files"
+// in the language the app shows.
+func OutlineAbove() string { return In(i18n.Locale()).OutlineAbove() }
+
+// OutlineAbove says "Above files"
+// in the language of msgs.
+func (msgs Messages) OutlineAbove() string {
+	return Catalog.Format(msgs.locale, "outlineAbove", nil)
+}
+
+// OutlineView says "Side view"
+// in the language the app shows.
+func OutlineView() string { return In(i18n.Locale()).OutlineView() }
+
+// OutlineView says "Side view"
+// in the language of msgs.
+func (msgs Messages) OutlineView() string {
+	return Catalog.Format(msgs.locale, "outlineView", nil)
+}
+
+// SettingsOutlineSort says "Outline order"
+// in the language the app shows.
+func SettingsOutlineSort() string { return In(i18n.Locale()).SettingsOutlineSort() }
+
+// SettingsOutlineSort says "Outline order"
+// in the language of msgs.
+func (msgs Messages) SettingsOutlineSort() string {
+	return Catalog.Format(msgs.locale, "settingsOutlineSort", nil)
+}
+
+// OutlineSortPosition says "By position"
+// in the language the app shows.
+func OutlineSortPosition() string { return In(i18n.Locale()).OutlineSortPosition() }
+
+// OutlineSortPosition says "By position"
+// in the language of msgs.
+func (msgs Messages) OutlineSortPosition() string {
+	return Catalog.Format(msgs.locale, "outlineSortPosition", nil)
+}
+
+// OutlineSortName says "By name"
+// in the language the app shows.
+func OutlineSortName() string { return In(i18n.Locale()).OutlineSortName() }
+
+// OutlineSortName says "By name"
+// in the language of msgs.
+func (msgs Messages) OutlineSortName() string {
+	return Catalog.Format(msgs.locale, "outlineSortName", nil)
+}
+
+// OutlineSortKind says "By kind"
+// in the language the app shows.
+func OutlineSortKind() string { return In(i18n.Locale()).OutlineSortKind() }
+
+// OutlineSortKind says "By kind"
+// in the language of msgs.
+func (msgs Messages) OutlineSortKind() string {
+	return Catalog.Format(msgs.locale, "outlineSortKind", nil)
+}
+
+// SettingsOutlineKinds says "Outline kinds"
+// in the language the app shows.
+func SettingsOutlineKinds() string { return In(i18n.Locale()).SettingsOutlineKinds() }
+
+// SettingsOutlineKinds says "Outline kinds"
+// in the language of msgs.
+func (msgs Messages) SettingsOutlineKinds() string {
+	return Catalog.Format(msgs.locale, "settingsOutlineKinds", nil)
+}
+
+// OutlineKindFunctions says "Functions"
+// in the language the app shows.
+func OutlineKindFunctions() string { return In(i18n.Locale()).OutlineKindFunctions() }
+
+// OutlineKindFunctions says "Functions"
+// in the language of msgs.
+func (msgs Messages) OutlineKindFunctions() string {
+	return Catalog.Format(msgs.locale, "outlineKindFunctions", nil)
+}
+
+// OutlineKindTypes says "Types"
+// in the language the app shows.
+func OutlineKindTypes() string { return In(i18n.Locale()).OutlineKindTypes() }
+
+// OutlineKindTypes says "Types"
+// in the language of msgs.
+func (msgs Messages) OutlineKindTypes() string {
+	return Catalog.Format(msgs.locale, "outlineKindTypes", nil)
+}
+
+// OutlineKindVariables says "Variables"
+// in the language the app shows.
+func OutlineKindVariables() string { return In(i18n.Locale()).OutlineKindVariables() }
+
+// OutlineKindVariables says "Variables"
+// in the language of msgs.
+func (msgs Messages) OutlineKindVariables() string {
+	return Catalog.Format(msgs.locale, "outlineKindVariables", nil)
+}
+
+// OutlineKindNamespaces says "Namespaces"
+// in the language the app shows.
+func OutlineKindNamespaces() string { return In(i18n.Locale()).OutlineKindNamespaces() }
+
+// OutlineKindNamespaces says "Namespaces"
+// in the language of msgs.
+func (msgs Messages) OutlineKindNamespaces() string {
+	return Catalog.Format(msgs.locale, "outlineKindNamespaces", nil)
+}
+
+// OutlineKindHeadings says "Headings"
+// in the language the app shows.
+func OutlineKindHeadings() string { return In(i18n.Locale()).OutlineKindHeadings() }
+
+// OutlineKindHeadings says "Headings"
+// in the language of msgs.
+func (msgs Messages) OutlineKindHeadings() string {
+	return Catalog.Format(msgs.locale, "outlineKindHeadings", nil)
+}
+
 // StageAllCommit says "Stage All & Commit"
 // in the language the app shows.
 func StageAllCommit() string { return In(i18n.Locale()).StageAllCommit() }
