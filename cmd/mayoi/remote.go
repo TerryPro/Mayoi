@@ -13,6 +13,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	"mayoi/internal/bg"
 	"mayoi/internal/remote"
 	"mayoi/internal/vfs"
 	"mayoi/locales"
@@ -235,14 +236,26 @@ func (a *app) loadRemote(d *document) {
 	go func() {
 		// The stat and the text at one round trip.
 		info, data, err := vfs.ReadFileInfo(path, maxOpenBytes)
-		a.post(func() { a.remoteLoaded(d, path, info, data, err) })
+		a.post(func() { a.fileLoaded(d, path, info, data, err) })
 	}()
 }
 
-// remoteLoaded takes the text of a remote document read, or why it could
-// not be: a file that cannot be opened closes its tabs, as one of this
-// machine never opens; one that could not be reached says so.
-func (a *app) remoteLoaded(d *document, path string, info fs.FileInfo, data []byte, err error) {
+// loadLocal reads a local file in the background, as loadRemote does for a
+// remote one: the document is empty and read-only until it is read, so that
+// a large file does not hold the frame it opens in.
+func (a *app) loadLocal(d *document) {
+	d.loading, d.loadErr = true, nil
+	path := d.path
+	bg.Go(func() {
+		info, data, err := readFileData(path)
+		a.post(func() { a.fileLoaded(d, path, info, data, err) })
+	})
+}
+
+// fileLoaded takes the text of a document read, or why it could not be: a
+// file that cannot be opened closes its tabs, as one of this machine never
+// opens; one that could not be reached says so.
+func (a *app) fileLoaded(d *document, path string, info fs.FileInfo, data []byte, err error) {
 	if !slices.Contains(a.docs, d) || d.path != path {
 		return
 	}
@@ -253,7 +266,7 @@ func (a *app) remoteLoaded(d *document, path string, info fs.FileInfo, data []by
 		err = errLongLine
 	}
 	if err != nil {
-		if errors.Is(err, remote.ErrOffline) || !remote.IsConnected(path) {
+		if errors.Is(err, remote.ErrOffline) || remote.Is(path) && !remote.IsConnected(path) {
 			d.loadErr = remote.ErrOffline
 			return
 		}
@@ -287,6 +300,16 @@ func (a *app) remoteLoaded(d *document, path string, info fs.FileInfo, data []by
 	d.measureWidest()
 	d.stamp = stampOf(info)
 	for _, ed := range d.views {
+		if ed.seekLine >= 0 {
+			// A jump asked for a line before the text came: it goes there.
+			line, char := ed.seekLine, ed.seekChar
+			ed.seekLine = -1
+			snap := d.buf.Snapshot()
+			line = min(max(line, 0), snap.LineCount()-1)
+			off := characterOffset(snap, line, char)
+			ed.selectRange(off, off, true)
+			ed.lightLanding()
+		}
 		if ts := ed.restoreTab; ts != nil {
 			ed.restoreTab = nil
 			a.restoreEditor(ed, *ts)

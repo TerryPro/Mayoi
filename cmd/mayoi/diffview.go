@@ -2216,6 +2216,11 @@ func (a *app) openFileAt(path string, line int, focus bool) {
 	// The line is in the text, whatever markdownPreview says.
 	a.openText(func() { a.openPath(path, focus) })
 	if d := a.activeEditor(); d != nil && d.path == path {
+		if d.loading {
+			// The text comes in a frame: the line waits for it.
+			d.seekLine, d.seekChar = line, 0
+			return
+		}
 		snap := d.buf.Snapshot()
 		line = min(max(line, 0), snap.LineCount()-1)
 		s, _ := snap.LineRange(line)

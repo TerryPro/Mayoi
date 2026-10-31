@@ -3306,6 +3306,46 @@ func (msgs Messages) SettingsTitle() string {
 	return Catalog.Format(msgs.locale, "settingsTitle", nil)
 }
 
+// CmdComplete says "Suggest"
+// in the language the app shows.
+func CmdComplete() string { return In(i18n.Locale()).CmdComplete() }
+
+// CmdComplete says "Suggest"
+// in the language of msgs.
+func (msgs Messages) CmdComplete() string {
+	return Catalog.Format(msgs.locale, "cmdComplete", nil)
+}
+
+// CmdHover says "Show Hover"
+// in the language the app shows.
+func CmdHover() string { return In(i18n.Locale()).CmdHover() }
+
+// CmdHover says "Show Hover"
+// in the language of msgs.
+func (msgs Messages) CmdHover() string {
+	return Catalog.Format(msgs.locale, "cmdHover", nil)
+}
+
+// CmdQuickFix says "Quick Fix"
+// in the language the app shows.
+func CmdQuickFix() string { return In(i18n.Locale()).CmdQuickFix() }
+
+// CmdQuickFix says "Quick Fix"
+// in the language of msgs.
+func (msgs Messages) CmdQuickFix() string {
+	return Catalog.Format(msgs.locale, "cmdQuickFix", nil)
+}
+
+// NoQuickFixes says "No quick fixes here"
+// in the language the app shows.
+func NoQuickFixes() string { return In(i18n.Locale()).NoQuickFixes() }
+
+// NoQuickFixes says "No quick fixes here"
+// in the language of msgs.
+func (msgs Messages) NoQuickFixes() string {
+	return Catalog.Format(msgs.locale, "noQuickFixes", nil)
+}
+
 // CmdGoDefinition says "Go to Definition"
 // in the language the app shows.
 func CmdGoDefinition() string { return In(i18n.Locale()).CmdGoDefinition() }
@@ -3444,6 +3484,16 @@ func LspOff() string { return In(i18n.Locale()).LspOff() }
 // in the language of msgs.
 func (msgs Messages) LspOff() string {
 	return Catalog.Format(msgs.locale, "lspOff", nil)
+}
+
+// LspStarting says "The language server is starting"
+// in the language the app shows.
+func LspStarting() string { return In(i18n.Locale()).LspStarting() }
+
+// LspStarting says "The language server is starting"
+// in the language of msgs.
+func (msgs Messages) LspStarting() string {
+	return Catalog.Format(msgs.locale, "lspStarting", nil)
 }
 
 // LspRunning says "Language server running"

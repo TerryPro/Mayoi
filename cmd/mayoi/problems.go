@@ -28,14 +28,39 @@ type problem struct {
 // problemsPanel is the problems panel's place: the filter of its severities
 // and its text, the files it folds, and the row it chooses.
 type problemsPanel struct {
-	list      ui.ListState
-	listView  ui.Handle
-	input     ui.Handle
-	row       int
-	query     string
-	severity  int // 0 for all, 1 for errors, 2 for warnings
-	collapsed map[string]bool
-	focusList bool
+	list        ui.ListState
+	listView    ui.Handle
+	input       ui.Handle
+	row         int
+	query       string
+	severity    int // 0 for all, 1 for errors, 2 for warnings
+	collapsed   map[string]bool
+	collapseGen int
+	focusList   bool
+}
+
+// problemsCache is what the problems panel last worked out, of the
+// diagnostics of the language servers, which are worked out again only as
+// they change, or as its filter does, rather than every frame.
+type problemsCache struct {
+	valid            bool
+	gen              int
+	all              []problem
+	count            int
+	errors, warnings int
+
+	shownValid    bool
+	shownGen      int
+	shownSeq      int
+	shownQuery    string
+	shownSeverity int
+	shown         []problem
+
+	itemsValid    bool
+	itemsGen      int
+	itemsShown    int
+	itemsCollapse int
+	items         []problemItem
 }
 
 // problemItem is a row of the problems panel: a file's header, or one of
@@ -50,6 +75,10 @@ type problemItem struct {
 // problems lists the language server's problems: a file's in the order of
 // their place in it, and the files by their paths.
 func (a *app) problems() []problem {
+	c := &a.problemsCache
+	if c.valid && c.gen == a.problemsGen {
+		return c.all
+	}
 	var out []problem
 	for _, f := range a.lspDiags {
 		for _, d := range f.diags {
@@ -71,6 +100,19 @@ func (a *app) problems() []problem {
 		}
 		return cmp.Compare(x.message, y.message)
 	})
+	if out == nil {
+		out = []problem{}
+	}
+	c.valid, c.gen, c.all, c.count = true, a.problemsGen, out, len(out)
+	c.errors, c.warnings = 0, 0
+	for _, pr := range out {
+		switch pr.severity {
+		case 1:
+			c.errors++
+		case 2:
+			c.warnings++
+		}
+	}
 	return out
 }
 
@@ -78,6 +120,10 @@ func (a *app) problems() []problem {
 func (a *app) problemsShown() []problem {
 	ps := a.problems()
 	s := &a.problemsUI
+	c := &a.problemsCache
+	if c.shownValid && c.shownGen == c.gen && c.shownQuery == s.query && c.shownSeverity == s.severity {
+		return c.shown
+	}
 	query := strings.ToLower(strings.TrimSpace(s.query))
 	out := make([]problem, 0, len(ps))
 	for _, pr := range ps {
@@ -99,37 +145,31 @@ func (a *app) problemsShown() []problem {
 		}
 		out = append(out, pr)
 	}
+	c.shownValid, c.shownGen, c.shownQuery, c.shownSeverity, c.shown = true, c.gen, s.query, s.severity, out
+	c.shownSeq++
 	return out
 }
 
 // problemCount counts the language server's problems, in every file.
 func (a *app) problemCount() int {
-	n := 0
-	for _, f := range a.lspDiags {
-		n += len(f.diags)
-	}
-	return n
+	a.problems()
+	return a.problemsCache.count
 }
 
 // problemSeverities counts the errors and warnings of every file.
 func (a *app) problemSeverities() (errors, warnings int) {
-	for _, f := range a.lspDiags {
-		for _, d := range f.diags {
-			switch d.Severity {
-			case 1:
-				errors++
-			case 2:
-				warnings++
-			}
-		}
-	}
-	return errors, warnings
+	a.problems()
+	return a.problemsCache.errors, a.problemsCache.warnings
 }
 
 // problemItems lists the panel's rows: a file's header, and its problems
 // unless it is folded.
 func (a *app) problemItems(ps []problem) []problemItem {
 	s := &a.problemsUI
+	c := &a.problemsCache
+	if c.itemsValid && c.itemsGen == c.gen && c.itemsShown == c.shownSeq && c.itemsCollapse == s.collapseGen {
+		return c.items
+	}
 	counts := map[string]int{}
 	for _, pr := range ps {
 		counts[lsp.Key(pr.path)]++
@@ -147,6 +187,7 @@ func (a *app) problemItems(ps []problem) []problemItem {
 		}
 		out = append(out, problemItem{path: pr.path, pr: pr})
 	}
+	c.itemsValid, c.itemsGen, c.itemsShown, c.itemsCollapse, c.items = true, c.gen, c.shownSeq, s.collapseGen, out
 	return out
 }
 
@@ -342,6 +383,7 @@ func (a *app) problemGroupRow(c *ui.Context, it problemItem, action *func()) {
 				s.collapsed = map[string]bool{}
 			}
 			s.collapsed[key] = !s.collapsed[key]
+			s.collapseGen++
 			s.focusList = true
 			a.invalidate()
 		}
@@ -411,4 +453,18 @@ func severityIcon(p *palette, severity int) (*ui.SVG, ui.Color) {
 		return iconInfo, p.ansi[4]
 	}
 	return iconLightbulb, p.muted
+}
+
+// severityColor is the color of a problem's severity, as an underline and
+// a mark of the overview strip show it.
+func severityColor(p *palette, severity int) ui.Color {
+	switch severity {
+	case 1:
+		return p.dangerFg
+	case 2:
+		return p.ansi[3]
+	case 3:
+		return p.ansi[4]
+	}
+	return p.muted
 }

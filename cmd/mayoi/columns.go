@@ -282,21 +282,30 @@ func (a *app) openFileIn(col *column, at int, path string, focus bool) {
 		}
 	} else {
 		a.nextID++
-		d, err := readDocument(a.nextID, path, a.invalidate)
-		if errors.Is(err, errBinary) {
-			a.fail("%s", locales.FailBinary(filepath.Base(path)))
-			return
+		info, statErr := os.Stat(path)
+		if statErr == nil && info.Size() <= syncOpenBytes {
+			d, err := readDocument(a.nextID, path, a.invalidate)
+			if errors.Is(err, errBinary) {
+				a.fail("%s", locales.FailBinary(filepath.Base(path)))
+				return
+			}
+			if errors.Is(err, errLongLine) {
+				a.fail("%s", locales.FailLongLine(filepath.Base(path)))
+				return
+			}
+			if err != nil {
+				a.fail("%s", locales.FailOpen(filepath.Base(path), err.Error()))
+				return
+			}
+			doc = d
+			a.docs = append(a.docs, doc)
+		} else {
+			// A large file is read in the background, the tab showing that
+			// it is, rather than the frame it opens in waiting for it.
+			doc = newDocument(a.nextID, path, "", highlight.New(highlight.Lexer(path), a.invalidate))
+			a.docs = append(a.docs, doc)
+			a.loadLocal(doc)
 		}
-		if errors.Is(err, errLongLine) {
-			a.fail("%s", locales.FailLongLine(filepath.Base(path)))
-			return
-		}
-		if err != nil {
-			a.fail("%s", locales.FailOpen(filepath.Base(path), err.Error()))
-			return
-		}
-		doc = d
-		a.docs = append(a.docs, doc)
 		if a.tree != nil {
 			a.tree.Watch(path)
 		}
@@ -420,6 +429,11 @@ func (a *app) activate(col *column, i int, focus bool) {
 	if i < 0 || i >= len(col.tabs) {
 		return
 	}
+	// Another tab shows: the language server's words and its hover were of
+	// the tab before.
+	a.closeCompletion()
+	a.closeHover()
+	a.closeFix()
 	col.active = i
 	if at := slices.Index(a.cols, col); at >= 0 {
 		a.col = at

@@ -39,6 +39,16 @@ type foldHit struct {
 // a file too long to fold whole.
 const maxFoldCandidates = 4096
 
+// maxFoldScan is how far a fold looks for the line that ends its block. A
+// block longer than this folds not, so that a file that never closes one
+// is not read whole on each line.
+const maxFoldScan = 5000
+
+// foldFew is how few folds are found anew as the text changes: past that,
+// typing keeps them where they are, rather than reading each block again
+// on each key.
+const foldFew = 8
+
 // foldUnion returns the folds as ranges that do not overlap: the lines a
 // fold inside another hides are the outer's anyway.
 func foldUnion(folds []foldRange) []foldRange {
@@ -213,6 +223,7 @@ func (a *app) restoreFolds(d *editor, saved []settings.Fold) {
 	slices.SortFunc(folds, func(x, y foldRange) int { return x.start - y.start })
 	d.setFolds(folds)
 	d.foldKind, d.foldVersion = foldCustom, snap.Version()
+	d.foldLines, d.foldTab = snap.LineCount(), tabSizeOf(a.settings.Prefs)
 }
 
 // foldRangeAt returns what folding line hides, and whether it folds: the
@@ -236,7 +247,7 @@ func foldRangeAt(snap ui.TextSnapshot, line, tab int) (foldRange, bool) {
 	}
 	base := indentColumns(text, tab)
 	end := line
-	for i := line + 1; i < snap.LineCount(); i++ {
+	for i := line + 1; i < snap.LineCount() && i <= line+maxFoldScan; i++ {
 		t := lineText(snap, i)
 		if strings.TrimSpace(t) == "" {
 			continue
@@ -260,7 +271,7 @@ func matchFoldBracket(snap ui.TextSnapshot, line int, text string, open byte) (i
 	inBlock := false
 	inString := byte(0)
 	start := strings.LastIndexByte(strings.TrimRight(stripComment(text), " \t\r"), open)
-	for i := line; i < snap.LineCount(); i++ {
+	for i := line; i < snap.LineCount() && i <= line+maxFoldScan; i++ {
 		s := lineText(snap, i)
 		from := 0
 		if i == line {
@@ -474,6 +485,7 @@ func (a *app) foldAllIn(d *editor) {
 	snap := d.buf.Snapshot()
 	d.setFolds(a.foldCandidates(d, snap))
 	d.foldKind, d.foldLevel, d.foldVersion = foldEvery, 0, snap.Version()
+	d.foldLines, d.foldTab = snap.LineCount(), tabSizeOf(a.settings.Prefs)
 	a.clampFoldSelection(d)
 	a.invalidate()
 }
@@ -500,6 +512,7 @@ func (a *app) foldLevelIn(d *editor, level int) {
 	}
 	d.setFolds(folds)
 	d.foldKind, d.foldLevel, d.foldVersion = foldLevels, level, snap.Version()
+	d.foldLines, d.foldTab = snap.LineCount(), tabSizeOf(a.settings.Prefs)
 	a.clampFoldSelection(d)
 	a.invalidate()
 }
@@ -549,6 +562,7 @@ func (a *app) unfoldAllIn(d *editor) {
 	}
 	d.setFolds(nil)
 	d.foldVersion = d.buf.Snapshot().Version()
+	d.foldLines, d.foldTab = d.buf.Snapshot().LineCount(), tabSizeOf(a.settings.Prefs)
 	a.invalidate()
 }
 
@@ -558,18 +572,24 @@ func foldSig(snap ui.TextSnapshot, line int) string {
 }
 
 // refreshFolds keeps the folds of an editor as its text changed, finding
-// each start line near where it was by its text, and its block anew, or
-// making every fold again as Fold All and Fold Level do.
+// each start line near where it was by its text, and its block anew.
+//
+// Typing changes the text without moving its lines: the folds of Fold All
+// and Fold Level then stay where they are, as their start lines do, rather
+// than the whole document being folded again on each key.
 func (a *app) refreshFolds(d *editor, snap ui.TextSnapshot) {
 	if d.foldVersion == snap.Version() {
 		return
 	}
-	switch d.foldKind {
-	case foldEvery:
-		a.foldAllIn(d)
-		return
-	case foldLevels:
-		a.foldLevelIn(d, d.foldLevel)
+	tab := tabSizeOf(a.settings.Prefs)
+	retab := d.foldTab != tab
+	if retab {
+		// The folds were found with another tab width: their blocks are
+		// found again, which the width changes.
+		d.foldHits, d.foldTab = nil, tab
+	}
+	if !retab && len(d.folds) >= foldFew && d.foldLines == snap.LineCount() && d.foldsHold(snap) {
+		d.foldVersion = snap.Version()
 		return
 	}
 	var kept []foldRange
@@ -596,7 +616,18 @@ func (a *app) refreshFolds(d *editor, snap ui.TextSnapshot) {
 	}
 	slices.SortFunc(kept, func(x, y foldRange) int { return x.start - y.start })
 	d.setFolds(kept)
-	d.foldVersion = snap.Version()
+	d.foldVersion, d.foldLines = snap.Version(), snap.LineCount()
+}
+
+// foldsHold reports whether the start line of each fold is still the one
+// it was: the folds stay where they are while the lines do not move.
+func (d *editor) foldsHold(snap ui.TextSnapshot) bool {
+	for _, f := range d.folds {
+		if f.start < 0 || f.start >= snap.LineCount() || foldSig(snap, f.start) != f.sig {
+			return false
+		}
+	}
+	return true
 }
 
 // findFoldStart finds the line near line whose text is sig, unused.

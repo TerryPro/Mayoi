@@ -281,6 +281,11 @@ type app struct {
 	panelMax      bool // the panel takes the editor's room
 	panelProblems bool // the panel shows its problems rather than its terminals
 	problemsUI    problemsPanel
+	problemsCache problemsCache // what the panel last worked out
+	problemsGen   int           // counts the changes of the diagnostics
+	complete      completionState
+	hover         hoverState
+	fix           fixState
 	welcomeView   ui.Handle
 	rain          rainState   // The Matrix's, behind the welcome page
 	mascot        mascotState // the theme's character, Claude's or Qoder's

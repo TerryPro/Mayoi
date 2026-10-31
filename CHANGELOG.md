@@ -5,6 +5,14 @@ needs a `## <version>` section here, or its build fails.
 
 ## Unreleased
 
+- Folding stays in place as you type in a file folded whole or by level, which no longer lags.
+- Folds are found again when `tabSize` changes, so their blocks line up with the new indent.
+- A large file opens without holding the window, read in the background as its tab shows.
+- The problems panel is worked out again only as the problems or its filter change, not every frame.
+- **Language server** problems are underlined in the editor, and marked on the overview strip.
+- `Ctrl+Space` suggests the words the language server offers at the caret.
+- `Shift+F1` shows what the language server says of the symbol at the caret.
+- `Ctrl+.` offers the language server's quick fixes for the problem at the caret.
 - Headings in the Markdown preview take the color theme's heading color, as the editor does.
 - Command-clicking a terminal path or URL followed by Chinese punctuation no longer takes the text after it.
 - Switching back to a tab no longer flashes a blank editor for a frame before its text shows.

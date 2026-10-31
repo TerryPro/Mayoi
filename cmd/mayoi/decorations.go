@@ -8,22 +8,33 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"mayoi/internal/linediff"
+	"mayoi/internal/lsp"
 )
 
 // decorations are what the editor paints around the text of the lines in
-// view: the indent guides, the brackets paired at the caret and the other
-// occurrences of the word at it. An editor keeps the last it found, and
-// finds them again only when its text, its caret or its view changes.
+// view: the indent guides, the brackets paired at the caret, the other
+// occurrences of the word at it, and the problems the language server
+// found. An editor keeps the last it found, and finds them again only
+// when its text, its caret, its view or the problems change.
 type decorations struct {
 	version     uint64
 	sel         [2]int
 	first, last int
+	diagGen     int
 
 	levels []int // the indent levels of lines first up to last
 	// The guide of the block the caret is in: its level, and its lines.
 	active, activeFrom, activeTo int
 	brackets                     []runeRect
 	words                        []runeRect
+	diags                        []diagMark
+}
+
+// diagMark is a problem's range on a line in view, a wavy underline.
+type diagMark struct {
+	line     int
+	x0, x1   float32
+	severity int
 }
 
 // runeRect is a run of runes on a line, as x offsets from the start of the
@@ -43,10 +54,11 @@ const (
 // decorate finds the decorations of lines first up to last of a snapshot.
 func (a *app) decorate(d *editor, snap ui.TextSnapshot, first, last int) *decorations {
 	dc := &d.deco
-	if dc.version == snap.Version() && dc.sel == d.sel && dc.first == first && dc.last == last && dc.levels != nil {
+	if dc.version == snap.Version() && dc.sel == d.sel && dc.first == first && dc.last == last && dc.levels != nil && dc.diagGen == a.problemsGen {
 		return dc
 	}
 	dc.version, dc.sel, dc.first, dc.last = snap.Version(), d.sel, first, last
+	dc.diagGen = a.problemsGen
 	unit := max(d.indent.cols(), 1)
 	// The lines in view and those around them that blank lines are
 	// measured against, read at once.
@@ -119,6 +131,32 @@ func (a *app) decorate(d *editor, snap ui.TextSnapshot, first, last int) *decora
 
 	dc.brackets = dc.brackets[:0]
 	dc.words = dc.words[:0]
+	dc.diags = dc.diags[:0]
+	// The problems of the lines in view, as the language server's last
+	// word said, underlined.
+	if d.path != "" {
+		if file, ok := a.lspDiags[lsp.Key(d.path)]; ok {
+			for _, dg := range file.diags {
+				line := dg.Range.Start.Line
+				if line < first || line > last || line < 0 || line >= snap.LineCount() {
+					continue
+				}
+				s, e := snap.LineRange(line)
+				start := min(characterOffset(snap, line, max(dg.Range.Start.Character, 0)), e)
+				end := e
+				if dg.Range.End.Line == line {
+					end = min(characterOffset(snap, line, max(dg.Range.End.Character, 0)), e)
+				}
+				end = max(end, start)
+				x0 := a.textWidth(snap.Slice(s, start))
+				x1 := max(a.textWidth(snap.Slice(s, end)), x0+2)
+				dc.diags = append(dc.diags, diagMark{line: line, x0: x0, x1: x1, severity: dg.Severity})
+				if len(dc.diags) >= 500 {
+					break
+				}
+			}
+		}
+	}
 	if d.sel[0] == d.sel[1] {
 		if at, pair, ok := matchBracket(snap, caret); ok {
 			dc.brackets = append(dc.brackets, a.runeRectOf(snap, at, at+1), a.runeRectOf(snap, pair, pair+1))
@@ -264,6 +302,25 @@ func (a *app) findWords(d *editor, snap ui.TextSnapshot, first, last int) {
 	if len(dc.words) == 1 {
 		dc.words = dc.words[:0] // only itself
 	}
+}
+
+// wavyUnderline draws a wavy line along x0 up to x1 at y, as a problem's
+// underline.
+func wavyUnderline(pt *ui.Painter, x0, x1, y float32, col ui.Color) {
+	const step, amp = float32(4), float32(1.5)
+	var path ui.Path
+	path.MoveTo(x0, y+amp)
+	up := false
+	for x := x0; x < x1; {
+		x = min(x+step, x1)
+		yy := y - amp
+		if up {
+			yy = y + amp
+		}
+		path.LineTo(x, yy)
+		up = !up
+	}
+	pt.StrokePath(&path, 1, col)
 }
 
 // overview is what the strip along the editor's right edge marks: the

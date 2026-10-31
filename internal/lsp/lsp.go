@@ -62,6 +62,106 @@ type FoldingRange struct {
 	Kind           string `json:"kind"`
 }
 
+// TextEdit is a change of a document's text: the text NewText in place of
+// the run of Range.
+type TextEdit struct {
+	Range   Range  `json:"range"`
+	NewText string `json:"newText"`
+}
+
+// CompletionItem is a word a server offers at a place: its Label, what
+// Detail says of it, and the Text it inserts, in place of Edit's range when
+// the server names one.
+type CompletionItem struct {
+	Label            string    `json:"label"`
+	Kind             int       `json:"kind"`
+	Detail           string    `json:"detail"`
+	Documentation    any       `json:"documentation"`
+	SortText         string    `json:"sortText"`
+	FilterText       string    `json:"filterText"`
+	InsertText       string    `json:"insertText"`
+	InsertTextFormat int       `json:"insertTextFormat"`
+	TextEdit         *TextEdit `json:"textEdit"`
+}
+
+// CompletionList is what a server offers at a place: its items, and
+// whether more may come as the text goes on.
+type CompletionList struct {
+	IsIncomplete bool             `json:"isIncomplete"`
+	Items        []CompletionItem `json:"items"`
+}
+
+// Hover is what a server says of the symbol at a place: its Contents, as
+// text or markup, and the Range they are of.
+type Hover struct {
+	Contents hoverContents `json:"contents"`
+	Range    *Range        `json:"range"`
+}
+
+// CodeAction is a change a server offers to a problem: what Title says it
+// does, and the Edit that does it.
+type CodeAction struct {
+	Title       string         `json:"title"`
+	Kind        string         `json:"kind"`
+	IsPreferred bool           `json:"isPreferred"`
+	Edit        *WorkspaceEdit `json:"edit"`
+	Command     any            `json:"command"`
+}
+
+// WorkspaceEdit is a change of documents: the edits of each by its URI,
+// or the edits of each document the server names.
+type WorkspaceEdit struct {
+	Changes         map[string][]TextEdit `json:"changes"`
+	DocumentChanges []TextDocumentEdit    `json:"documentChanges"`
+}
+
+// TextDocumentEdit is the edits of one document.
+type TextDocumentEdit struct {
+	TextDocument struct {
+		URI string `json:"uri"`
+	} `json:"textDocument"`
+	Edits []TextEdit `json:"edits"`
+}
+
+// Text returns the hover's contents as text: its markup's value, or the
+// strings of its list.
+func (h Hover) Text() string { return h.Contents.Value }
+
+// hoverContents is a hover's contents, which the protocol may spell as a
+// string, a markup content, or a list of either.
+type hoverContents struct {
+	Kind  string
+	Value string
+}
+
+func (h *hoverContents) UnmarshalJSON(data []byte) error {
+	var s string
+	if json.Unmarshal(data, &s) == nil {
+		h.Value = s
+		return nil
+	}
+	var content struct {
+		Kind  string `json:"kind"`
+		Value string `json:"value"`
+	}
+	if json.Unmarshal(data, &content) == nil && content.Value != "" {
+		h.Kind, h.Value = content.Kind, content.Value
+		return nil
+	}
+	var list []json.RawMessage
+	if json.Unmarshal(data, &list) == nil {
+		var parts []string
+		for _, raw := range list {
+			var one hoverContents
+			if one.UnmarshalJSON(raw) == nil && one.Value != "" {
+				parts = append(parts, one.Value)
+			}
+		}
+		h.Kind, h.Value = "markdown", strings.Join(parts, "\n\n")
+	}
+	return nil
+}
+
 // ErrUnsupported is what a request returns for a method the server does not
 // implement.
 var ErrUnsupported = errors.New("lsp: the request is not supported")
@@ -140,6 +240,13 @@ func (c *Client) Initialize(ctx context.Context, root string) error {
 					"lineFoldingOnly":  true,
 					"foldingRangeKind": map[string]any{"valueSet": []string{"comment", "imports", "region"}},
 				},
+				"completion": map[string]any{
+					"completionItem": map[string]any{
+						"snippetSupport":      false,
+						"documentationFormat": []string{"markdown", "plaintext"},
+					},
+				},
+				"hover": map[string]any{"contentFormat": []string{"markdown", "plaintext"}},
 			},
 			"workspace": map[string]any{"workspaceFolders": true},
 		},
@@ -204,6 +311,63 @@ func (c *Client) FoldingRange(ctx context.Context, uri string) ([]FoldingRange, 
 		return nil, err
 	}
 	return ranges, nil
+}
+
+// Completion asks what the server offers at pos, as the text stands there.
+func (c *Client) Completion(ctx context.Context, uri string, pos Position) (CompletionList, error) {
+	var raw json.RawMessage
+	if err := c.call(ctx, "textDocument/completion", map[string]any{
+		"textDocument": map[string]any{"uri": uri},
+		"position":     pos,
+	}, &raw); err != nil {
+		return CompletionList{}, err
+	}
+	var items []CompletionItem
+	if json.Unmarshal(raw, &items) == nil {
+		return CompletionList{Items: items}, nil
+	}
+	var list CompletionList
+	if err := json.Unmarshal(raw, &list); err != nil {
+		return CompletionList{}, err
+	}
+	return list, nil
+}
+
+// Hover asks what the server says of the symbol at pos, nil when it says
+// nothing.
+func (c *Client) Hover(ctx context.Context, uri string, pos Position) (*Hover, error) {
+	var raw json.RawMessage
+	if err := c.call(ctx, "textDocument/hover", map[string]any{
+		"textDocument": map[string]any{"uri": uri},
+		"position":     pos,
+	}, &raw); err != nil {
+		return nil, err
+	}
+	if len(raw) == 0 || string(raw) == "null" {
+		return nil, nil
+	}
+	var hover Hover
+	if err := json.Unmarshal(raw, &hover); err != nil {
+		return nil, err
+	}
+	if hover.Text() == "" {
+		return nil, nil
+	}
+	return &hover, nil
+}
+
+// CodeAction asks what the server offers to fix the problems diags of the
+// range rng, nil when it offers nothing.
+func (c *Client) CodeAction(ctx context.Context, uri string, rng Range, diags []Diagnostic) ([]CodeAction, error) {
+	var actions []CodeAction
+	if err := c.call(ctx, "textDocument/codeAction", map[string]any{
+		"textDocument": map[string]any{"uri": uri},
+		"range":        rng,
+		"context":      map[string]any{"diagnostics": diags},
+	}, &actions); err != nil {
+		return nil, err
+	}
+	return actions, nil
 }
 
 // Close ends the server's session, and its process.

@@ -97,6 +97,9 @@ func (a *app) commandsIn(t locales.Messages) []command {
 		{"sel.sortDesc", t.CmdSelSortDesc(), "", a.editActive(func(d *editor) { sortLines(d, true) })},
 		{"go.bracket", t.CmdGoBracket(), "Shift+CmdOrCtrl+\\", a.editActive(goToBracket)},
 		{"go.definition", t.CmdGoDefinition(), "F12", a.gotoDefinition},
+		{"editor.complete", t.CmdComplete(), "Ctrl+Space", a.showCompletion},
+		{"editor.hover", t.CmdHover(), "Shift+F1", a.showHover},
+		{"editor.quickFix", t.CmdQuickFix(), "Ctrl+.", a.showQuickFix},
 		{"editor.fold", t.CmdFold(), "Shift+CmdOrCtrl+[", a.foldAtCaret},
 		{"editor.unfold", t.CmdUnfold(), "Shift+CmdOrCtrl+]", a.unfoldAtCaret},
 		{"editor.foldAll", t.CmdFoldAll(), "", a.foldAll},
@@ -561,6 +564,7 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 		{Label: locales.MenuFile(), Submenu: file},
 		{Label: locales.MenuEdit(), Submenu: []*mygo.MenuItem{
 			item("edit.undo"), item("edit.redo"), mygo.Separator(),
+			item("editor.quickFix"), mygo.Separator(),
 			cut, {Role: mygo.RoleCopy}, {Role: mygo.RolePaste}, selectAll, mygo.Separator(),
 			item("edit.find"), item("edit.replace"), item("edit.findNext"), item("edit.findPrev"), mygo.Separator(),
 			item("edit.findInFiles"), item("edit.replaceInFiles"),

@@ -10,6 +10,7 @@ import (
 
 	"mayoi/internal/highlight"
 	"mayoi/internal/linediff"
+	"mayoi/internal/lsp"
 	"mayoi/internal/settings"
 	"mayoi/locales"
 )
@@ -234,6 +235,12 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 			Label(locales.EditorLabel(d.name())).
 			ReadOnly(vimKeys || a.chording() || d.locked())
 		a.takeKeys(area, placeEditor, func(ev ui.InputEvent) bool {
+			if a.completionKey(d, ev) {
+				return true
+			}
+			if a.fixKey(d, ev) {
+				return true
+			}
 			if a.editorKey(d, ev) {
 				return true
 			}
@@ -446,6 +453,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 			matches = a.vimMatches(d, snap, first, last)
 		}
 		deco := a.decorate(d, snap, first, last)
+		diagFile := a.lspDiags[lsp.Key(d.path)]
 		d.git.Refresh(d.path, d.buf.Snapshot(), a.post)
 		marks := d.git.Lines
 		gitRuns := d.gitRuns()
@@ -654,6 +662,13 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 			from, to := a.linesInView(g, top, r.H)
 			stuck := float32(len(sticky)) * lineH
 			_, numH := pt.MeasureText(0, ui.Span{Text: "0", Font: family, Size: size})
+			// The problems the language server found, as wavy underlines
+			// over the text.
+			for _, dm := range deco.diags {
+				place(r, dm.line, dm.x0, dm.x1, func(y, x0, x1 float32) {
+					wavyUnderline(pt, x0, x1, y+lineH-2, severityColor(p, dm.severity))
+				})
+			}
 			number := func(i int, y float32, col ui.Color) {
 				label := strconv.Itoa(i + 1)
 				pt.RichText(x+gutterW-14-float32(len(label))*charW, y+(lineH-numH)/2, 0,
@@ -682,7 +697,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 			// Along the right edge, where the scroll bar goes, the whole
 			// document: the lines changed since the last commit, find's
 			// matches and the caret's line.
-			if lines > 1 && len(gitRuns)+len(rows)+len(noted) > 0 {
+			if lines > 1 && (len(gitRuns)+len(rows)+len(noted) > 0 || len(diagFile.diags) > 0) {
 				right := x + view.W - 10
 				for _, g := range gitRuns {
 					y, h := r.Y+g.from*r.H, max((g.to-g.from)*r.H, 2)
@@ -700,6 +715,14 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 				}
 				for _, n := range noted {
 					pt.Fill(ui.Rect{X: right + 4, Y: r.Y + float32(n.from)/float32(lines)*r.H - 1, W: 5, H: 3}, p.accent, 1)
+				}
+				for _, dg := range diagFile.diags {
+					line := dg.Range.Start.Line
+					if line < 0 || line >= lines {
+						continue
+					}
+					y := r.Y + float32(line)/float32(lines)*r.H
+					pt.Fill(ui.Rect{X: right + 4, Y: y, W: 5, H: 2}, severityColor(p, dg.Severity), 1)
 				}
 				caretAt := float32(caretLine) / float32(lines)
 				pt.Fill(ui.Rect{X: right, Y: r.Y + caretAt*r.H - 1, W: 9, H: 2}, p.text.Alpha(0.6), 1)
@@ -818,6 +841,14 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 				number(row.line, r.Y+float32(k)*lineH, p.muted)
 			}
 		})
+		// The language server's words at the caret, and what it says of the
+		// symbol there, over the text and the area's own drawing.
+		a.completionView(c, d, func(line int) float32 {
+			return editorPadY + g.top(line) - d.vscroll.Y
+		}, textX, f.lineH, view)
+		a.fixView(c, d, func(line int) float32 {
+			return editorPadY + g.top(line) - d.vscroll.Y
+		}, textX, f.lineH, view)
 	})
 	if d.coverFrame == a.frame {
 		// Built again, the text area scrolls to the selection it is given:

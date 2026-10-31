@@ -260,6 +260,7 @@ func (a *app) startLSPServer(srv *lspServer) {
 				a.lspDiags = map[string]lspFile{}
 			}
 			a.lspDiags[key] = lspFile{path: path, diags: diagnostics}
+			a.problemsGen++
 			a.invalidate()
 		})
 	})
@@ -306,6 +307,7 @@ func (a *app) resetLSP() {
 	}
 	a.lspServers = map[string]*lspServer{}
 	a.lspDiags = map[string]lspFile{}
+	a.problemsGen++
 	a.lspRoots = map[string]string{}
 	a.lspReg, a.lspGen = nil, -1
 	a.lspRoot = a.root
@@ -434,6 +436,7 @@ func (a *app) closeLSPDoc(srv *lspServer, uri string) {
 	delete(srv.ready, uri)
 	if path := lsp.Path(uri); path != "" {
 		delete(a.lspDiags, lsp.Key(path))
+		a.problemsGen++
 	}
 	if t := srv.timers[uri]; t != nil {
 		t.Stop()
@@ -496,14 +499,6 @@ func (a *app) requestLSPFolds(d *editor, snap ui.TextSnapshot) {
 				return
 			}
 			d.lspFolds = foldRangesOf(ranges, snap.LineCount())
-			// Folds made of every fold, or of a level, are made again of
-			// the server's, which may fold more than the brackets do.
-			switch d.foldKind {
-			case foldEvery:
-				a.foldAllIn(d)
-			case foldLevels:
-				a.foldLevelIn(d, d.foldLevel)
-			}
 			a.invalidate()
 		})
 	})
@@ -635,7 +630,12 @@ func (a *app) revealLocation(loc lsp.Location, focus bool) {
 	}
 	a.openFile(path, focus)
 	d := a.activeEditor()
-	if d == nil {
+	if d == nil || d.path != path {
+		return
+	}
+	if d.loading {
+		// The text comes in a frame: the place waits for it.
+		d.seekLine, d.seekChar = max(loc.Range.Start.Line, 0), max(loc.Range.Start.Character, 0)
 		return
 	}
 	snap := d.buf.Snapshot()

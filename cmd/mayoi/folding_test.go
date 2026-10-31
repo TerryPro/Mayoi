@@ -7,6 +7,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"mayoi/internal/lsp"
+	"mayoi/internal/settings"
 )
 
 func TestFoldRangeAt(t *testing.T) {
@@ -163,5 +164,32 @@ func TestToggleFoldKeepsNested(t *testing.T) {
 	hs.a.toggleFold(d, 0, snap)
 	if len(d.folds) != 1 || d.folds[0].start != 1 {
 		t.Fatalf("folds after unfolding the func: %+v, want the if folded", d.folds)
+	}
+}
+
+func TestRefreshFoldsKeepsFoldsAsLinesStay(t *testing.T) {
+	a := &app{settings: settings.Default()}
+	doc := newDocument(1, "a.go", "func f() {\n\tx := 1\n}\n", nil)
+	d := newEditor(doc)
+	snap := doc.buf.Snapshot()
+	d.setFolds([]foldRange{{start: 0, end: 2, sig: "func f() {"}})
+	d.foldKind, d.foldLines = foldEvery, snap.LineCount()
+	d.foldTab = tabSizeOf(a.settings.Prefs)
+	// A key changes a line, not the number of them: the fold stays.
+	s, _ := snap.LineRange(1)
+	doc.buf.Replace(s, s+1, "\t ")
+	a.refreshFolds(d, doc.buf.Snapshot())
+	if len(d.folds) != 1 || d.folds[0].start != 0 || d.folds[0].end != 2 {
+		t.Fatalf("folds after typing: %+v, want 0..2", d.folds)
+	}
+
+	// A line comes inside the block: the fold is found again, its end with
+	// it.
+	snap = doc.buf.Snapshot()
+	s, _ = snap.LineRange(1)
+	doc.buf.Replace(s, s, "extra\n")
+	a.refreshFolds(d, doc.buf.Snapshot())
+	if len(d.folds) != 1 || d.folds[0].start != 0 || d.folds[0].end != 3 {
+		t.Fatalf("folds after a line came: %+v, want 0..3", d.folds)
 	}
 }

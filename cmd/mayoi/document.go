@@ -21,6 +21,11 @@ import (
 // maxOpenBytes is the largest file the editor opens.
 const maxOpenBytes = 64 << 20
 
+// syncOpenBytes is the size a local file opens under as its tab opens,
+// rather than read in the background: a small file reads before the frame
+// paints, while a large one would hold it.
+const syncOpenBytes = 512 << 10
+
 // maxLineBytes is the longest line the editor opens: a line is laid out
 // whole, and one of a minified bundle or source map would take
 // gigabytes and the main thread.
@@ -136,12 +141,15 @@ type editor struct {
 	// them.
 	lines ui.TextLines
 	// folds are the folds of the editor, by their start line, and
-	// foldVersion the text they are of; foldHover is the line whose gutter
-	// marker the pointer is on, -1 for none. foldKind and foldLevel say how
-	// foldAll and foldLevel made them, which the next frame makes again as
-	// the text changes.
+	// foldVersion the text they are of, foldLines the lines they were found
+	// in, and foldHover the line whose gutter marker the pointer is on, -1
+	// for none. foldKind and foldLevel say how foldAll and foldLevel made
+	// them, which the next frame keeps as the text changes, finding their
+	// start lines again.
 	folds        []foldRange
 	foldVersion  uint64
+	foldLines    int         // the lines the folds were last found in
+	foldTab      int         // the tab width the folds were last found at
 	foldGen      int         // counts the changes of folds, which hide is of
 	hide         []foldRange // folds as ranges that do not overlap
 	hideGen      int
@@ -222,6 +230,10 @@ type editor struct {
 	vim     vimState
 	// vimShown are the matches of vim's search the editor highlighted last.
 	vimShown vimShownMatches
+	// seekLine is the line a jump to a document read in the background asks
+	// for, which the text read shows, -1 for none, and seekChar its
+	// character.
+	seekLine, seekChar int
 	// restoreTab is where a tab of the last session was, which a remote file
 	// takes once it is read.
 	restoreTab *settings.Tab
@@ -229,7 +241,7 @@ type editor struct {
 
 // newEditor makes an editor of doc, its caret at the start.
 func newEditor(doc *document) *editor {
-	d := &editor{document: doc, parked: -1, peek: -1, foldHover: -1, foldCaretRow: -1, version: doc.buf.Version()}
+	d := &editor{document: doc, parked: -1, peek: -1, foldHover: -1, foldCaretRow: -1, version: doc.buf.Version(), seekLine: -1}
 	doc.views = append(doc.views, d)
 	if doc.typist == nil {
 		doc.typist = d
@@ -271,24 +283,35 @@ func (d *document) dirty() bool { return d.buf.Version() != d.saved || d.crlf !=
 // is not read, or its host not connected.
 func (d *document) locked() bool { return d.loading || d.loadErr != nil || d.offline }
 
-// readDocument reads a file into a document.
-func readDocument(id int, path string, notify func()) (*document, error) {
+// readFileData reads a file's bytes for a document: its stat, and the text,
+// unless it is too large, binary, or has a line too long. It may run on any
+// goroutine.
+func readFileData(path string) (os.FileInfo, []byte, error) {
 	info, err := os.Stat(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if info.Size() > maxOpenBytes {
-		return nil, errors.New(locales.ErrTooLarge())
+		return info, nil, errors.New(locales.ErrTooLarge())
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return info, nil, err
 	}
 	if isBinary(data) {
-		return nil, errBinary
+		return info, nil, errBinary
 	}
 	if hasLongLine(data) {
-		return nil, errLongLine
+		return info, nil, errLongLine
+	}
+	return info, data, nil
+}
+
+// readDocument reads a file into a document.
+func readDocument(id int, path string, notify func()) (*document, error) {
+	_, data, err := readFileData(path)
+	if err != nil {
+		return nil, err
 	}
 	crlf := bytes.Contains(data, []byte("\r\n"))
 	if crlf {
