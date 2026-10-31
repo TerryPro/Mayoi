@@ -25,6 +25,14 @@ needs a `## <version>` section here, or its build fails.
 - The language server serves TypeScript, JavaScript, Rust, Python and C/C++ as well as Go.
 - A language server starts for each project of a folder, as a nested module or a subproject.
 - `lspServers` in `settings.json` adds a language server, or overrides one of Mayoi's.
+- Code folds from a chevron in the gutter, a folded block showing an ellipsis on its first line.
+- **View → Fold**, **Unfold**, **Fold All** and **Unfold All** fold a block at the caret, or every block of the file.
+- Folds stay folded as you edit, and come back with a tab when the window opens again.
+- The language server's folding ranges fold imports and regions that brackets alone do not.
+- **View → Fold Level 1**, **Fold Level 2** and **Fold Level 3** fold the blocks up to that depth.
+- Folding works with word wrap, where a hidden line takes no rows.
+- **File → Settings → Editor** sets the fold markers to show always, or only on hover.
+- In Vim mode, `zc`, `zo`, `za`, `zR` and `zM` fold and unfold at the cursor.
 
 ## 0.15.0
 

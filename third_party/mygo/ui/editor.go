@@ -48,6 +48,8 @@ type editor struct {
 	published          TextSnapshot
 	bufferDirty        bool
 	nativeBufferBefore TextSnapshot
+	// folds are the lines hidden of the text area (FoldLines).
+	folds []Fold
 	queue              []editEvent
 	multiline          bool
 	readOnly           bool   // selectable text: selected and copied, not edited

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -157,7 +158,10 @@ type lspServer struct {
 	args    []string
 	client  *lsp.Client
 	open    map[string]uint64
-	timers  map[string]*bg.Timer
+	// ready is the version of each document the server was told of, by
+	// didOpen or didChange: questions about it come after those.
+	ready  map[string]uint64
+	timers map[string]*bg.Timer
 	// tried is set once it was started, and err why it could not be, or
 	// why it ended.
 	tried bool
@@ -230,7 +234,7 @@ func (a *app) lspServerFor(setup *lspSetup, root string) *lspServer {
 	}
 	srv := &lspServer{
 		key: key, root: root, command: setup.command, args: setup.args, tried: true,
-		open: map[string]uint64{}, timers: map[string]*bg.Timer{},
+		open: map[string]uint64{}, ready: map[string]uint64{}, timers: map[string]*bg.Timer{},
 	}
 	a.lspServers[key] = srv
 	a.startLSPServer(srv)
@@ -305,6 +309,12 @@ func (a *app) resetLSP() {
 	a.lspRoots = map[string]string{}
 	a.lspReg, a.lspGen = nil, -1
 	a.lspRoot = a.root
+	// The folds the servers found were of them.
+	for _, doc := range a.docs {
+		for _, d := range doc.views {
+			d.lspFolds, d.lspFoldVersion, d.lspFoldPending, d.lspFoldUnsupported = nil, 0, false, false
+		}
+	}
 }
 
 // lspRootOf returns the folder of a document's project: the nearest, from
@@ -387,7 +397,14 @@ func (a *app) openLSPDoc(srv *lspServer, d *document, uri string, version uint64
 	text := d.buf.Snapshot().String()
 	c := srv.client
 	srv.open[uri] = version
-	bg.Go(func() { _ = c.DidOpen(uri, id, text) })
+	bg.Go(func() {
+		_ = c.DidOpen(uri, id, text)
+		a.post(func() {
+			if a.lspServers[srv.key] == srv {
+				srv.ready[uri] = version
+			}
+		})
+	})
 }
 
 // sendLSPChange tells a server of a document's text, once it stops
@@ -400,12 +417,21 @@ func (a *app) sendLSPChange(srv *lspServer, d *document, uri string, version uin
 	c := srv.client
 	srv.timers[uri] = bg.AfterFunc(250*time.Millisecond, func() {
 		_ = c.DidChange(uri, int(version), d.buf.Snapshot().String())
+		a.post(func() {
+			delete(srv.timers, uri)
+			// The server has the text now, and its folds are asked for.
+			if a.lspServers[srv.key] == srv {
+				srv.ready[uri] = version
+			}
+			a.invalidate()
+		})
 	})
 }
 
 // closeLSPDoc tells a server of a document closed in the editor.
 func (a *app) closeLSPDoc(srv *lspServer, uri string) {
 	delete(srv.open, uri)
+	delete(srv.ready, uri)
 	if path := lsp.Path(uri); path != "" {
 		delete(a.lspDiags, lsp.Key(path))
 	}
@@ -431,6 +457,91 @@ func (a *app) lspDocOpen(uri string) bool {
 		}
 	}
 	return false
+}
+
+// requestLSPFolds asks a document's language server for the folds of its
+// text, once for each version, while the server has the text open.
+func (a *app) requestLSPFolds(d *editor, snap ui.TextSnapshot) {
+	if !a.settings.LSP || d.path == "" || d.lspFoldPending || d.lspFoldUnsupported || d.lspFoldVersion == snap.Version() {
+		return
+	}
+	setup, srv := a.lspTarget(d.path)
+	if setup == nil || srv == nil || srv.client == nil {
+		return
+	}
+	uri, ver := lsp.URI(d.path), snap.Version()
+	if ready, ok := srv.ready[uri]; !ok || ready < ver {
+		// The server has not the text yet: the folds it would find are of
+		// the text before, or of none.
+		return
+	}
+	c := srv.client
+	d.lspFoldPending = true
+	bg.Go(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		ranges, err := c.FoldingRange(ctx, uri)
+		a.post(func() {
+			d.lspFoldPending = false
+			if a.lspServers[srv.key] != srv || d.buf.Snapshot().Version() != ver {
+				// Another server, or other text since: the folds wait for
+				// the next frame to ask again.
+				return
+			}
+			d.lspFoldVersion = ver
+			if err != nil {
+				if errors.Is(err, lsp.ErrUnsupported) {
+					d.lspFoldUnsupported = true
+				}
+				return
+			}
+			d.lspFolds = foldRangesOf(ranges, snap.LineCount())
+			// Folds made of every fold, or of a level, are made again of
+			// the server's, which may fold more than the brackets do.
+			switch d.foldKind {
+			case foldEvery:
+				a.foldAllIn(d)
+			case foldLevels:
+				a.foldLevelIn(d, d.foldLevel)
+			}
+			a.invalidate()
+		})
+	})
+}
+
+// foldRangesOf returns the folds a server found, without the lines beyond
+// the text, and without those that hide none: one range per start line, the
+// longest.
+func foldRangesOf(ranges []lsp.FoldingRange, lines int) []foldRange {
+	out := make([]foldRange, 0, len(ranges))
+	for _, r := range ranges {
+		start, end := r.StartLine, r.EndLine
+		if start < 0 || end < start || lines <= 0 {
+			continue
+		}
+		start, end = min(start, lines-1), min(end, lines-1)
+		if end <= start {
+			continue
+		}
+		out = append(out, foldRange{start: start, end: end})
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	slices.SortFunc(out, func(x, y foldRange) int {
+		if x.start != y.start {
+			return x.start - y.start
+		}
+		return y.end - x.end
+	})
+	kept := out[:0]
+	for i, f := range out {
+		if i > 0 && f.start == out[i-1].start {
+			continue
+		}
+		kept = append(kept, f)
+	}
+	return kept
 }
 
 // lspProblems counts the errors and warnings of a document, as the servers

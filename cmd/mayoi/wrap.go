@@ -70,15 +70,59 @@ func (a *app) toggleMergeWrap(v *mergeView) {
 type geometry struct {
 	lines *ui.TextLines // nil while the editor does not wrap
 	lineH float32
-	n     int // the lines
+	n     int         // the lines
+	folds []foldRange // the folds of an editor that does not wrap, not overlapping
 }
 
 func (a *app) geometry(d *editor, n int) geometry {
 	g := geometry{lineH: a.font.lineH, n: n}
 	if a.wraps(d) {
 		g.lines = &d.lines
+	} else {
+		g.folds = d.hides()
 	}
 	return g
+}
+
+// visible returns the row line i takes, less the lines folds hide.
+func (g geometry) visible(i int) int {
+	i = min(max(i, 0), g.n)
+	shift := 0
+	for _, f := range g.folds {
+		start := f.start - shift
+		if i <= f.start {
+			break
+		}
+		if i <= f.end {
+			return start
+		}
+		shift += f.end - f.start
+	}
+	return i - shift
+}
+
+// lineRow returns the line at visible row r.
+func (g geometry) lineRow(r int) int {
+	r = max(r, 0)
+	shift := 0
+	for _, f := range g.folds {
+		start := f.start - shift
+		if r == start {
+			return f.start
+		}
+		if r > start {
+			shift += f.end - f.start
+			continue
+		}
+		break
+	}
+	line := min(r+shift, g.n-1)
+	for _, f := range g.folds {
+		if line > f.start && line <= f.end {
+			return f.start
+		}
+	}
+	return line
 }
 
 // top returns the top of line i.
@@ -86,7 +130,7 @@ func (g geometry) top(i int) float32 {
 	if g.lines != nil {
 		return g.lines.Top(i)
 	}
-	return float32(i) * g.lineH
+	return float32(g.visible(i)) * g.lineH
 }
 
 // at returns the line at y, within the text.
@@ -94,7 +138,7 @@ func (g geometry) at(y float32) int {
 	if g.lines != nil {
 		return g.lines.At(y)
 	}
-	return min(max(0, int(y/g.lineH)), g.n-1)
+	return g.lineRow(int(y / g.lineH))
 }
 
 // topF returns the top of a fractional line i, between the tops of the
@@ -102,8 +146,12 @@ func (g geometry) at(y float32) int {
 // Below the first line it goes on by the first line's rows, as i*lineH
 // does and as atF reads it back.
 func (g geometry) topF(i float32) float32 {
-	if g.lines == nil {
+	if g.lines == nil && len(g.folds) == 0 {
 		return i * g.lineH
+	}
+	if g.lines == nil {
+		line := int(i)
+		return float32(g.visible(line))*g.lineH + (i-float32(line))*g.lineH
 	}
 	if i < 0 {
 		return i * (g.lines.Top(1) - g.lines.Top(0))
@@ -120,8 +168,12 @@ func (g geometry) topF(i float32) float32 {
 // into it, as the line across from y goes. Past the last line it stays
 // at the last.
 func (g geometry) atF(y float32) float32 {
-	if g.lines == nil {
+	if g.lines == nil && len(g.folds) == 0 {
 		return min(y/g.lineH, float32(g.n))
+	}
+	if g.lines == nil {
+		r := int(y / g.lineH)
+		return float32(g.lineRow(r)) + (y-float32(r)*g.lineH)/g.lineH
 	}
 	i := g.lines.At(y)
 	t0 := g.lines.Top(i)

@@ -446,7 +446,7 @@ func TestLayoutInputs(t *testing.T) {
 	// or made volatile by sameLayout, and those it writes.
 	read := "flags ts cols rows spans image svg placeOn list form colFit overflow gridFit leaving ghosts attach popover " +
 		"first last next nchild parent st c measured tl lay laid x y w h contentW contentH frags runes paragraph " +
-		"ownText merged spansKey collapsed rowMinW field hidden"
+		"ownText merged spansKey collapsed rowMinW field hidden tabSize folds"
 	// Fields the layout never reads.
 	other := "epoch key valueInput id depth track transform originX originY originSet world content contentSet " +
 		"pose poseAnim poseSet poseM poseFade reposed ink noCull backface bg fill grad stripes borderC borderStyle radius " +

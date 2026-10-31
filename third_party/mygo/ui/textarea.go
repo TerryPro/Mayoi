@@ -48,6 +48,17 @@ type area struct {
 	wrappedParams  text.Params
 	wrappedVersion uint64
 	wrappedCompose string
+
+	// zero is the layout of a line a fold hides: no text, no height.
+	zero *text.Layout
+}
+
+// hiddenLayout returns the layout of a line a fold hides.
+func (a *area) hiddenLayout() *text.Layout {
+	if a.zero == nil {
+		a.zero = &text.Layout{Lines: []text.Line{{}}}
+	}
+	return a.zero
 }
 
 // wrappedHeight returns the height of the text, with an input method's
@@ -143,8 +154,8 @@ func (a *area) sync(b *buffer, params text.Params) {
 		a.version = b.version
 		a.anchor = min(a.anchor, len(b.paras)-1)
 	}
-	m, unknown := a.hs.totals()
-	if n := len(b.paras) - unknown; n > 0 {
+	m, unknown, hidden := a.hs.totals()
+	if n := len(b.paras) - unknown - hidden; n > 0 {
 		a.hs.est = m / float64(n)
 	} else {
 		a.hs.est = float64(a.line.Height)
@@ -235,6 +246,29 @@ func remapSpans(key string, stops []tabStop) string {
 func (a *area) paraLayout(ed *editor, p int) *text.Layout {
 	b := &ed.buf
 	pr := &b.paras[p]
+	if _, hidden := ed.foldStart(p); hidden {
+		if !pr.hidden {
+			// The folds came after the text was measured: its height is
+			// none now.
+			pr.hidden = true
+			a.hs.hidden++
+			if pr.h > 0 {
+				a.hs.add(p, -float64(pr.h), 0)
+			} else {
+				a.hs.add(p, 0, -1)
+			}
+		}
+		pr.h, pr.layout, pr.compose, pr.spans, pr.tabs = 0, nil, "", "", nil
+		return a.hiddenLayout()
+	}
+	if pr.hidden {
+		if pr.h > 0 {
+			a.hs.add(p, -float64(pr.h), 0)
+			pr.h = 0
+		}
+		pr.layout, pr.compose, pr.spans, pr.tabs = nil, "", "", nil
+		return a.hiddenLayout()
+	}
 	compose := ""
 	if ed.compose != "" && p == b.para(ed.caret) {
 		compose = ed.compose
@@ -308,6 +342,9 @@ func (a *area) global(ed *editor, p, l int) int {
 // composition there: its x, top and height in the content.
 func (a *area) caretAt(ed *editor, i, extra int) (x float32, y float64, h float32) {
 	p := ed.buf.para(i)
+	if f, ok := ed.foldStart(p); ok {
+		p, i = f.Start, ed.buf.end(f.Start)
+	}
 	l := a.paraLayout(ed, p)
 	affinity := text.Downstream
 	if i == ed.caret {
@@ -320,6 +357,9 @@ func (a *area) caretAt(ed *editor, i, extra int) (x float32, y float64, h float3
 // lineEdges returns the edges of the visual line holding rune i.
 func (a *area) lineEdges(ed *editor, i int) (int, int) {
 	p := ed.buf.para(i)
+	if f, ok := ed.foldStart(p); ok {
+		p, i = f.Start, ed.buf.end(f.Start)
+	}
 	l := a.paraLayout(ed, p)
 	line := &l.Lines[l.LineAt(a.local(ed, p, i))]
 	return a.global(ed, p, line.Start), a.global(ed, p, line.End)
@@ -352,6 +392,10 @@ func (a *area) hitPosition(ed *editor, x float32, y float64, virtual bool) text.
 	n := len(ed.buf.paras)
 	y = max(y, 0)
 	p := a.hs.at(y)
+	if f, ok := ed.foldStart(p); ok {
+		// A fold's lines take no height: the start line's end is theirs.
+		p = f.Start
+	}
 	// Laying the paragraph out may show it is not as high as estimated.
 	for range n {
 		l := a.paraLayout(ed, p)
@@ -390,6 +434,8 @@ func (a *area) setScroll(y float64) {
 // view is.
 func (a *area) layout(e *node, cw, ch float32) {
 	ed := e.st.editor
+	// The folds are those the build set, after the area was made.
+	ed.setFolds(e.folds)
 	b := &ed.buf
 	if e.tabSize > 0 && a.tabSize != e.tabSize {
 		// A tab spans other cells now: the layouts that showed it are old.
@@ -491,6 +537,12 @@ func (a *area) paint(e *node, p *Painter, ox, oy float32) {
 	focused := e.Focused()
 	last := len(b.paras) - 1
 	for i := a.first; i <= a.last; i++ {
+		if b.paras[i].hidden {
+			continue
+		}
+		if _, hidden := ed.foldStart(i); hidden {
+			continue
+		}
 		l := a.paraLayout(ed, i)
 		y := oy + float32(a.hs.top(i)-a.scroll)
 		start, end := b.start(i), b.end(i)

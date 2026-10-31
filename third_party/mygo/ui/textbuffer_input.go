@@ -33,6 +33,7 @@ func styledBufferInput(c *context, value *TextBuffer, multiline bool) *node {
 }
 
 func (ed *editor) loadBuffer(s TextSnapshot) {
+	ed.folds = nil
 	clear(ed.undo)
 	clear(ed.redo)
 	clear(ed.queue)

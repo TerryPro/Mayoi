@@ -165,6 +165,7 @@ const vimActions = "xXDCYpPoOJsS~u.iaIAvV:&\t\x0f\x04\x15\x06\x02\x05\x19\x12\x7
 var vimPairActions = map[string]bool{
 	"gv": true, "gi": true, "gJ": true, "gp": true, "gP": true, "g&": true,
 	"zz": true, "zt": true, "zb": true, "z.": true, "z\r": true, "z-": true,
+	"zc": true, "zo": true, "za": true, "zv": true, "zR": true, "zM": true,
 	"ZZ": true, "ZQ": true,
 }
 
@@ -1781,6 +1782,8 @@ func (a *app) vimNormalRun(d *editor, c vimCmd, next vimMode) {
 		if c.key == "z." || c.key == "z\r" || c.key == "z-" {
 			vimPut(d, firstNonBlank(snap, line))
 		}
+	case "zc", "zo", "za", "zv", "zR", "zM":
+		a.vimFoldCommand(d, line, c.key)
 	case "gv":
 		if lv := v.lastVisual; lv.mode.visual() {
 			v.anchor, v.cursor = lv.anchor, lv.cursor
@@ -1861,6 +1864,34 @@ func (a *app) vimScroll(d *editor, snap ui.TextSnapshot, cur int, key string, co
 		v.want, v.hasWant = vimCol(snap, cur), true
 	}
 	vimPut(d, vimAtCol(snap, to, v.want))
+}
+
+// vimFoldCommand folds and unfolds as vim's z commands do: zc closes the
+// fold at the cursor, zo opens it, za toggles it, zv opens what hides the
+// cursor, zR opens every fold, and zM closes every one it can.
+func (a *app) vimFoldCommand(d *editor, line int, key string) {
+	snap := d.buf.Snapshot()
+	switch key {
+	case "zc":
+		if _, ok := d.foldStarting(line); !ok {
+			a.toggleFold(d, line, snap)
+		}
+	case "zo", "zv":
+		a.unfoldFold(d, line)
+	case "za":
+		a.toggleFold(d, line, snap)
+	case "zR":
+		a.unfoldAllIn(d)
+	case "zM":
+		a.foldAllIn(d)
+	}
+	// The cursor stays on a line that shows, at the end of the line folding
+	// it, as vim keeps it on a marker.
+	l := snap.LineAt(min(d.sel[1], snap.Len()))
+	if f, ok := d.foldHolding(l); ok && l > f.start {
+		_, e := snap.LineRange(f.start)
+		vimPut(d, e)
+	}
 }
 
 // vimScrollTo scrolls the editor so that line shows at the middle of the

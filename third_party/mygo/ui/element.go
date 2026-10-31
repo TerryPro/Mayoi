@@ -271,6 +271,8 @@ type node struct {
 	st         *state
 	// tabSize is how many cells a tab spans in a text area; 0 for 4.
 	tabSize int
+	// folds are the lines a text area hides (FoldLines).
+	folds []Fold
 	// track is the ScrollState of a scroll container (TrackScroll).
 	track *ScrollState
 

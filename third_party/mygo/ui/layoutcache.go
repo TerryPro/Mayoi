@@ -74,6 +74,8 @@ type layoutRecord struct {
 	style      layoutStyle
 	flags      uint32
 	hidden     bool
+	tabSize    int
+	folds      []Fold
 	ts         textLayout
 	cols, rows []Track
 	spans      string
@@ -153,12 +155,15 @@ func sameLayout(e *node, parent uint64, index int, changed bool) bool {
 		r.ts = layoutOfText(&e.ts)
 	}
 	equal := fresh && r.style == e.layoutStyle && r.flags == e.flags&layoutFlags && r.hidden == e.hidden &&
+		r.tabSize == e.tabSize && slices.Equal(r.folds, e.folds) &&
 		r.spans == spans && r.media == media && r.placeOn == placeOn &&
 		r.parent == parent && r.index == int32(index) && r.nchild == int32(e.nchild) &&
 		slices.Equal(r.cols, e.cols) && slices.Equal(r.rows, e.rows)
 	if !equal {
 		r.ok = true
 		r.style, r.flags, r.hidden = e.layoutStyle, e.flags&layoutFlags, e.hidden
+		r.tabSize = e.tabSize
+		r.folds = append(r.folds[:0], e.folds...)
 		if !slices.Equal(r.cols, e.cols) || !slices.Equal(r.rows, e.rows) {
 			r.cols, r.rows = append(r.cols[:0], e.cols...), append(r.rows[:0], e.rows...)
 		}

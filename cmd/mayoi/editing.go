@@ -514,6 +514,7 @@ func (a *app) editorKey(d *editor, ev ui.InputEvent) bool {
 	if a.swipeSideways(&d.hscroll, ev) {
 		return true
 	}
+	a.trackFoldHover(d, ev)
 	if ev.Kind == ui.InputPointerDown && ev.Button == 0 && len(d.sticky) > 0 && a.font.lineH > 0 {
 		// A click on a line stuck at the top goes to it.
 		if k := int(ev.Y / a.font.lineH); ev.Y >= 0 && k < len(d.sticky) {

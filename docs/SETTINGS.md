@@ -63,6 +63,7 @@ leave out takes its default.
 | `locale`                | `""`          | `""` (follow the system), `"en"`, `"zh-Hans"`, `"ja"`       | **View → Language**                            |
 | `autoSave`              | `true`        | `true`, `false`                                             | **File → Auto Save**                           |
 | `wordWrap`              | `false`       | `true`, `false`                                             | **View → Word Wrap**                           |
+| `showFoldingControls`   | `""`          | `""` (on hover), `"always"`                                 | **File → Settings → Editor**                   |
 | `previewMermaid`        | `true`        | `true`, `false`                                             | Only this file                                 |
 | `previewMath`           | `true`        | `true`, `false`                                             | Only this file                                 |
 | `markdownPreview`       | `false`       | `true`, `false`                                             | **View → Preview Markdown on Open**            |
@@ -183,6 +184,8 @@ differ in width lines them up only roughly.
 - **`autoSave`** saves a changed file a moment after you stop typing, and when you leave it.
 - **`wordWrap`** wraps long lines at the edge of the editor. **⌥Z** wraps or unwraps one tab only, until this
   setting changes.
+- **`showFoldingControls`** shows the fold markers of the gutter while the pointer is over it, or always as
+  `"always"`.
 - **`previewMermaid`** draws the `mermaid` code blocks of a Markdown preview as diagrams. Turn it off to show
   them as code. A `.mmd` or `.mermaid` file's own preview draws its diagram either way.
 - **`previewMath`** draws the LaTeX math of a Markdown preview, between `$` and `$`, `$$` and `$$`, or in a

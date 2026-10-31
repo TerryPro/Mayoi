@@ -118,6 +118,9 @@ type Prefs struct {
 	// scrolling sideways to them. A tab may choose otherwise, until this
 	// changes: Settings.WrapGen counts its changes.
 	WordWrap bool `json:"wordWrap,omitempty"`
+	// ShowFoldingControls shows the fold markers of the gutter always, as
+	// "always", or only while the pointer is over it, as "" or "mouseover".
+	ShowFoldingControls string `json:"showFoldingControls,omitempty"`
 	// PreviewMermaid draws the blocks of Mermaid of a Markdown preview as
 	// the diagrams they make, rather than their source.
 	PreviewMermaid bool `json:"previewMermaid"`
@@ -395,6 +398,15 @@ type Column struct {
 	Locked bool    `json:"locked,omitempty"`
 }
 
+// Fold is a folded block of a tab, as the settings keep it: the lines
+// after Start through End are hidden, and Sig is the text of Start's line,
+// which finds it again as the file changes.
+type Fold struct {
+	Start int    `json:"start"`
+	End   int    `json:"end"`
+	Sig   string `json:"sig,omitempty"`
+}
+
 // Tab is a tab: the file it shows, or a terminal, which the next
 // start opens anew, or attaches to again while its shell runs in
 // herdr-core at HC.
@@ -425,6 +437,8 @@ type Tab struct {
 	ScrollX float32 `json:"scrollX,omitempty"`
 	ScrollY float32 `json:"scrollY,omitempty"`
 	Wrap    *bool   `json:"wrap,omitempty"`
+	// Folds are the blocks of the file folded when the session was kept.
+	Folds []Fold `json:"folds,omitempty"`
 	// Untitled is the file in the untitled folder beside the settings that
 	// keeps the text of an untitled document as the app quit, and Number
 	// the number of its name.

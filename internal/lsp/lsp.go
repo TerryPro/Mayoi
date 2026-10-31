@@ -50,6 +50,22 @@ type Location struct {
 	Range Range  `json:"range"`
 }
 
+// FoldingRange is a run of lines a server folds: the lines after StartLine
+// through EndLine, while StartLine stays. Kind is "comment" for a comment's
+// block, "imports" for an import block, "region" for one marked by the
+// language, and "" for code.
+type FoldingRange struct {
+	StartLine      int    `json:"startLine"`
+	StartCharacter int    `json:"startCharacter"`
+	EndLine        int    `json:"endLine"`
+	EndCharacter   int    `json:"endCharacter"`
+	Kind           string `json:"kind"`
+}
+
+// ErrUnsupported is what a request returns for a method the server does not
+// implement.
+var ErrUnsupported = errors.New("lsp: the request is not supported")
+
 // Client is a language server's process and the messages it exchanges.
 type Client struct {
 	cmd *exec.Cmd
@@ -118,6 +134,12 @@ func (c *Client) Initialize(ctx context.Context, root string) error {
 		"capabilities": map[string]any{
 			"textDocument": map[string]any{
 				"publishDiagnostics": map[string]any{"relatedInformation": true, "versionSupport": true},
+				// Only the lines of a folding range are folded, and the
+				// kinds a server sends are all taken.
+				"foldingRange": map[string]any{
+					"lineFoldingOnly":  true,
+					"foldingRangeKind": map[string]any{"valueSet": []string{"comment", "imports", "region"}},
+				},
 			},
 			"workspace": map[string]any{"workspaceFolders": true},
 		},
@@ -170,6 +192,18 @@ func (c *Client) Definition(ctx context.Context, uri string, pos Position) ([]Lo
 		return nil, err
 	}
 	return []Location{one}, nil
+}
+
+// FoldingRange returns the runs of lines of a document that its server
+// folds, [] when it has none.
+func (c *Client) FoldingRange(ctx context.Context, uri string) ([]FoldingRange, error) {
+	var ranges []FoldingRange
+	if err := c.call(ctx, "textDocument/foldingRange", map[string]any{
+		"textDocument": map[string]any{"uri": uri},
+	}, &ranges); err != nil {
+		return nil, err
+	}
+	return ranges, nil
 }
 
 // Close ends the server's session, and its process.
@@ -290,7 +324,11 @@ func (c *Client) read() {
 				continue
 			}
 			if msg.Error != nil {
-				ch <- result{err: fmt.Errorf("lsp: %s", msg.Error.Message)}
+				if msg.Error.Code == -32601 {
+					ch <- result{err: ErrUnsupported}
+				} else {
+					ch <- result{err: fmt.Errorf("lsp: %s", msg.Error.Message)}
+				}
 			} else {
 				ch <- result{raw: msg.Result}
 			}

@@ -127,6 +127,7 @@ func (a *app) settingsItems(c *ui.Context, tab int) {
 	case 0:
 		a.settingsBool(c, "autoSave", locales.CmdFileAutoSave, &a.settings.AutoSave)
 		a.settingsBool(c, "wordWrap", locales.CmdViewWordWrap, &a.settings.WordWrap)
+		a.settingsShowFoldingControls(c)
 		a.settingsBool(c, "vim", locales.CmdViewVim, &a.settings.Vim)
 		a.settingsTabSize(c)
 		a.settingsFloat(c, "fontSize", locales.SettingsFontSize,
@@ -264,6 +265,13 @@ func (a *app) settingsAppearance(c *ui.Context) {
 		a.previewTheme(a.settings.Theme, a.settings.Appearance)
 		a.themeChanged()
 	}
+}
+
+// settingsShowFoldingControls shows when the fold markers show.
+func (a *app) settingsShowFoldingControls(c *ui.Context) {
+	a.settingsPick(c, "showFoldingControls", locales.SettingsFoldingControls, &a.settings.ShowFoldingControls,
+		[]string{"", "always"},
+		[]string{locales.FoldOnHover(), locales.FoldAlways()})
 }
 
 // settingsPanelPosition shows where the panel is.

@@ -135,6 +135,31 @@ type editor struct {
 	// lines is where the text area lays out the lines, while it wraps
 	// them.
 	lines ui.TextLines
+	// folds are the folds of the editor, by their start line, and
+	// foldVersion the text they are of; foldHover is the line whose gutter
+	// marker the pointer is on, -1 for none. foldKind and foldLevel say how
+	// foldAll and foldLevel made them, which the next frame makes again as
+	// the text changes.
+	folds        []foldRange
+	foldVersion  uint64
+	foldGen      int         // counts the changes of folds, which hide is of
+	hide         []foldRange // folds as ranges that do not overlap
+	hideGen      int
+	foldHover    int  // the line of the gutter the pointer is on, -1 for none
+	foldGutter   bool // the pointer is over the gutter's fold markers
+	foldCaretRow int  // the caret's line in the frame before, -1 for none
+	foldKind     foldKind
+	foldLevel    int
+	// lspFolds are the folds a language server found, of the text version
+	// lspFoldVersion, while lspFoldPending is set while one is asked for,
+	// and lspFoldUnsupported once the server said it has none. foldHits
+	// caches what folding each line hides, of foldHitsVersion.
+	lspFolds           []foldRange
+	lspFoldVersion     uint64
+	lspFoldPending     bool
+	lspFoldUnsupported bool
+	foldHits           map[int]foldHit
+	foldHitsVersion    uint64
 	// wrap is the tab's own choice to wrap its lines or not, made while
 	// the settings' WordWrap was of generation wrapGen; nil to follow it.
 	wrap    *bool
@@ -204,7 +229,7 @@ type editor struct {
 
 // newEditor makes an editor of doc, its caret at the start.
 func newEditor(doc *document) *editor {
-	d := &editor{document: doc, parked: -1, peek: -1, version: doc.buf.Version()}
+	d := &editor{document: doc, parked: -1, peek: -1, foldHover: -1, foldCaretRow: -1, version: doc.buf.Version()}
 	doc.views = append(doc.views, d)
 	if doc.typist == nil {
 		doc.typist = d

@@ -108,11 +108,29 @@ func (a *app) gutterClick(d *editor, x, y float32) bool {
 	if gutterW <= 0 {
 		return false
 	}
-	if gx := x - d.hscroll.X; gx < gutterW-14 || gx > gutterW+4 {
+	gx := x - d.hscroll.X
+	if gx < gutterW-18 || gx > gutterW+4 {
 		return false
 	}
-	n := d.buf.Snapshot().LineCount()
+	snap := d.buf.Snapshot()
+	n := snap.LineCount()
 	line := a.geometry(d, n).at(y + d.vscroll.Y - editorPadY)
+	line = min(max(line, 0), n-1)
+	if !d.folded(line) {
+		if _, ok := d.foldStarting(line); ok {
+			a.toggleFold(d, line, snap)
+			return true
+		}
+		if gx <= gutterW+2 {
+			if _, ok := a.foldRangeFor(d, snap, line); ok {
+				a.toggleFold(d, line, snap)
+				return true
+			}
+		}
+	}
+	if gx < gutterW-14 {
+		return false
+	}
 	return d.peekHunk(line)
 }
 

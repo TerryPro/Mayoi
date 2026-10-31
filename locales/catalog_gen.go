@@ -3316,6 +3316,106 @@ func (msgs Messages) CmdGoDefinition() string {
 	return Catalog.Format(msgs.locale, "cmdGoDefinition", nil)
 }
 
+// CmdFold says "Fold"
+// in the language the app shows.
+func CmdFold() string { return In(i18n.Locale()).CmdFold() }
+
+// CmdFold says "Fold"
+// in the language of msgs.
+func (msgs Messages) CmdFold() string {
+	return Catalog.Format(msgs.locale, "cmdFold", nil)
+}
+
+// CmdUnfold says "Unfold"
+// in the language the app shows.
+func CmdUnfold() string { return In(i18n.Locale()).CmdUnfold() }
+
+// CmdUnfold says "Unfold"
+// in the language of msgs.
+func (msgs Messages) CmdUnfold() string {
+	return Catalog.Format(msgs.locale, "cmdUnfold", nil)
+}
+
+// CmdFoldAll says "Fold All"
+// in the language the app shows.
+func CmdFoldAll() string { return In(i18n.Locale()).CmdFoldAll() }
+
+// CmdFoldAll says "Fold All"
+// in the language of msgs.
+func (msgs Messages) CmdFoldAll() string {
+	return Catalog.Format(msgs.locale, "cmdFoldAll", nil)
+}
+
+// CmdUnfoldAll says "Unfold All"
+// in the language the app shows.
+func CmdUnfoldAll() string { return In(i18n.Locale()).CmdUnfoldAll() }
+
+// CmdUnfoldAll says "Unfold All"
+// in the language of msgs.
+func (msgs Messages) CmdUnfoldAll() string {
+	return Catalog.Format(msgs.locale, "cmdUnfoldAll", nil)
+}
+
+// CmdFoldLevel1 says "Fold Level 1"
+// in the language the app shows.
+func CmdFoldLevel1() string { return In(i18n.Locale()).CmdFoldLevel1() }
+
+// CmdFoldLevel1 says "Fold Level 1"
+// in the language of msgs.
+func (msgs Messages) CmdFoldLevel1() string {
+	return Catalog.Format(msgs.locale, "cmdFoldLevel1", nil)
+}
+
+// CmdFoldLevel2 says "Fold Level 2"
+// in the language the app shows.
+func CmdFoldLevel2() string { return In(i18n.Locale()).CmdFoldLevel2() }
+
+// CmdFoldLevel2 says "Fold Level 2"
+// in the language of msgs.
+func (msgs Messages) CmdFoldLevel2() string {
+	return Catalog.Format(msgs.locale, "cmdFoldLevel2", nil)
+}
+
+// CmdFoldLevel3 says "Fold Level 3"
+// in the language the app shows.
+func CmdFoldLevel3() string { return In(i18n.Locale()).CmdFoldLevel3() }
+
+// CmdFoldLevel3 says "Fold Level 3"
+// in the language of msgs.
+func (msgs Messages) CmdFoldLevel3() string {
+	return Catalog.Format(msgs.locale, "cmdFoldLevel3", nil)
+}
+
+// SettingsFoldingControls says "Folding Controls"
+// in the language the app shows.
+func SettingsFoldingControls() string { return In(i18n.Locale()).SettingsFoldingControls() }
+
+// SettingsFoldingControls says "Folding Controls"
+// in the language of msgs.
+func (msgs Messages) SettingsFoldingControls() string {
+	return Catalog.Format(msgs.locale, "settingsFoldingControls", nil)
+}
+
+// FoldOnHover says "On Hover"
+// in the language the app shows.
+func FoldOnHover() string { return In(i18n.Locale()).FoldOnHover() }
+
+// FoldOnHover says "On Hover"
+// in the language of msgs.
+func (msgs Messages) FoldOnHover() string {
+	return Catalog.Format(msgs.locale, "foldOnHover", nil)
+}
+
+// FoldAlways says "Always"
+// in the language the app shows.
+func FoldAlways() string { return In(i18n.Locale()).FoldAlways() }
+
+// FoldAlways says "Always"
+// in the language of msgs.
+func (msgs Messages) FoldAlways() string {
+	return Catalog.Format(msgs.locale, "foldAlways", nil)
+}
+
 // SettingsLSP says "Language Server"
 // in the language the app shows.
 func SettingsLSP() string { return In(i18n.Locale()).SettingsLSP() }

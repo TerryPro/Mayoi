@@ -23,6 +23,37 @@ func allTabNames(a *app) []string {
 	return out
 }
 
+// Folds a tab was closed with return with it, as its file has them.
+func TestFoldsReturnWithSession(t *testing.T) {
+	root, other := workspaceFixture(t), workspaceFixture(t)
+	s := settings.Default()
+	a := newApp(&fakeHost{}, s, s.NewWindow())
+	t.Cleanup(a.shutdown)
+	tt := ui.NewTester(a.view, 1200, 760)
+	step(tt)
+	a.openFolder(root)
+	a.openFile(filepath.Join(root, "main.go"), true)
+	step(tt)
+	d := a.activeEditor()
+	a.toggleFold(d, 5, d.buf.Snapshot())
+	step(tt)
+	if f, ok := d.foldStarting(5); !ok || f.end != 7 {
+		t.Fatalf("folded %+v, %v, want 5..7", f, ok)
+	}
+	a.switchFolder(other)
+	step(tt)
+	a.switchFolder(root)
+	step(tt)
+	step(tt)
+	d = a.activeEditor()
+	if f, ok := d.foldStarting(5); !ok || f.end != 7 {
+		t.Fatalf("restored folds %+v, want 5..7", d.folds)
+	}
+	if !d.folded(6) {
+		t.Fatal("the restored fold hides nothing")
+	}
+}
+
 // Switching a window's folder keeps the tabs of the one it had, where
 // they were, and the folders open in its explorer, which come back as it
 // opens that folder again.

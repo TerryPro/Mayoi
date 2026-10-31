@@ -909,12 +909,14 @@ func (a *app) rememberTabs() {
 				if saved := ed.restoreTab; saved != nil {
 					ts.Preview, ts.Sel = saved.Preview, saved.Sel
 					ts.ScrollX, ts.ScrollY, ts.Wrap = saved.ScrollX, saved.ScrollY, saved.Wrap
+					ts.Folds = saved.Folds
 				} else {
 					ts.Sel, ts.ScrollX, ts.ScrollY = ed.sel, ed.hscroll.X, ed.vscroll.Y
 					if ed.hidden {
 						ts.ScrollY = ed.hiddenY
 					}
 					ts.Wrap = a.ownWrap(ed.wrap, ed.wrapGen)
+					ts.Folds = savedFolds(ed)
 				}
 			}
 			cs.Tabs = append(cs.Tabs, ts)
@@ -1019,6 +1021,7 @@ func (a *app) restoreEditor(ed *editor, ts settings.Tab) {
 		w := *ts.Wrap
 		ed.wrap, ed.wrapGen = &w, a.settings.WrapGen
 	}
+	a.restoreFolds(ed, ts.Folds)
 	a.setPreview(ed, ts.Preview)
 }
 

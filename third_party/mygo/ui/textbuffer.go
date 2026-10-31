@@ -81,6 +81,8 @@ type paragraph struct {
 	// tabs are the tabs of the paragraph, which its layout shows as spaces.
 	tabs []tabStop
 	h    float32
+	// hidden is set while a fold hides the paragraph.
+	hidden bool
 }
 
 func (b *buffer) set(s string) {
@@ -464,7 +466,10 @@ func (g *graphemes) prev(b *buffer, i int) int {
 type heights struct {
 	measured []float64 // 1-based
 	unknown  []int32
-	est      float64
+	// hidden counts the paragraphs a fold hides, measured as 0, which the
+	// estimate of the others leaves out.
+	hidden int
+	est    float64
 }
 
 // reset sums the heights of paras.
@@ -477,10 +482,15 @@ func (h *heights) reset(paras []paragraph) {
 	h.measured = slices.Grow(h.measured[:0], n+1)[:n+1]
 	h.unknown = slices.Grow(h.unknown[:0], n+1)[:n+1]
 	h.measured[0], h.unknown[0] = 0, 0
+	h.hidden = 0
 	for i, p := range paras {
-		if p.h > 0 {
+		switch {
+		case p.hidden:
+			h.measured[i+1], h.unknown[i+1] = 0, 0
+			h.hidden++
+		case p.h > 0:
 			h.measured[i+1], h.unknown[i+1] = float64(p.h), 0
-		} else {
+		default:
 			h.measured[i+1], h.unknown[i+1] = 0, 1
 		}
 	}
@@ -530,13 +540,14 @@ func (h *heights) at(y float64) int {
 	return min(pos, n-1)
 }
 
-// totals returns the sum of the heights measured and how many are not.
-func (h *heights) totals() (float64, int) {
+// totals returns the sum of the heights measured, how many paragraphs are
+// not, and how many folds hide.
+func (h *heights) totals() (float64, int, int) {
 	var m float64
 	var u int32
 	for i := len(h.measured) - 1; i > 0; i -= i & -i {
 		m += h.measured[i]
 		u += h.unknown[i]
 	}
-	return m, int(u)
+	return m, int(u), h.hidden
 }

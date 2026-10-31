@@ -473,6 +473,30 @@ func TestVimScrollsToCursor(t *testing.T) {
 	}
 }
 
+func TestVimFolds(t *testing.T) {
+	hs, d := vimHarness(t, "a.txt", "func f() {\n\tx := 1\n\tx++\n}\n\nafter\n")
+	hs.vim("zc")
+	f, ok := d.foldStarting(0)
+	if !ok || f.end != 3 {
+		t.Fatalf("zc folded %+v, %v, want 0..3", f, ok)
+	}
+	if !d.folded(1) {
+		t.Fatal("zc hid none of the block")
+	}
+	hs.vim("zR")
+	if len(d.folds) != 0 {
+		t.Fatalf("zR left %+v", d.folds)
+	}
+	hs.vim("zM")
+	if f, ok := d.foldStarting(0); !ok || f.end != 3 {
+		t.Fatalf("zM folded %+v, %v, want 0..3", f, ok)
+	}
+	hs.vim("za")
+	if len(d.folds) != 0 {
+		t.Fatalf("za left %+v", d.folds)
+	}
+}
+
 func TestVimCursorAndFlash(t *testing.T) {
 	hs, d := vimHarness(t, "a.txt", "one two\n")
 	hs.vim("d")
