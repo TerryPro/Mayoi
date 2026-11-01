@@ -3,7 +3,7 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
-## Unreleased
+## 0.16.2
 
 - Mermaid diagrams copy as an image from their hover buttons or the opened diagram's header.
 - Mermaid diagrams export as PNG or SVG from their export button, in the colors of the current theme.
