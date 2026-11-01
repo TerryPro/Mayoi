@@ -3,7 +3,7 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
-## Unreleased
+## 0.15.1
 
 - The Explorer shows a timeline of the file shown, with each change's kind, author and time.
 - A click on a timeline change opens only that file's change in the commit, named with both versions.
