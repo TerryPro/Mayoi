@@ -10,7 +10,7 @@ root="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT HUP INT TERM
 
-gh release download "v$version" --repo sorrycc/Mayoi --dir "$tmp" \
+gh release download "v$version" --repo TerryPro/Mayoi --dir "$tmp" \
   --pattern "mayoi-$version-arm64.dmg" --pattern "mayoi-$version-amd64.dmg"
 arm="$(shasum -a 256 "$tmp/mayoi-$version-arm64.dmg" | cut -d ' ' -f 1)"
 intel="$(shasum -a 256 "$tmp/mayoi-$version-amd64.dmg" | cut -d ' ' -f 1)"
