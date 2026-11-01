@@ -60,6 +60,9 @@ type fakeHost struct {
 	// update windows opened.
 	newVersion  string
 	updateOpens int
+	// settingsShown are the sections and keys the settings window opened
+	// at, as "section:key".
+	settingsShown []string
 }
 
 func (h *fakeHost) openFolder(done func(string)) { done(h.folder) }
@@ -83,6 +86,16 @@ func (h *fakeHost) copyFiles(paths []string) error {
 }
 func (h *fakeHost) clipboardFiles() []string { return h.clipboard }
 func (h *fakeHost) clipboardImage() []byte   { return h.image }
+func (h *fakeHost) copyImage(png []byte) error {
+	h.image = png
+	return nil
+}
+func (h *fakeHost) exportAs(path, _ string, done func(string)) {
+	h.asked = append(h.asked, "export "+filepath.Base(path))
+	if h.saveTo != "" {
+		done(h.saveTo)
+	}
+}
 func (h *fakeHost) choosePaths(title, _, _ string, _ bool, done func([]string)) {
 	h.asked = append(h.asked, title)
 	if len(h.chosen) > 0 {
@@ -100,13 +113,16 @@ func (h *fakeHost) newBlankWindow()           { h.blankWindows++ }
 func (h *fakeHost) openFolders(dirs []string) { h.folders = append(h.folders, dirs...) }
 func (h *fakeHost) recentChanged()            { h.recentChanges++ }
 func (h *fakeHost) menuChanged()              {}
-func (h *fakeHost) redrawWindows()            {}
-func (h *fakeHost) installCLI()               {}
-func (h *fakeHost) uninstallCLI()             {}
-func (h *fakeHost) account() string           { return h.signedIn }
-func (h *fakeHost) signIn()                   { h.signIns++ }
-func (h *fakeHost) signOut()                  { h.signOuts++ }
-func (h *fakeHost) syncNow()                  { h.syncs++ }
+func (h *fakeHost) showSettings(section, key string) {
+	h.settingsShown = append(h.settingsShown, section+":"+key)
+}
+func (h *fakeHost) redrawWindows()  {}
+func (h *fakeHost) installCLI()     {}
+func (h *fakeHost) uninstallCLI()   {}
+func (h *fakeHost) account() string { return h.signedIn }
+func (h *fakeHost) signIn()         { h.signIns++ }
+func (h *fakeHost) signOut()        { h.signOuts++ }
+func (h *fakeHost) syncNow()        { h.syncs++ }
 func (h *fakeHost) syncInfo() syncInfo {
 	if h.signedIn == "" {
 		return syncInfo{}
@@ -131,26 +147,35 @@ func (h *fakeHost) nativeDrags() bool       { return false }
 func (h *fakeHost) shown() bool { return false }
 
 // workspaceFixture makes a folder of a few files.
+// fixtureFiles are the files of a test's folder, by their paths in it.
+var fixtureFiles = map[string]string{
+	"main.go":             "package main\n\nimport \"fmt\"\n\n// main says hello.\nfunc main() {\n\tfmt.Println(\"hello, mayoi\")\n}\n",
+	"README.md":           "# Mayoi\n\nA small editor.\n",
+	"internal/a/a.go":     "package a\n\nconst Answer = 42\n",
+	"internal/b/b.ts":     "export const greet = (name: string) => `hi ${name}`;\n",
+	"web/index.html":      "<!doctype html>\n<title>Mayoi</title>\n",
+	"web/style.css":       "body { color: #333; }\n",
+	"node_modules/x/x.js": "module.exports = 1\n",
+	"go.mod":              "module example\n\ngo 1.27\n",
+}
+
 func workspaceFixture(t testing.TB) string {
 	root := t.TempDir()
-	files := map[string]string{
-		"main.go":             "package main\n\nimport \"fmt\"\n\n// main says hello.\nfunc main() {\n\tfmt.Println(\"hello, mayoi\")\n}\n",
-		"README.md":           "# Mayoi\n\nA small editor.\n",
-		"internal/a/a.go":     "package a\n\nconst Answer = 42\n",
-		"internal/b/b.ts":     "export const greet = (name: string) => `hi ${name}`;\n",
-		"web/index.html":      "<!doctype html>\n<title>Mayoi</title>\n",
-		"web/style.css":       "body { color: #333; }\n",
-		"node_modules/x/x.js": "module.exports = 1\n",
-		"go.mod":              "module example\n\ngo 1.27\n",
+	if err := writeFixture(root); err != nil {
+		t.Fatal(err)
 	}
-	for name, body := range files {
+	return root
+}
+
+func writeFixture(root string) error {
+	for name, body := range fixtureFiles {
 		p := filepath.Join(root, filepath.FromSlash(name))
 		os.MkdirAll(filepath.Dir(p), 0o755)
 		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
-			t.Fatal(err)
+			return err
 		}
 	}
-	return root
+	return nil
 }
 
 type harness struct {
@@ -190,6 +215,8 @@ func step(tt *ui.Tester) {
 	tt.Frame()
 }
 
+const settleTimeout = 30 * time.Second
+
 // settle draws frames until the background work (reading directories,
 // highlighting, indexing, git) is done: half a second of the tester's
 // clock, which the animations, the double clicks and the waits of the app
@@ -199,11 +226,17 @@ func step(tt *ui.Tester) {
 // counts for two frames in a row, as a frame can start work that one
 // finished asks for.
 func (hs *harness) settle() {
-	for range 30 {
+	hs.t.Helper()
+	hs.a.gitClock = hs.tt.Now
+	// Advance before waiting: a final frame after the wait can start work.
+	for range 31 {
 		step(hs.tt)
 	}
-	for idle, deadline := 0, time.Now().Add(10*time.Second); idle < 2 && time.Now().Before(deadline); {
+	for idle, deadline := 0, time.Now().Add(settleTimeout); idle < 2; {
 		running, queued := hs.busy()
+		if time.Now().After(deadline) {
+			hs.t.Fatalf("settle: %d background jobs still run after %s (queued: %v)", bg.Running()-hs.held, settleTimeout, queued)
+		}
 		switch {
 		case queued:
 			idle = 0
@@ -212,24 +245,26 @@ func (hs *harness) settle() {
 			idle = 0
 			time.Sleep(time.Millisecond)
 		default:
-			idle++
 			hs.tt.Frame()
+			if hs.idle() {
+				idle++
+			} else {
+				idle = 0
+			}
 		}
 	}
-	if !hs.idle() {
-		hs.t.Logf("settle: %d background jobs still run after 10s", bg.Running()-hs.held)
-	}
-	step(hs.tt)
 }
 
 // busy reports whether background work runs, and whether some it posted
 // waits for a frame. Whether the view asks for a frame does not count: it
 // always does while something on screen moves.
 func (hs *harness) busy() (running, queued bool) {
+	// A job posts before it stops counting: sample the work before its queue.
+	running = bg.Running() > hs.held
 	hs.a.mu.Lock()
 	n := len(hs.a.queue)
 	hs.a.mu.Unlock()
-	return bg.Running() > hs.held, n > 0
+	return running, n > 0
 }
 
 // idle reports whether no background work runs and none posted waits.
@@ -899,7 +934,9 @@ func TestTerminalPanelAtASide(t *testing.T) {
 	// left of the sidebar's.
 	a.run("view.panelPosition.left")
 	hs.settle()
-	if panel, explorer := at("TERMINAL"), at("EXPLORER"); panel.X > explorer.X || panel.X > 40 {
+	// The panel's left edge is its problems tab, the first of its tabs, as
+	// the terminal's tab follows it.
+	if panel, explorer := at("PROBLEMS"), at("EXPLORER"); panel.X > explorer.X || panel.X > 40 {
 		t.Errorf("the panel on the left: %v, the sidebar %v", panel, explorer)
 	}
 	if term, side := buttons(); term.X > side.X {
@@ -927,7 +964,7 @@ func TestTerminalPanelAtASide(t *testing.T) {
 	// outer one, at the window's own edge, and its button is at the right.
 	a.run("view.panelPosition.right")
 	hs.settle()
-	panel, explorer := at("TERMINAL"), at("EXPLORER")
+	panel, explorer := at("PROBLEMS"), at("EXPLORER")
 	if panel.X < explorer.X || panel.X < width-a.window.PanelWidth || panel.X > width-a.window.PanelWidth+40 {
 		t.Errorf("the panel on the right: %v, the sidebar %v, width %v", panel, explorer, a.window.PanelWidth)
 	}
@@ -978,7 +1015,7 @@ func TestMaximizedPanelFillsTheWindow(t *testing.T) {
 		a.run("view.panelPosition." + pos)
 		a.panelMax = true
 		hs.settle()
-		title, ok := tt.Find("TERMINAL")
+		title, ok := tt.Find("PROBLEMS")
 		hide, ok2 := tt.Find("Hide Panel")
 		if !ok || !ok2 {
 			t.Fatalf("the panel maximized at the %s is not shown", pos)

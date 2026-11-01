@@ -11,6 +11,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"mayoi/internal/lsp"
+	"mayoi/internal/settings"
 	"mayoi/locales"
 )
 
@@ -227,7 +228,7 @@ func (a *app) problemsView(c *ui.Context) {
 			ui.Text(c, msg).FontSize(12).TextColor(p.faint).TextAlign(ui.Center).MaxWidth(420)
 			if !a.settings.LSP {
 				if ui.Button(c, locales.CmdFileSettings()).Clicked() {
-					a.openSettingsDialog()
+					a.host.showSettings(settings.CatGeneral, "lsp")
 				}
 			}
 		})

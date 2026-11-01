@@ -92,7 +92,7 @@ func (a *app) paletteEntries() []paletteEntry {
 // commandOn reports whether a command that turns something on or off,
 // or picks a theme, has it on.
 func (a *app) commandOn(id string) bool {
-	s := a.settings
+	s := a.prefs()
 	switch id {
 	case "file.autoSave":
 		return s.AutoSave
@@ -102,6 +102,8 @@ func (a *app) commandOn(id string) bool {
 		return s.Vim
 	case "view.sidebarRight":
 		return s.SidebarRight
+	case "view.compactFolders":
+		return s.ExplorerCompactFolders
 	case "view.terminalLocation":
 		return s.TerminalLocation == "editor"
 	case "git.blame":

@@ -43,8 +43,13 @@ type host interface {
 	// and clipboardFiles are the local files the clipboard has.
 	copyFiles(paths []string) error
 	clipboardFiles() []string
-	// clipboardImage is the image the clipboard has, as PNG, or nil.
+	// clipboardImage is the image the clipboard has, as PNG, or nil, and
+	// copyImage puts a PNG on it.
 	clipboardImage() []byte
+	copyImage(png []byte) error
+	// exportAs asks where to save a file of the type of ext, at path
+	// first.
+	exportAs(path, ext string, done func(path string))
 	// choosePaths asks in the native dialog for files, or for a folder
 	// when folders is set, starting in dir.
 	choosePaths(title, button, dir string, folders bool, done func(paths []string))
@@ -71,6 +76,10 @@ type host interface {
 	// they change.
 	recentChanged()
 	menuChanged()
+	// showSettings opens the settings window, or brings it to the front,
+	// at section, a category of the preferences or "shortcuts", and at
+	// the preference of key when it is not "", for the window's folder.
+	showSettings(section, key string)
 	// redrawWindows draws every window with the current font and zoom.
 	redrawWindows()
 	// installCLI and uninstallCLI put the mayoi command on the shell's
@@ -122,6 +131,9 @@ type host interface {
 type app struct {
 	host     host
 	settings *settings.Settings
+	// folderPrefs is what the folder chooses of the preferences, nil
+	// without a folder.
+	folderPrefs *folderPrefs
 	// window is what the settings keep of this window.
 	window *settings.Window
 
@@ -188,8 +200,9 @@ type app struct {
 	retryAt time.Time
 	// indexed is when the files of a remote folder were last listed,
 	// which is done again at most every remoteIndexEvery.
-	indexed time.Time
-	files   ui.OutlineState[string]
+	indexed  time.Time
+	files    ui.OutlineState[string]
+	explorer explorerTree
 	// crumbs is the box a folder of the breadcrumbs opens.
 	crumbs  crumbsPicker
 	fileRow int
@@ -201,6 +214,7 @@ type app struct {
 	// file it should choose once its row shows.
 	treeSynced, selectInTree string
 	git                      gitState
+	gitClock                 func() time.Time // nil uses real time; tests use the frame clock
 	repositories             repositoryState
 	commitTools              commitTools
 	scm                      scmState
@@ -234,6 +248,8 @@ type app struct {
 	// keyboard as the frame's columns began: a click on another's tab as
 	// they draw moves col, and the widget's input binds one control.
 	findCol *column
+	// keptTabs is keepEditors' list of the tabs it keeps, reused.
+	keptTabs []*colTab
 	// findPreview is the Markdown preview find last looked in, which
 	// shows its matches while find is open.
 	findPreview *markdownPreview
@@ -291,6 +307,7 @@ type app struct {
 	welcomeView   ui.Handle
 	rain          rainState   // The Matrix's, behind the welcome page
 	mascot        mascotState // the theme's character, Claude's or Qoder's
+	spin          spinState   // Claude's spinner, while Git works
 	// blurred is set while the window has not the keyboard.
 	blurred  bool
 	colsView ui.Handle // the columns, whose width their weights share
@@ -298,6 +315,8 @@ type app struct {
 	// frame may build the view several times.
 	frame   int
 	frameAt time.Time
+	// builds counts the builds of the view.
+	builds int
 	// dragging is set while a tab is dragged, as the frame before found.
 	dragging, dragNow bool
 	// middle is the tab a middle press is on, until it is let go of: the
@@ -316,9 +335,9 @@ type app struct {
 	stashes    stashPicker       // the box of the stashes
 	prs        prPicker          // the box of the pull requests
 	checks     checksPicker      // the box of the checks of the pull request
+	worktrees  worktreePicker    // the box that switches worktrees
 	recents    recentPicker      // the box of the recent folders
 	themes     themePicker       // the box of the color themes
-	settingsUI settingsDialog    // the box of the settings
 	// lspServers are the language servers running, by their command,
 	// arguments and root, and lspDiags their diagnostics by file. lspReg
 	// are the servers the settings name, made for the settings' lspGen
@@ -429,6 +448,7 @@ func (a *app) park() {
 		for _, t := range col.tabs {
 			if t.ed != nil {
 				a.hideEditor(t.ed)
+				t.ed.areaCol = nil
 			}
 		}
 	}
@@ -508,11 +528,13 @@ func (a *app) openFolder(dir string) {
 	}
 	a.root = dir
 	a.attachRemote(dir)
+	a.loadFolderPrefs(dir)
 	a.tree = workspace.NewTree(dir, a.post)
 	a.tree.OnChange = a.diskChanged
-	a.tree.IsOpen = a.files.Open.Has
+	a.tree.IsOpen = a.explorerDirVisible
 	a.tree.Load(dir)
 	a.files = ui.OutlineState[string]{Indent: treeStep}
+	a.explorer = explorerTree{}
 	a.fileRow = -1
 	a.files.List.Selected = &a.fileRow
 	a.index, a.indexStale = nil, true
@@ -566,6 +588,7 @@ func (a *app) closeFolder() {
 			a.tree.Close()
 		}
 		a.detachRemote()
+		a.dropFolderPrefs()
 		a.resetRepositories()
 		a.root, a.tree, a.index, a.git = "", nil, nil, gitState{}
 		a.resetSearch()

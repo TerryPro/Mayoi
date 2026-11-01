@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"os"
 	"strings"
 	"testing"
@@ -8,6 +9,8 @@ import (
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
+
+	"mayoi/internal/highlight"
 )
 
 // matrixHarness is a dark window in The Matrix.
@@ -50,7 +53,8 @@ func TestMatrixTheme(t *testing.T) {
 	}
 }
 
-// Purple Gold is always dark, whatever the appearance, and has no rain.
+// Purple Gold is always dark, whatever the appearance, with Corona and
+// gold hairlines, and has no rain.
 func TestPurpleGoldTheme(t *testing.T) {
 	if paletteFor(themePurpleGold, false) != purpleGoldPal || paletteFor(themePurpleGold, true) != purpleGoldPal {
 		t.Error("Purple Gold follows the window's light or dark")
@@ -58,9 +62,39 @@ func TestPurpleGoldTheme(t *testing.T) {
 	if themeSource(themePurpleGold, "light") != mygo.ThemeDark || themeSource(themePurpleGold, "") != mygo.ThemeDark {
 		t.Error("the native window is not dark under Purple Gold")
 	}
+	if themeMascotOf(themePurpleGold) != corona {
+		t.Error("Purple Gold has not Corona")
+	}
+	if purpleGoldPal.hairline() != purpleGoldPal.rule || darkPal.hairline() != darkPal.border {
+		t.Error("the hairline is not the theme's own rule, or the border without one")
+	}
 	hs := themeHarness(t, themePurpleGold, false)
 	if hs.a.pal != purpleGoldPal || hs.a.rain.moving {
 		t.Error("a light window is not in Purple Gold, without rain")
+	}
+}
+
+// The Halloween themes are always dark, whatever the appearance, without
+// rain, each with its character.
+func TestHalloweenThemes(t *testing.T) {
+	for _, tc := range []struct {
+		theme string
+		pal   *palette
+		m     *mascot
+	}{{themePumpkin, pumpkinPal, jack}, {themeWitchsBrew, witchsBrewPal, cauldron}, {themeBloodMoon, bloodMoonPal, bat}} {
+		if paletteFor(tc.theme, false) != tc.pal || paletteFor(tc.theme, true) != tc.pal {
+			t.Errorf("%s follows the window's light or dark", tc.theme)
+		}
+		if themeSource(tc.theme, "light") != mygo.ThemeDark || themeSource(tc.theme, "") != mygo.ThemeDark {
+			t.Errorf("the native window is not dark under %s", tc.theme)
+		}
+		if themeMascotOf(tc.theme) != tc.m {
+			t.Errorf("%s has not its character", tc.theme)
+		}
+		hs := themeHarness(t, tc.theme, false)
+		if hs.a.pal != tc.pal || hs.a.rain.moving {
+			t.Errorf("a light window is not in %s, without rain", tc.theme)
+		}
 	}
 }
 
@@ -166,9 +200,10 @@ func TestLightOrDarkThemes(t *testing.T) {
 			if light.Background != tc.light.panel || darkTh.Palette != tc.dark.ansi {
 				t.Errorf("the terminal's colors are not %s's", tc.name)
 			}
-			// The icons of files keep their languages' colors.
-			if _, c := fileIcon(a.pal, "main.go"); c == langColor(matrixPal, "#00add8", "") {
-				t.Error("a Go file's icon is a mono shade")
+			// The icons of files keep their languages' colors, but in
+			// Claude, which is in the code's font and shades its icons.
+			if _, c := fileIcon(a.pal, "main.go"); (c == langColor(&palette{mono: true, muted: a.pal.muted, accent: a.pal.accent}, "#00add8", "")) != a.pal.mono {
+				t.Errorf("a Go file's icon under %s is %v", tc.name, c)
 			}
 			// Choosing an appearance keeps the theme.
 			a.setAppearance("light")
@@ -182,6 +217,84 @@ func TestLightOrDarkThemes(t *testing.T) {
 			}
 		}
 	}
+}
+
+// Claude is as Claude Code draws itself: the whole window in the code's
+// font, and errors and what is removed in a rose apart from the orange of
+// the accent, so that neither reads as a mark. Its terminal's whites read
+// on a light window, as text does.
+func TestClaudeTheme(t *testing.T) {
+	for name, p := range map[string]*palette{"light": claudeLightPal, "dark": claudeDarkPal} {
+		if !p.mono {
+			t.Errorf("Claude %s is not in the code's font", name)
+		}
+		for what, c := range map[string]ui.Color{"danger": p.danger, "removed": p.removed, "keyword": p.syntax[highlight.Keyword]} {
+			if d := hueApart(c, p.accent); d < 20 {
+				t.Errorf("Claude %s: %s is %.0f° from the accent", name, what, d)
+			}
+		}
+		if hueApart(p.active, p.accent) < 90 {
+			t.Errorf("Claude %s: what is chosen is tinted with the accent", name)
+		}
+	}
+	for i, least := range map[int]float64{7: 3, 15: 3} {
+		if r := contrast(claudeLightPal.ansi[i], claudeLightPal.panel); r < least {
+			t.Errorf("Claude light: the terminal's color %d reads at %.2f:1", i, r)
+		}
+	}
+}
+
+// Claude's spinner turns through Claude Code's glyphs a step at a time,
+// names the work, and after a while now and then says one of the CLI's
+// own words instead, as the light runs across it.
+func TestClaudeSpinner(t *testing.T) {
+	if g, w, _ := spinAt(-time.Second, "Pushing…"); g != "·" || w != "Pushing…" {
+		t.Errorf("before it started: %q %q", g, w)
+	}
+	if g, w, _ := spinAt(0, "Pushing…"); g != "·" || w != "Pushing…" {
+		t.Errorf("at first the spinner shows %q %q", g, w)
+	}
+	if g, _, _ := spinAt(4*spinStep, "Pushing…"); g != "✻" {
+		t.Errorf("four steps in, the glyph is %q", g)
+	}
+	if _, w, _ := spinAt(spinFlavorAt, "Pushing…"); w != spinVerbs[0] {
+		t.Errorf("after a while the word is %q, not Claude Code's", w)
+	}
+	if _, w, _ := spinAt(spinFlavorAt+spinFlavor, "Pushing…"); w != "Pushing…" {
+		t.Errorf("the word does not come back to the work's name: %q", w)
+	}
+	if _, _, l1 := spinAt(0, "Pushing…"); func() bool { _, _, l2 := spinAt(spinStep, "Pushing…"); return l2 != l1+1 }() {
+		t.Error("the light does not move a rune a step")
+	}
+	hs := themeHarness(t, themeClaude, true)
+	a := hs.a
+	a.repository().git.busy = "Pushing…"
+	hs.settle()
+	if a.spin.label != "Pushing…" || a.spin.since.IsZero() {
+		t.Errorf("the spinner is not timing the push: %+v", a.spin)
+	}
+	hs.shot("claude-spinner")
+	a.repository().git.busy = ""
+}
+
+// hueApart is how far apart the hues of two colors are, in degrees.
+func hueApart(x, y ui.Color) float64 {
+	hue := func(c ui.Color) float64 {
+		r, g, b := float64(c.R)/255, float64(c.G)/255, float64(c.B)/255
+		hi, lo := math.Max(r, math.Max(g, b)), math.Min(r, math.Min(g, b))
+		d := hi - lo
+		switch {
+		case d == 0:
+			return 0
+		case hi == r:
+			return math.Mod((g-b)/d+6, 6) * 60
+		case hi == g:
+			return ((b-r)/d + 2) * 60
+		}
+		return ((r-g)/d + 4) * 60
+	}
+	d := math.Abs(hue(x) - hue(y))
+	return math.Min(d, 360-d)
 }
 
 func restingPose(now time.Time) mascotPose {
@@ -231,7 +344,9 @@ func TestMascotMoves(t *testing.T) {
 		theme string
 		m     *mascot
 		name  string
-	}{{themeClaude, clawd, "Claude"}, {themeQoder, qoduck, "Qoder"}, {themeGrokBot, grokBot, "Grok Bot"}} {
+	}{{themeClaude, clawd, "Claude"}, {themeQoder, qoduck, "Qoder"}, {themeGrokBot, grokBot, "Grok Bot"},
+		{themePumpkin, jack, "Jack-o'-Lantern"}, {themeWitchsBrew, cauldron, "Witch's Brew"}, {themeBloodMoon, bat, "Blood Moon"},
+		{themePurpleGold, corona, "Corona"}} {
 		hs := themeHarness(t, tc.theme, true)
 		a := hs.a
 		if a.themeMascot() != tc.m {
@@ -288,6 +403,12 @@ func TestShotPurpleGold(t *testing.T) {
 	shotTheme(t, themePurpleGold)
 }
 
+func TestShotHalloween(t *testing.T) {
+	for _, theme := range []string{themePumpkin, themeWitchsBrew, themeBloodMoon} {
+		shotTheme(t, theme)
+	}
+}
+
 // shotTheme shoots a theme's welcome page and an editor, light and dark.
 func shotTheme(t *testing.T, theme string) {
 	if os.Getenv("SHOTS") == "" {
@@ -315,8 +436,9 @@ func shotTheme(t *testing.T, theme string) {
 	}
 }
 
-// The appearances are greyed out in the menu under The Matrix and Purple
-// Gold, which are always dark, and the themes and appearances are checked apart.
+// The appearances are greyed out in the menu under The Matrix, Purple
+// Gold and Witch's Brew, which are always dark, and the themes and
+// appearances are checked apart.
 func TestThemeMenu(t *testing.T) {
 	hs := newHarness(t, true)
 	a := hs.a
@@ -358,8 +480,13 @@ func TestThemeMenu(t *testing.T) {
 	if l, g := find("Light"), find("Purple Gold"); g == nil || !g.Checked || !l.Disabled || !l.Checked || !a.commandOn("view.theme.purplegold") {
 		t.Error("Purple Gold is not the theme checked, with Light greyed out and kept")
 	}
-	if a.themeMascot() != nil {
-		t.Error("Purple Gold has a character")
+	if a.themeMascot() != corona {
+		t.Error("Purple Gold has not Corona")
+	}
+	a.setTheme(themeWitchsBrew)
+	if l, w := find("Light"), find("Witch's Brew"); w == nil || !w.Checked || find("Purple Gold").Checked || !l.Disabled ||
+		!a.commandOn("view.theme.witchsbrew") {
+		t.Error("Witch's Brew is not the theme checked, with Light greyed out")
 	}
 	a.setTheme(themeQoder)
 	if q, l := find("Qoder"), find("Light"); q == nil || !q.Checked || find("The Matrix").Checked || l.Disabled {
@@ -387,7 +514,8 @@ func TestThemeMenu(t *testing.T) {
 func TestButtonContrast(t *testing.T) {
 	pals := map[string]*palette{"light": lightPal, "dark": darkPal, "matrix": matrixPal, "claude light": claudeLightPal, "claude dark": claudeDarkPal,
 		"qoder light": qoderLightPal, "qoder dark": qoderDarkPal, "grok bot light": grokBotLightPal, "grok bot dark": grokBotDarkPal,
-		"cursor light": cursorLightPal, "cursor dark": cursorDarkPal, "purple gold": purpleGoldPal}
+		"cursor light": cursorLightPal, "cursor dark": cursorDarkPal, "purple gold": purpleGoldPal,
+		"jack-o'-lantern": pumpkinPal, "witch's brew": witchsBrewPal, "blood moon": bloodMoonPal}
 	for name, p := range pals {
 		for _, pair := range []struct {
 			what     string
@@ -413,7 +541,8 @@ func TestButtonContrast(t *testing.T) {
 func TestStatusTextContrast(t *testing.T) {
 	pals := map[string]*palette{"light": lightPal, "dark": darkPal, "matrix": matrixPal, "claude light": claudeLightPal, "claude dark": claudeDarkPal,
 		"qoder light": qoderLightPal, "qoder dark": qoderDarkPal, "grok bot light": grokBotLightPal, "grok bot dark": grokBotDarkPal,
-		"cursor light": cursorLightPal, "cursor dark": cursorDarkPal, "purple gold": purpleGoldPal}
+		"cursor light": cursorLightPal, "cursor dark": cursorDarkPal, "purple gold": purpleGoldPal,
+		"jack-o'-lantern": pumpkinPal, "witch's brew": witchsBrewPal, "blood moon": bloodMoonPal}
 	for name, p := range pals {
 		for what, fg := range map[string]ui.Color{"modified": p.modifiedFg, "added": p.addedFg, "removed": p.removedFg, "danger": p.dangerFg} {
 			for _, back := range []ui.Color{p.chrome, p.editor, p.panel} {

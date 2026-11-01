@@ -11,6 +11,9 @@ A click on the space below the files, or Escape, unselects the file or folder ch
 folder. A right click there opens the workspace's menu: New File…, New Folder…, Reveal in Finder, Open in Terminal and
 Paste.
 
+**View → Compact Folders** shows a chain of folders that each hold only one folder on one row, as
+`src/main/java/com/example`. The row's actions use its last folder.
+
 ## Editor
 
 Tabs, line numbers, a highlighted caret line, and Chroma syntax highlighting. Files changed on disk reload unless you
@@ -138,8 +141,16 @@ which link the whole file. The remote is the upstream's, else origin, else the f
 The button beside **EXPLORER** at the top of the sidebar (⌃⇧G) switches it to the changes of the folder's Git work
 tree, with a count of them. Files are grouped as merge changes, staged changes, changes and untracked files.
 
-- The branch at the top opens **Switch Branch…**. Beside it, fetch, pull and push, which show how many commits
-  they would bring down or send up; a branch with no upstream gets **Publish Branch** instead.
+- The row at the top has two buttons: the folder of this work tree, which opens **Switch Worktree…**, and the branch,
+  which opens **Switch Branch…**. The folder names a linked worktree, and the name shortens as the sidebar narrows;
+  the main one shows its icon alone. Beside the branch, fetch, pull and push, which show how many commits they would
+  bring down or send up; a branch with no upstream gets **Publish Branch** instead. With an upstream, a row too narrow
+  for its buttons, counts included, moves fetch, pull and push into the **⋯** menu; without one, fetch and publish stay
+  in the row.
+- **Switch Worktree…** lists the work tree's checkouts, the one open first, by folder and branch. Choosing one
+  opens its folder in the window. Typing a new branch name offers **Create Worktree**, which makes the checkout beside
+  the main one, in `<folder>.worktrees`, from the commit HEAD is at. Typing the name of a branch that is already there
+  points to **Switch Branch…** instead. A folder that has gone missing is reported, not pruned.
 - Click a file, or press Enter, to see its changes with the diff focused, so its keys (`]` `[`, `.` `,`) work at once.
   Shift-click or Shift+Up/Down selects a range of files, ⌘-click (Ctrl-click on Windows and Linux) adds or removes one,
   and ⌘A selects them all. Space, and a selected row's stage, unstage and discard buttons and menu items, act on all the
@@ -179,7 +190,7 @@ it. The current change group (such as Staged Changes or Changes) stays directly
 beneath that header, with its counts and actions, until the next group or
 repository pushes it away. Headers combine the repository name, branch or
 detached HEAD, and repository actions; a narrow sidebar keeps remote actions in
-each repository's **⋯** menu.
+each repository's **⋯** menu. Each header's folder icon opens **Switch Worktree…** for its repository.
 Repositories with changes start expanded; clean repositories start collapsed and
 can be expanded to show their retained commit draft and a disabled commit button.
 The arrow expands or collapses a section; clicking its name selects its history.
@@ -296,8 +307,18 @@ diff focused, keys work as in a pager:
 
 ### Review comments
 
+To collect code for an agent from ordinary files, set `"editorAgentContext": true` in **Settings**
+(off by default). Hover a line and click **+**, or select several lines first, to open the same comment
+card used in reviews. While writing the comment, the source is shown with room for the card under those
+lines; saving or cancelling returns to editing the source. Use ⌘Enter to save or Escape to cancel.
+Leave the comment empty and choose **Add to Agent** to collect just the code. Collect snippets across
+files, then use **Send N Items** above the editor to paste them, together with review comments, into the
+last-used terminal without pressing Enter. The **…** button lists the collected items for navigation,
+editing and removal. With no terminal open, sending copies the batch to the clipboard and keeps it.
+Pending items survive restarts and turning the setting off.
+
 Review an agent's changes, then hand it the review in one paste. Choose lines in a diff and press `c`, or click the
-**+** by the line under the pointer, or select lines in a file and press ⇧⌘M (**Add Review Comment**), and type a
+**+** by the line under the pointer, or select lines in a file and press ⇧⌥M (**Add Review Comment**), and type a
 comment: ⌘Enter keeps it, Escape drops it. In a diff the comment shows under its lines, with buttons to edit or delete
 it, and a bar by the line numbers marks its lines. In a file the bar marks them too, and the comment shows after the
 last of them: click it, or run the command on its lines, to edit it. The scroll bar marks where each comment is.
@@ -308,9 +329,9 @@ the next comment and `N` to the one before; **Go to Next Review Comment** and **
 from anywhere, in the order of their files and lines. Going to a comment on lines removed, staged or of a commit shows
 it in its diff.
 
-**Send Review Comments to Terminal**, from the button in the diff's toolbar, that menu, the **Git** menu or the
+**Send Review Items to Terminal**, from the button in the diff's toolbar, that menu, the **Git** menu or the
 command palette, pastes every comment into the terminal used last, without pressing Enter, so you can add to it before
-it goes to the agent, and clears them. **Copy Review Comments** copies them instead. Each says where its lines are, relative to the folder, then shows
+it goes to the agent, and clears them. **Copy Review Items** copies them instead. Each says where its lines are, relative to the folder, then shows
 them, as a diff when it was made in one, then the comment, numbered when there are more than one:
 
 ````
@@ -370,20 +391,21 @@ offers **Reload**.
 menu, or a click on the badge's checks icon, lists the checks of the branch's pull request, failed first, and reads
 them again every 30 seconds while one runs; type to find one. A failed GitHub Actions job offers **Send to Terminal**
 (⏎), which reads the last 3000 lines of its log, without colors or time stamps, and pastes them into the terminal used
-last without pressing Enter, as **Send Review Comments to Terminal** does, copying them with no terminal open; **Copy
+last without pressing Enter, as **Send Review Items to Terminal** does, copying them with no terminal open; **Copy
 Log**; **Re-run** (⌘⏎), which runs that job again; and **Open on GitHub**, the only one a check outside GitHub Actions
 offers.
 
-Click the branch in the status bar to open the same branch picker as source control. The sync button alongside it
-shows how far the branch is ahead of its upstream (↑) and behind it (↓), and pulls then pushes in one click; a branch
-without an upstream has a publish button instead. Switching waits until open files are saved.
+The sync button in the status bar shows how far the branch is ahead of its upstream (↑) and behind it (↓), and pulls
+then pushes in one click; a branch without an upstream has a publish button instead. Switching waits until open
+files are saved.
 
-**Switch Branch…**, from the branch at the top of source control, the status bar or the **Git** menu, opens a box
-of the branches, local and of the remotes, the one checked out first and then the one committed to last. Each shows the
-subject of its last commit and how long ago it was made. Type to find one by name, or type a new name to create a branch
-from the one checked out. **Create Branch…** at the top of the unfiltered list opens a name prompt. With matching
-branches, Enter switches to the first match; with no matches, it creates the typed name. Choosing a remote's branch
-checks out a local branch that tracks it. Fetch, pull and push are also available in source control and the **Git** menu.
+**Switch Branch…**, from the branch in the status bar, at the top of source control or in the **Git** menu,
+opens a box of the branches: the one checked out first, then the local ones, then those of the remotes, each the one
+committed to last first. Each shows the author of its last commit, how long ago it was made and its subject. Type to find one by
+name, or type a new name to create a branch from the one checked out. **Create Branch…** at the top of the unfiltered
+list opens a name prompt. With matching branches, Enter switches to the first match; with no matches, it creates the
+typed name. Choosing a remote's branch checks out a local branch that tracks it. Fetch, pull and push are also
+available in source control and the **Git** menu.
 
 Pull only fast-forwards. Push sets the upstream the first time. Git never prompts for a password inside Mayoi: it uses
 your SSH agent and credential helper, and if those fail, the error says to run the command once in the terminal.
@@ -454,8 +476,13 @@ the caret there. Relative paths use the directory the shell reports, or the term
 it reports none. Windows drive-letter and backslash paths are not recognized yet. Holding Command (Control
 elsewhere) over a recognized path underlines it and shows a hand cursor.
 
+⌘F (Ctrl+F on Linux and Windows) in a terminal opens a find bar over it that searches the screen and the scrollback,
+ignoring the case of ASCII letters, and highlights the matches as output comes. Return and the up arrow go to the
+match above, in older output, and Shift+Return and the down arrow to the one below; ⌘G and ⇧⌘G do the same. Escape
+closes it and gives the terminal back the keyboard.
+
 On Windows and Linux the shell has the keys with Ctrl, which edit its line, except the workbench's: Quick Open, the
-Command Palette, the terminal and the sidebar toggles, Next and Previous Tab, Alt+1 to Alt+9 and zoom, and every
+Command Palette, Find, the terminal and the sidebar toggles, Next and Previous Tab, Alt+1 to Alt+9 and zoom, and every
 Ctrl+Shift shortcut but Ctrl+Shift+C and Ctrl+Shift+V, the terminal's copy and paste, and those of the function keys.
 
 ## Quick open
@@ -652,14 +679,22 @@ for options it doesn't know. A `mayoi` command an older Mayoi installed is broug
 
 ## Appearance and persistence
 
-**View → Theme** picks a theme, Mayoi, The Matrix, Claude, Qoder, Grok Bot, Cursor or Purple Gold, and apart from it whether the window follows the system's
-light or dark mode or is always Light or Dark. Light and Dark are greyed out under The Matrix and Purple Gold, which are always dark.
+**View → Theme** picks a theme, Mayoi, The Matrix, Claude, Qoder, Grok Bot, Cursor, Purple Gold, or one of the Halloween
+themes, Jack-o'-Lantern, Witch's Brew and Blood Moon, and apart from it whether the window follows the system's light or
+dark mode or is always Light or Dark. Light and Dark are greyed out under The Matrix, Purple Gold and the Halloween
+themes, which are always dark.
 The Matrix is phosphor green on black, with the whole window in the code's font, file icons in greens, and red and amber
 kept for what is removed, failed or changed. Digital rain falls behind the welcome page while the window has the
-keyboard, and holds still without it or when the system asks for reduced motion. Claude is Anthropic's ivory and warm
-near-black with Claude's orange, in a light and a dark kind. Clawd, Claude Code's character, takes the logo's place on
-the welcome page and sits at the start of the status bar: it blinks now and then, and hops while a Git command or a search of the files
-runs, and holds still as the rain does. Qoder is Qoder's Forest theme: white or green-tinged greys with forest green,
+keyboard, and holds still without it or when the system asks for reduced motion. Claude is Claude Code as it draws itself in a
+terminal, in a light and a dark kind: the whole window in the code's font, as The Matrix is, warm near-black or
+off-white, Claude's orange for the accent and the buttons, with dark labels on them, and periwinkle for what is chosen,
+with errors and what is removed in Claude Code's rose, apart from the orange. The boxes over the window, as Quick
+Open's, are outlined in the orange. While a Git command runs, the status bar has Claude Code's spinner: a ✻ that turns
+through its glyphs, the command's name with a light running across it, and the seconds it has taken, and after five
+seconds now and then one of Claude Code's own words, as Clauding…, in its place. Clawd, Claude Code's character, takes
+the logo's place on the welcome page and sits at the start of the status bar: it blinks now and then, and hops while a
+Git command or a search of the files runs, and holds still as the rain does, as the spinner does. Qoder is Qoder's
+Forest theme: white or green-tinged greys with forest green,
 in a light and a dark kind, and its code in Forest's greens, blues, teals and ambers. Qoduck, Qoder's duck, takes the
 logo's place and the status bar's start as Clawd does, and blinks, bobs and hops as it does. Grok Bot is the Grok Bot
 app's Sand theme: white or near-black greys, near-black or near-white buttons and its blue for the accent, in a light
@@ -667,9 +702,19 @@ and a dark kind, and its code in the warm colors of x.ai's terminal. Grok Bot's 
 eyes, takes the logo's place and the status bar's start as Clawd does, looks up as it hops, and now and then glances
 to one side and the other. Cursor is Cursor's own Cursor Light and Cursor Dark: near-white or near-black greys with
 Cursor's blue for the accent and the buttons, in a light and a dark kind, and its code in Cursor's own colors. It has
-no character, so the welcome page keeps Mayoi's logo. Purple Gold is a near-black sidebar, tab strip and panel around
-a charcoal editor, with a royal purple status bar, classic gold for the accent, the buttons and the chosen rows, and its
-code in golds, lavenders, roses and teals. It has no character either.
+no character, so the welcome page keeps Mayoi's logo. Purple Gold is Porphyry, the emperor's purple set in gold mosaic:
+Tyrian chrome around a deep purple editor, a Tyrian status bar lettered in gold, gold leaf for the accent, the buttons
+and the chosen rows, gold hairlines under the title bar and over the status bar, and a gilded line along the tab shown
+with a gem at its middle. Its code is in amethyst, gold, rose quartz and jade. Its character is Corona, a crown in gold
+leaf set with amethysts and a ruby, which takes the logo's place and the status bar's start as Clawd does, and whose
+jewels flash as it hops. Jack-o'-Lantern is soot-black chrome around a
+warm editor, pumpkin orange for the accent and the buttons, and a status bar that glows like the lantern's face, with its
+code in candle yellow, ember and vine green and witch-purple keywords. Witch's Brew is plum chrome with a witch-purple
+status bar and slime green for the accent and the buttons, with its code in violets, slime greens, teals and lilacs.
+Blood Moon is near-black with a red undertone, crimson for the accent and the buttons, a dark-blood status bar, and a
+scarlet apart from the crimson for what loses something, with its code in reds, old gold and moonlight blue. Each has a
+character drawn from cells in its accent, which takes the logo's place and the status bar's start as Clawd does: a
+carved pumpkin whose face glows, a cauldron whose brew bubbles, and a bat that flaps its wings as it hops.
 **View → Theme → Color Theme…** (`workbench.action.selectTheme` in `keybindings.json`, as `cmd+k cmd+t`), or **Color
 Theme…** on the welcome page, opens a box of the themes, each with a little window in its colors and its character: the
 window takes each theme as ↑ and ↓ move to it, and ← and → switch the appearance; Return keeps them, and Escape goes
@@ -684,15 +729,27 @@ again with its tabs, columns and Explorer as they were. Closing the last window 
 
 ## Settings
 
-**File → Open Settings** (⌘,) opens `settings.json` in a tab. Saving it applies its preferences in every window at once:
-the code's and the terminal's fonts, weight, ligatures and line height, the theme and appearance, auto save, word wrap,
-the diff layout, vim and more. Mayoi keeps the windows, tabs, recent folders and layout itself, in `state.json` beside
-it. See [SETTINGS.md](SETTINGS.md) for every key and where the files are.
+**Mayoi → Settings…** (⌘,), or **File → Settings…** on Windows and Linux, opens the settings window: every preference
+by category, with search, a mark on those changed from their defaults and a button to reset each. A change applies in
+every window at once: the code's and the terminal's fonts, weight, ligatures and line height, the theme and appearance,
+auto save, word wrap, the diff layout, vim and more.
+
+**File → Open Settings (JSON)** opens `settings.json` in a tab instead. Saving it applies it the same way. Mayoi keeps
+the windows, tabs, recent folders and layout itself, in `state.json` beside it. See [SETTINGS.md](SETTINGS.md) for
+every key and where the files are.
+
+A folder can set some preferences for itself, such as `vim` or `autoSave`, in `.mayoi/settings.json`. Choose the folder
+at the top right of the settings window, or use **File → Open Folder Settings (JSON)**. See
+[Folder settings](SETTINGS.md#folder-settings).
 
 ## Keyboard shortcuts
 
-**File → Open Keyboard Shortcuts** opens `keybindings.json`, in VS Code's format, so a VS Code or Cursor file can be
-pasted in. Saving it applies it in every window at once. It binds keys and chords to Mayoi's commands or VS Code's
+**File → Keyboard Shortcuts…** lists every command with its keys in the settings window. Search by name or by pressing
+keys, click a command and press its new keys, and see which other commands already use them. Each change goes to
+`keybindings.json` at once, keeping its comments.
+
+**File → Open Keyboard Shortcuts (JSON)** opens `keybindings.json`, in VS Code's format, so a VS Code or Cursor file can
+be pasted in. Saving it applies it in every window at once. It binds keys and chords to Mayoi's commands or VS Code's
 names for them, with `when` conditions. See [SETTINGS.md](SETTINGS.md#keybindingsjson) for the format, and for the
 shortcuts that differ on Windows and Linux.
 

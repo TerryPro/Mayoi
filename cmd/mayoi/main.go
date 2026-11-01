@@ -72,6 +72,8 @@ type mayoi struct {
 	// Mayoi is up to date, and update the one shown, "" when skipped.
 	updateFound string
 	update      string
+	// prefs is the settings window, nil while it is closed.
+	prefs *prefsWindow
 }
 
 func (h *desktop) openFolder(done func(string)) {
@@ -130,6 +132,18 @@ func (h *desktop) saveAs(name string, done func(string)) {
 	}()
 }
 
+func (h *desktop) exportAs(path, ext string, done func(string)) {
+	go func() {
+		path, err := mygo.Dialog.Save(mygo.SaveDialogOptions{
+			Parent: h.f.win, Title: locales.DialogExport(), DefaultPath: path, CreateDirectories: true,
+			Filters: []mygo.FileFilter{{Name: strings.ToUpper(ext), Extensions: []string{ext}}},
+		})
+		if err == nil && path != "" {
+			h.a.post(func() { done(path) })
+		}
+	}()
+}
+
 func (h *desktop) confirmClose(name string, done func(int)) {
 	go func() {
 		res, err := mygo.Dialog.Message(mygo.MessageOptions{
@@ -163,7 +177,8 @@ func (h *desktop) clipboardFiles() []string {
 	paths, _ := mygo.Clipboard.ReadFiles()
 	return paths
 }
-func (h *desktop) clipboardImage() []byte { return mygo.Clipboard.ReadImage() }
+func (h *desktop) clipboardImage() []byte     { return mygo.Clipboard.ReadImage() }
+func (h *desktop) copyImage(png []byte) error { return mygo.Clipboard.WriteImage(png) }
 
 // setTitle titles the window, while it shows the project.
 func (h *desktop) setTitle(title string) {
@@ -215,10 +230,13 @@ func (h *desktop) openFolders(dirs []string) {
 func (h *desktop) recentChanged() { h.m.refreshMenu() }
 func (h *desktop) menuChanged()   { h.m.refreshMenu() }
 
+func (h *desktop) showSettings(section, key string) { h.m.showPrefs(section, key, h) }
+
 func (h *desktop) redrawWindows() {
 	for _, w := range h.m.wins {
 		w.a.invalidate()
 	}
+	h.m.prefsChanged()
 }
 
 func (h *desktop) installCLI() {
@@ -285,6 +303,11 @@ func main() {
 	// scripts/dev.sh's Mayoi-dev, so a development app leaves Mayoi's alone.
 	if dir := os.Getenv("MAYOI_DATA_DIR"); dir != "" {
 		mygo.App.SetPath(mygo.PathUserData, dir)
+	}
+	// A development build signed in to the same account keeps its theme,
+	// so that trying one leaves the everyday Mayoi's alone.
+	if mygo.IsDev() {
+		settings.MachineKept = []string{"theme", "appearance"}
 	}
 	// Started as the mayoi command, Mayoi asks the app that runs, and
 	// exits.
@@ -375,6 +398,9 @@ func main() {
 			applyLocale(m.s.Locale)
 		}
 		mygo.App.OnLocaleChanged(func(string) { m.localeChanged() })
+		// A menu or a button changing a preference shows in the settings
+		// window.
+		m.s.OnPrefsChanged(m.prefsChanged)
 		if stop, err := m.s.Watch(func(p settings.Prefs) { mygo.RunOnMain(func() { m.reload(p); m.cloud.changed() }) }); err == nil {
 			mygo.App.OnQuit(stop)
 		}
@@ -618,12 +644,16 @@ func (m *mayoi) of(st *settings.Window) *desktop {
 	return nil
 }
 
+// setThemeSource sets the light or dark appearance of the native windows,
+// as the preferences change: the tests, which have none, leave it.
+var setThemeSource = func(s mygo.ThemeSource) { mygo.Theme.SetSource(s) }
+
 // reload applies the preferences of the settings file, which a person
 // changed as Mayoi runs.
 func (m *mayoi) reload(p settings.Prefs) {
 	old := m.s.SetPrefs(p)
 	if p.Appearance != old.Appearance || p.Theme != old.Theme {
-		mygo.Theme.SetSource(themeSource(p.Theme, p.Appearance))
+		setThemeSource(themeSource(p.Theme, p.Appearance))
 	}
 	if p.ProjectTabs != old.ProjectTabs {
 		m.projectTabsChanged()
@@ -638,6 +668,7 @@ func (m *mayoi) reload(p settings.Prefs) {
 		w.a.invalidate()
 	}
 	m.refreshMenu()
+	m.prefsChanged()
 }
 
 // reloadKeys applies the shortcuts of keybindings.json, which a person
@@ -677,11 +708,13 @@ func (m *mayoi) localeChanged() {
 	}
 	m.menuKey = ""
 	m.refreshMenu()
+	m.prefsChanged()
 }
 
 // refreshMenu builds the menus anew on the window in front, whose folder
 // the recent folders of the File menu leave out.
 func (m *mayoi) refreshMenu() {
+	m.prefsChanged()
 	if !m.ready || len(m.wins) == 0 {
 		return
 	}
@@ -781,6 +814,26 @@ func (m *mayoi) run(id string, win *mygo.Window) {
 	// The menu toggled the item chosen, which the command may leave as
 	// it was: the menu is set anew as the next one is made.
 	m.menuKey = ""
+	// The settings window takes the shortcut of a menu as a key pressed
+	// while it records keys, closes as a tab would, and finds in its
+	// search.
+	if w := m.prefs; w != nil && win == w.win {
+		switch {
+		case w.keys.recordAccel(id):
+			return
+		case id == "file.close":
+			w.win.Close()
+			return
+		case id == "file.settings":
+			return
+		case id == "edit.find":
+			w.find()
+			return
+		case strings.HasPrefix(id, "edit.") || strings.HasPrefix(id, "sel."):
+			// The editing of the window behind it.
+			return
+		}
+	}
 	h := m.wins[0]
 	for _, f := range m.frames {
 		if f.win == win && f.active != nil {

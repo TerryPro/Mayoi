@@ -32,6 +32,9 @@ type gitState struct {
 	remotes  []string    // the remotes, read with the status
 	// remotesStale has the next read of the status read the remotes too.
 	remotesStale bool
+	// remotesOf is when the config was changed that the remotes were read
+	// from, zero when that is not known.
+	remotesOf time.Time
 	// entries are the files that differ, by path; dirs the folders above
 	// them, with the letter of the one that matters most.
 	entries map[string]git.Entry
@@ -86,7 +89,7 @@ type gitState struct {
 	// counts.
 	graph   []graphRow
 	graphOf int
-	// tags are the names of the tags, read with the history.
+	// tags are the names of the tags, read with the status.
 	tags []string
 	// reach is the commits of history that HEAD has, worked out for the
 	// HEAD and the read reachOf names.
@@ -132,6 +135,13 @@ const historyPage = 50
 // files changed in folders the tree does not watch.
 const statusEvery = 5 * time.Second
 
+func (a *app) gitNow() time.Time {
+	if a.gitClock != nil {
+		return a.gitClock()
+	}
+	return time.Now()
+}
+
 // lookUpRepo finds the work tree of the folder in the background.
 func (a *app) lookUpRepo() {
 	g := &a.git
@@ -169,11 +179,12 @@ func (a *gitContext) refreshGit() {
 	if g.repo == nil || !a.app.online() {
 		return
 	}
+	now := a.app.gitNow()
 	switch {
 	case a.app.conn != nil:
 		// On the host, at one round trip, in the background.
-		if !g.metaRunning && time.Since(g.checked) >= remoteMetaEvery {
-			g.checked, g.metaRunning = time.Now(), true
+		if !g.metaRunning && now.Sub(g.checked) >= remoteMetaEvery {
+			g.checked, g.metaRunning = now, true
 			r := g.repo
 			bg.Go(func() {
 				defer recoverCrash()
@@ -189,27 +200,40 @@ func (a *gitContext) refreshGit() {
 				})
 			})
 		}
-	case time.Since(g.checked) >= 1500*time.Millisecond:
-		g.checked = time.Now()
+	case now.Sub(g.checked) >= 1500*time.Millisecond:
+		g.checked = now
 		a.tookGitMeta(gitMeta(g.repo))
 	}
 	a.refreshHistory()
-	if g.running || !g.stale && time.Since(g.read) < statusEvery {
+	if g.running || !g.stale && now.Sub(g.read) < statusEvery {
 		return
 	}
 	g.running, g.stale = true, false
 	r := g.repo
 	// The remotes change seldom: they are read again with the status after
-	// a command, or as HEAD moves, not every few seconds.
-	readRemotes := g.remotesStale
+	// a command, or as HEAD moves, not every few seconds, and of a work
+	// tree here only once the config they are in changed.
+	readRemotes, local, remotesOf := g.remotesStale, a.app.conn == nil, g.remotesOf
 	g.remotesStale = false
 	bg.Go(func() {
 		defer recoverCrash()
 		st, err := r.Status()
-		branches, _ := r.Branches()
-		stashes, stashesErr := r.StashList(stashListN)
+		refs, _ := r.Refs()
+		// The stash is listed only while its ref is there.
+		var stashes []git.Stash
+		var stashesErr error
+		if refs.Stash {
+			stashes, stashesErr = r.StashList(stashListN)
+		}
 		var remotes []string
 		var remotesErr error
+		var config time.Time
+		if readRemotes && local {
+			if info, err := os.Stat(filepath.Join(r.Common, "config")); err == nil {
+				config = info.ModTime()
+				readRemotes = !config.Equal(remotesOf)
+			}
+		}
 		if readRemotes {
 			remotes, remotesErr = r.Remotes()
 		}
@@ -217,17 +241,17 @@ func (a *gitContext) refreshGit() {
 			if g.repo != r {
 				return
 			}
-			g.running, g.read = false, time.Now()
+			g.running, g.read = false, a.app.gitNow()
 			if err != nil {
 				return
 			}
 			a.setStatus(st)
-			g.branches = branches
+			g.branches, g.tags = refs.Branches, refs.Tags
 			if stashesErr == nil {
 				g.stashes = stashes
 			}
 			if readRemotes && remotesErr == nil {
-				g.remotes = remotes
+				g.remotes, g.remotesOf = remotes, config
 			}
 		})
 	})
@@ -263,15 +287,14 @@ func (a *gitContext) refreshHistory() {
 	}
 	g.loadingHistory = true
 	// Without a remote nothing is pushed or not: no commit is marked.
-	r, remotes, all := g.repo, len(g.remotes) > 0, a.app.settings.ScmAllBranches
+	r, remotes, all, upstream := g.repo, len(g.remotes) > 0, a.app.settings.ScmAllBranches, st.Upstream
 	bg.Go(func() {
 		defer recoverCrash()
 		cs, err := r.Log(n, all)
 		var unpushed map[string]bool
 		if remotes {
-			unpushed = r.Unpushed(n)
+			unpushed = r.Unpushed(n, upstream)
 		}
-		tags, _ := r.Tags()
 		a.app.post(func() {
 			if g.repo != r {
 				return
@@ -281,7 +304,7 @@ func (a *gitContext) refreshHistory() {
 			if err != nil {
 				return
 			}
-			g.history, g.unpushed, g.tags = cs, unpushed, tags
+			g.history, g.unpushed = cs, unpushed
 			g.historyGen++
 		})
 	})

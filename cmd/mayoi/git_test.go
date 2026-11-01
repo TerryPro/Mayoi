@@ -1,12 +1,15 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,6 +17,7 @@ import (
 
 	gitpkg "mayoi/internal/git"
 	"mayoi/internal/linediff"
+	"mayoi/locales"
 )
 
 // gitRepo makes the harness's folder a work tree with all its files
@@ -33,15 +37,128 @@ func (hs *harness) gitRepo() func(args ...string) string {
 		}
 		return string(out)
 	}
-	git("init", "-q", "-b", "main")
-	git("config", "user.email", "t@t")
-	git("config", "user.name", "t")
-	os.WriteFile(hs.path(".gitignore"), []byte("node_modules/\n"), 0o644)
-	git("add", ".")
-	git("commit", "-q", "-m", "first")
+	if !copyFixtureRepo(hs.root) {
+		for _, args := range fixtureRepoGit {
+			git(args...)
+		}
+		os.WriteFile(hs.path(".gitignore"), []byte(fixtureIgnore), 0o644)
+		git("add", ".")
+		git("commit", "-q", "-m", "first")
+	}
 	hs.a.openFolder(hs.root)
 	hs.settleGit()
 	return git
+}
+
+// fixtureRepoGit makes a folder a repository, before its files are added
+// and committed.
+var fixtureRepoGit = [][]string{{"init", "-q", "-b", "main"}, {"config", "user.email", "t@t"}, {"config", "user.name", "t"}}
+
+const fixtureIgnore = "node_modules/\n"
+
+// fixtureRepo is a folder of the fixture's files, all committed, whose
+// .git gitRepo copies rather than run git five times: each git is a
+// program started, which some machines take long to let run. The worker
+// processes of a run share the one their parent made, which
+// fixtureRepoEnv names.
+var fixtureRepo struct {
+	sync.Mutex
+	dir   string
+	owned bool // made by this process, which removes it
+}
+
+const fixtureRepoEnv = "MAYOI_TEST_FIXTURE_REPO"
+
+// copyFixtureRepo gives root, with the fixture's files only, the .git of
+// fixtureRepo, its commit made again just now, as the tests show it, and
+// reports whether it did: a test that changed the files first commits
+// them itself.
+func copyFixtureRepo(root string) bool {
+	if !isFixture(root) {
+		return false
+	}
+	fixtureRepo.Lock()
+	defer fixtureRepo.Unlock()
+	if fixtureRepo.dir == "" {
+		if dir := os.Getenv(fixtureRepoEnv); dir != "" {
+			fixtureRepo.dir = dir
+		} else if dir, err := makeFixtureRepo(); err == nil {
+			fixtureRepo.dir, fixtureRepo.owned = dir, true
+		} else {
+			return false
+		}
+	}
+	dotGit := filepath.Join(root, ".git")
+	err := os.CopyFS(dotGit, os.DirFS(filepath.Join(fixtureRepo.dir, ".git")))
+	if err == nil {
+		err = os.WriteFile(filepath.Join(root, ".gitignore"), []byte(fixtureIgnore), 0o644)
+	}
+	if err == nil {
+		err = exec.Command("git", "-C", root, "commit", "-q", "--amend", "--no-edit", "--reset-author").Run()
+	}
+	if err != nil {
+		os.RemoveAll(dotGit)
+		return false
+	}
+	return true
+}
+
+// removeFixtureRepo removes the fixtureRepo this process made, as the
+// tests end.
+func removeFixtureRepo() {
+	if fixtureRepo.owned {
+		os.RemoveAll(fixtureRepo.dir)
+	}
+}
+
+func makeFixtureRepo() (string, error) {
+	dir, err := os.MkdirTemp("", "mayoi-fixture-repo")
+	if err != nil {
+		return "", err
+	}
+	if err := writeFixture(dir); err != nil {
+		os.RemoveAll(dir)
+		return "", err
+	}
+	os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(fixtureIgnore), 0o644)
+	for _, args := range slices.Concat(fixtureRepoGit, [][]string{{"add", "."}, {"commit", "-q", "-m", "first"}}) {
+		if out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput(); err != nil {
+			os.RemoveAll(dir)
+			return "", fmt.Errorf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	return dir, nil
+}
+
+// isFixture reports whether root has the fixture's files, as they were
+// written, and no others but a .gitignore, which gitRepo writes over.
+func isFixture(root string) bool {
+	if _, err := os.Lstat(filepath.Join(root, ".git")); err == nil {
+		return false
+	}
+	n := 0
+	differs := errors.New("differs")
+	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		rel, _ := filepath.Rel(root, p)
+		rel = filepath.ToSlash(rel)
+		if rel == ".gitignore" {
+			return nil
+		}
+		want, ok := fixtureFiles[rel]
+		info, err := d.Info()
+		if !ok || err != nil || !info.Mode().IsRegular() || info.Mode()&0o111 != 0 {
+			return differs
+		}
+		if b, err := os.ReadFile(p); err != nil || string(b) != want {
+			return differs
+		}
+		n++
+		return nil
+	})
+	return err == nil && n == len(fixtureFiles)
 }
 
 // settleGit draws frames until the status read in the background is in.
@@ -2723,5 +2840,54 @@ func TestRevertArrowOfOneOfTwoNearbyBlocks(t *testing.T) {
 	hs.settle()
 	if d.buf.String() != orig {
 		t.Fatalf("after the arrow of the second block:\n%s", d.buf.String())
+	}
+}
+
+func TestGutterHunkActionsWithAgentContext(t *testing.T) {
+	for _, size := range []float32{10, 18, 26} {
+		t.Run(fmt.Sprint(size), func(t *testing.T) {
+			hs := newHarness(t, true)
+			a, tt := hs.a, hs.tt
+			path := hs.path("many.go")
+			if err := os.WriteFile(path, []byte(strings.Repeat("line()\n", 1100)), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			hs.gitRepo()
+			lines := strings.Split(strings.Repeat("line()\n", 1100), "\n")
+			lines[999] = "changed()"
+			if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			a.settings.EditorAgentContext, a.settings.FontSize = true, size
+			a.openFileAt(path, 999, true)
+			hs.settleGit()
+			d := a.activeEditor()
+			area, ok := tt.Find(locales.EditorLabel(d.name()))
+			if !ok {
+				t.Fatal("no editor")
+			}
+			x := area.X + d.gutterW - 7
+			y := area.Y + editorPadY + 999.5*a.font.lineH - d.vscroll.Y
+			tt.Move(x, y)
+			hs.settle()
+			button, ok := tt.Find(locales.AgentContextComment())
+			numberX := area.X + d.gutterW - 14 - 4*a.font.charW
+			if !ok || button.X+button.W > numberX || button.X < area.X {
+				t.Fatalf("action overlaps four-digit number: %+v; number x %v", button, numberX)
+			}
+			tt.ClickAt(x, y)
+			hs.settle()
+			if _, k := d.peekedHunk(); k != 0 || a.review.draft != nil {
+				t.Fatal("action intercepted the Git mark")
+			}
+			if err := tt.Click(locales.AgentContextComment()); err != nil {
+				t.Fatal(err)
+			}
+			hs.settle()
+			if a.review.draft == nil || a.review.draft.from != 999 {
+				t.Fatal("changed line cannot be commented on")
+			}
+			hs.shot("agent-context-gutter-" + fmt.Sprint(size))
+		})
 	}
 }

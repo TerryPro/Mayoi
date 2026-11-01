@@ -10,6 +10,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"mayoi/internal/highlight"
+	"mayoi/internal/settings"
 )
 
 // palette is Mayoi's look: the colors of its chrome, of the code and of
@@ -75,6 +76,11 @@ type palette struct {
 	// one, as far as they need to read at 4.5:1 on the chrome and the
 	// editor. The marks and tints keep the brighter ones.
 	modifiedFg, addedFg, removedFg, dangerFg ui.Color
+	// rule, when set, is the theme's own hairline along the foot of the
+	// title bar and the top of the status bar, in place of the border;
+	// gilt, when set, is the light of its gold, which runs to the middle
+	// of the line along the top of the tab shown, with a gem there.
+	rule, gilt ui.Color
 
 	syntax [highlight.Kinds]ui.Color
 	// ansi is the terminal's 16 colors: black, red, green, yellow, blue,
@@ -306,151 +312,157 @@ func matrixPalette() *palette {
 	return p
 }
 
-// claudeDarkPalette is Claude in a dark window: Anthropic's warm
-// near-black and cloud, with Claude's orange for the accent.
+// claudeDarkPalette is Claude in a dark window, as Claude Code draws
+// itself in a terminal: the whole window in the code's font, warm
+// near-black, Claude's orange for the accent and periwinkle, the CLI's
+// color for a suggestion, for what is chosen. Errors and what is removed
+// take Claude Code's rose, apart from the orange, so that neither reads
+// as a mark.
 func claudeDarkPalette() *palette {
 	p := &palette{
 		dark:      true,
-		editor:    ui.Hex("#1f1e1d"),
-		chrome:    ui.Hex("#191918"),
-		panel:     ui.Hex("#1c1b1a"),
-		border:    ui.Hex("#2e2c2a"),
-		hover:     ui.RGBA(255, 245, 230, 0.045),
-		active:    ui.RGBA(217, 119, 87, 0.16),
-		text:      ui.Hex("#e8e6dc"),
-		muted:     ui.Hex("#a39e93"),
-		faint:     ui.Hex("#75716a"),
-		accent:    ui.Hex("#d97757"),
-		accentDim: ui.RGBA(217, 119, 87, 0.55),
+		mono:      true,
+		editor:    ui.Hex("#1a1917"),
+		chrome:    ui.Hex("#141312"),
+		panel:     ui.Hex("#171615"),
+		border:    ui.Hex("#34322f"),
+		hover:     ui.RGBA(255, 245, 230, 0.05),
+		active:    ui.RGBA(177, 185, 249, 0.14),
+		text:      ui.Hex("#ecebe6"),
+		muted:     ui.Hex("#9a9893"),
+		faint:     ui.Hex("#6b6964"),
+		accent:    ui.Hex("#d77757"),
+		accentDim: ui.RGBA(215, 119, 87, 0.55),
 		line:      ui.RGBA(255, 245, 230, 0.035),
-		selection: ui.RGBA(217, 119, 87, 0.28),
-		gutter:    ui.Hex("#6b675f"),
-		gutterNow: ui.Hex("#c4bfb3"),
-		status:    ui.Hex("#191918"),
-		statusFg:  ui.Hex("#a39e93"),
-		modified:  ui.Hex("#e3b25f"),
-		danger:    ui.Hex("#e8705f"),
-		match:     ui.RGBA(227, 178, 95, 0.20),
-		matchNow:  ui.RGBA(227, 178, 95, 0.38),
-		matchRing: ui.RGBA(227, 178, 95, 0.85),
+		selection: ui.RGBA(177, 185, 249, 0.24),
+		gutter:    ui.Hex("#5c5a55"),
+		gutterNow: ui.Hex("#d77757"),
+		status:    ui.Hex("#141312"),
+		statusFg:  ui.Hex("#9a9893"),
+		modified:  ui.Hex("#f2c14e"),
+		danger:    ui.Hex("#ff6b80"),
+		match:     ui.RGBA(242, 193, 78, 0.20),
+		matchNow:  ui.RGBA(242, 193, 78, 0.38),
+		matchRing: ui.RGBA(242, 193, 78, 0.85),
 		guide:     ui.RGBA(255, 245, 230, 0.065),
 		guideNow:  ui.RGBA(255, 245, 230, 0.22),
 		bracket:   ui.RGBA(255, 245, 230, 0.30),
 		word:      ui.RGBA(255, 245, 230, 0.075),
-		shadow:    ui.RGBA(0, 0, 0, 0.35),
-		added:     ui.Hex("#7ba05b"),
-		changed:   ui.Hex("#6a9bcc"),
-		removed:   ui.Hex("#d9634f"),
-		// White on Claude's orange reads at 3:1, so buttons take a
-		// deeper one, with white on it at 4.6:1.
-		fill:           ui.Hex("#b8573a"),
-		fillText:       ui.Hex("#ffffff"),
-		dangerFill:     ui.Hex("#b5402f"),
-		dangerText:     ui.Hex("#ffffff"),
-		surface:        ui.Hex("#262523"),
-		surfaceHover:   ui.Hex("#2d2b29"),
-		surfacePressed: ui.Hex("#34322f"),
+		shadow:    ui.RGBA(0, 0, 0, 0.45),
+		added:     ui.Hex("#4eba65"),
+		changed:   ui.Hex("#b1b9f9"),
+		removed:   ui.Hex("#ff6b80"),
+		// Dark labels on the orange and the rose, as the CLI inverts.
+		fill:           ui.Hex("#d77757"),
+		fillText:       ui.Hex("#141413"),
+		dangerFill:     ui.Hex("#ff6b80"),
+		dangerText:     ui.Hex("#141413"),
+		surface:        ui.Hex("#201f1d"),
+		surfaceHover:   ui.Hex("#272523"),
+		surfacePressed: ui.Hex("#2e2c29"),
 		scrollbar:      ui.RGBA(255, 245, 230, 0.16),
-		inverse:        ui.Hex("#302e2b"),
+		inverse:        ui.Hex("#2c2a27"),
 		inverseText:    ui.Hex("#f0eee6"),
 		ansi: [16]ui.Color{
-			ui.Hex("#2e2c2a"), ui.Hex("#e8705f"), ui.Hex("#9cbf7a"), ui.Hex("#e3b25f"),
-			ui.Hex("#6a9bcc"), ui.Hex("#c68fb5"), ui.Hex("#7fbfb3"), ui.Hex("#e8e6dc"),
-			ui.Hex("#6b675f"), ui.Hex("#f08a78"), ui.Hex("#b3d496"), ui.Hex("#f0c87e"),
-			ui.Hex("#8fb6dd"), ui.Hex("#d9a8cb"), ui.Hex("#9fd6cb"), ui.Hex("#faf9f5"),
+			ui.Hex("#34322f"), ui.Hex("#ff6b80"), ui.Hex("#4eba65"), ui.Hex("#f2c14e"),
+			ui.Hex("#6a9fe0"), ui.Hex("#fd5db1"), ui.Hex("#5fb3a6"), ui.Hex("#c9c8c3"),
+			ui.Hex("#62605b"), ui.Hex("#ff8a9b"), ui.Hex("#6fd685"), ui.Hex("#ffd451"),
+			ui.Hex("#8db8f0"), ui.Hex("#ff85c6"), ui.Hex("#7fcfc2"), ui.Hex("#ffffff"),
 		},
 	}
 	p.fillHover, p.fillPressed = p.fill.Mix(white, 0.1), p.fill.Mix(black, 0.15)
 	s := &p.syntax
 	s[highlight.Plain] = p.text
-	s[highlight.Keyword] = ui.Hex("#d97757")
-	s[highlight.Type] = ui.Hex("#7fbfb3")
-	s[highlight.Function] = ui.Hex("#8fb6dd")
-	s[highlight.String] = ui.Hex("#b3c98a")
-	s[highlight.Number] = ui.Hex("#d4a27f")
-	s[highlight.Comment] = ui.Hex("#7d786f")
-	s[highlight.Operator] = ui.Hex("#b0aa9e")
-	s[highlight.Punctuation] = ui.Hex("#938d82")
-	s[highlight.Constant] = ui.Hex("#d4a27f")
-	s[highlight.Builtin] = ui.Hex("#e3b25f")
-	s[highlight.Tag] = ui.Hex("#e8705f")
-	s[highlight.Attribute] = ui.Hex("#e3b25f")
-	s[highlight.Variable] = ui.Hex("#ebe9e0")
-	s[highlight.Heading] = ui.Hex("#d97757")
-	s[highlight.Deleted] = ui.Hex("#e8705f")
-	s[highlight.Inserted] = ui.Hex("#9cbf7a")
+	s[highlight.Keyword] = ui.Hex("#b1b9f9")
+	s[highlight.Type] = ui.Hex("#5fb3a6")
+	s[highlight.Function] = ui.Hex("#f0a585")
+	s[highlight.String] = ui.Hex("#8fcf8f")
+	s[highlight.Number] = ui.Hex("#f2c55c")
+	s[highlight.Comment] = ui.Hex("#7a7873")
+	s[highlight.Operator] = ui.Hex("#9a9893")
+	s[highlight.Punctuation] = ui.Hex("#7f7d78")
+	s[highlight.Constant] = ui.Hex("#f2c55c")
+	s[highlight.Builtin] = ui.Hex("#af87ff")
+	s[highlight.Tag] = ui.Hex("#fd5db1")
+	s[highlight.Attribute] = ui.Hex("#f2c55c")
+	s[highlight.Variable] = ui.Hex("#ecebe6")
+	s[highlight.Heading] = p.accent
+	s[highlight.Deleted] = p.removed
+	s[highlight.Inserted] = p.added
 	return p
 }
 
-// claudeLightPalette is Claude in a light window: Anthropic's ivory and
-// near-black, with a deeper orange for the accent, for marks on a light
-// ground.
+// claudeLightPalette is Claude in a light window, as Claude Code draws
+// itself in a light terminal: off-white, Claude's orange for the accent,
+// with near-black on it, and the CLI's blue-violet for what is chosen.
+// Its whites are greys that read on the off-white, as text does.
 func claudeLightPalette() *palette {
 	p := &palette{
-		editor:         ui.Hex("#faf9f5"),
-		chrome:         ui.Hex("#f0eee6"),
-		panel:          ui.Hex("#f5f4ee"),
-		border:         ui.Hex("#e3dfd3"),
-		hover:          ui.RGBA(20, 20, 19, 0.045),
-		active:         ui.RGBA(201, 100, 66, 0.13),
-		text:           ui.Hex("#141413"),
-		muted:          ui.Hex("#6b675f"),
-		faint:          ui.Hex("#938d82"),
-		accent:         ui.Hex("#c96442"),
-		accentDim:      ui.RGBA(201, 100, 66, 0.5),
-		line:           ui.RGBA(20, 20, 19, 0.03),
-		selection:      ui.RGBA(217, 119, 87, 0.22),
-		gutter:         ui.Hex("#a39e93"),
-		gutterNow:      ui.Hex("#3d3a35"),
-		status:         ui.Hex("#f0eee6"),
-		statusFg:       ui.Hex("#6b675f"),
-		modified:       ui.Hex("#b5791f"),
-		danger:         ui.Hex("#bf4d3a"),
+		mono:           true,
+		editor:         ui.Hex("#fdfcfa"),
+		chrome:         ui.Hex("#f5f4f1"),
+		panel:          ui.Hex("#f9f8f6"),
+		border:         ui.Hex("#dcdad4"),
+		hover:          ui.RGBA(26, 25, 24, 0.045),
+		active:         ui.RGBA(87, 105, 247, 0.11),
+		text:           ui.Hex("#1a1918"),
+		muted:          ui.Hex("#66645f"),
+		faint:          ui.Hex("#8a8882"),
+		accent:         ui.Hex("#c4613f"),
+		accentDim:      ui.RGBA(196, 97, 63, 0.5),
+		line:           ui.RGBA(26, 25, 24, 0.03),
+		selection:      ui.RGBA(87, 105, 247, 0.16),
+		gutter:         ui.Hex("#a9a7a1"),
+		gutterNow:      ui.Hex("#b65a3c"),
+		status:         ui.Hex("#f5f4f1"),
+		statusFg:       ui.Hex("#66645f"),
+		modified:       ui.Hex("#966c1e"),
+		danger:         ui.Hex("#ab2b3f"),
 		match:          ui.RGBA(212, 162, 64, 0.24),
 		matchNow:       ui.RGBA(212, 162, 64, 0.44),
-		matchRing:      ui.RGBA(181, 121, 31, 0.9),
-		guide:          ui.RGBA(20, 20, 19, 0.07),
-		guideNow:       ui.RGBA(20, 20, 19, 0.24),
-		bracket:        ui.RGBA(20, 20, 19, 0.28),
-		word:           ui.RGBA(20, 20, 19, 0.065),
-		shadow:         ui.RGBA(40, 30, 20, 0.12),
-		added:          ui.Hex("#5e8a3a"),
-		changed:        ui.Hex("#4a7fb5"),
-		removed:        ui.Hex("#c4513c"),
-		fill:           ui.Hex("#b8573a"),
-		fillText:       ui.Hex("#ffffff"),
-		dangerFill:     ui.Hex("#bf4d3a"),
+		matchRing:      ui.RGBA(150, 108, 30, 0.9),
+		guide:          ui.RGBA(26, 25, 24, 0.075),
+		guideNow:       ui.RGBA(26, 25, 24, 0.24),
+		bracket:        ui.RGBA(26, 25, 24, 0.28),
+		word:           ui.RGBA(26, 25, 24, 0.065),
+		shadow:         ui.RGBA(40, 30, 20, 0.14),
+		added:          ui.Hex("#2c7a39"),
+		changed:        ui.Hex("#5769f7"),
+		removed:        ui.Hex("#c8374f"),
+		fill:           ui.Hex("#d77757"),
+		fillText:       ui.Hex("#1a1918"),
+		dangerFill:     ui.Hex("#ab2b3f"),
 		dangerText:     ui.Hex("#ffffff"),
 		surface:        ui.Hex("#ffffff"),
-		surfaceHover:   ui.Hex("#f5f3ec"),
-		surfacePressed: ui.Hex("#ece9df"),
-		scrollbar:      ui.RGBA(20, 20, 19, 0.18),
+		surfaceHover:   ui.Hex("#f4f3ef"),
+		surfacePressed: ui.Hex("#ebe9e4"),
+		scrollbar:      ui.RGBA(26, 25, 24, 0.18),
 		ansi: [16]ui.Color{
-			ui.Hex("#141413"), ui.Hex("#bf4d3a"), ui.Hex("#5e8a3a"), ui.Hex("#a3680f"),
-			ui.Hex("#3b6ea8"), ui.Hex("#9a4f86"), ui.Hex("#2f8378"), ui.Hex("#b0aa9e"),
-			ui.Hex("#6b675f"), ui.Hex("#d9634f"), ui.Hex("#76a34f"), ui.Hex("#c4862a"),
-			ui.Hex("#5a8cc4"), ui.Hex("#b56aa1"), ui.Hex("#45a093"), ui.Hex("#e3dfd3"),
+			ui.Hex("#1a1918"), ui.Hex("#ab2b3f"), ui.Hex("#2c7a39"), ui.Hex("#966c1e"),
+			ui.Hex("#3a63c8"), ui.Hex("#c8207c"), ui.Hex("#0f6e6e"), ui.Hex("#86847e"),
+			ui.Hex("#66645f"), ui.Hex("#c8374f"), ui.Hex("#3c9a4c"), ui.Hex("#b08428"),
+			ui.Hex("#5769f7"), ui.Hex("#e0409a"), ui.Hex("#1f8a8a"), ui.Hex("#4a4843"),
 		},
 	}
-	p.fillHover, p.fillPressed = p.fill.Mix(black, 0.1), p.fill.Mix(black, 0.22)
+	p.fillHover, p.fillPressed = p.fill.Mix(black, 0.08), p.fill.Mix(black, 0.16)
 	s := &p.syntax
 	s[highlight.Plain] = p.text
-	s[highlight.Keyword] = ui.Hex("#b8573a")
-	s[highlight.Type] = ui.Hex("#2f8378")
-	s[highlight.Function] = ui.Hex("#3b6ea8")
-	s[highlight.String] = ui.Hex("#5e8a3a")
-	s[highlight.Number] = ui.Hex("#a85a1f")
-	s[highlight.Comment] = ui.Hex("#938d82")
-	s[highlight.Operator] = ui.Hex("#5c5850")
-	s[highlight.Punctuation] = ui.Hex("#75716a")
-	s[highlight.Constant] = ui.Hex("#a85a1f")
-	s[highlight.Builtin] = ui.Hex("#a3680f")
-	s[highlight.Tag] = ui.Hex("#bf4d3a")
-	s[highlight.Attribute] = ui.Hex("#a3680f")
-	s[highlight.Variable] = ui.Hex("#141413")
-	s[highlight.Heading] = ui.Hex("#b8573a")
-	s[highlight.Deleted] = ui.Hex("#bf4d3a")
-	s[highlight.Inserted] = ui.Hex("#5e8a3a")
+	s[highlight.Keyword] = ui.Hex("#4c5ee0")
+	s[highlight.Type] = ui.Hex("#0f6e6e")
+	s[highlight.Function] = ui.Hex("#b0532f")
+	s[highlight.String] = ui.Hex("#2c7a39")
+	s[highlight.Number] = ui.Hex("#966c1e")
+	s[highlight.Comment] = ui.Hex("#87857f")
+	s[highlight.Operator] = ui.Hex("#66645f")
+	s[highlight.Punctuation] = ui.Hex("#83817b")
+	s[highlight.Constant] = ui.Hex("#966c1e")
+	s[highlight.Builtin] = ui.Hex("#7a4fe0")
+	s[highlight.Tag] = ui.Hex("#c8207c")
+	s[highlight.Attribute] = ui.Hex("#966c1e")
+	s[highlight.Variable] = ui.Hex("#1a1918")
+	s[highlight.Heading] = p.accent
+	s[highlight.Deleted] = p.removed
+	s[highlight.Inserted] = p.added
 	return p
 }
 
@@ -935,81 +947,321 @@ func cursorDarkPalette() *palette {
 	return p
 }
 
-// purpleGoldPalette is Purple Gold, always dark: a near-black sidebar,
-// tab strip and panel around a charcoal editor, a royal purple status
-// bar, and classic gold for the accent, the buttons, with deep purple
-// labels on them, and the chosen rows. Its code is in golds, lavenders,
-// roses and teals.
+// purpleGoldPalette is Purple Gold, always dark: Porphyry, the emperor's
+// purple set in gold mosaic. Tyrian chrome around a deep purple editor, a
+// Tyrian status bar lettered in gold, and gold leaf for the accent and the
+// buttons, with deep purple labels on them. Gold hairlines run under the
+// title bar and over the status bar, and along the tab shown to a gem.
+// Its code is in amethyst, gold, rose quartz and jade.
 func purpleGoldPalette() *palette {
 	p := &palette{
 		dark:   true,
-		editor: ui.Hex("#17141e"),
-		chrome: ui.Hex("#110d18"),
-		panel:  ui.Hex("#110d18"),
-		border: ui.Hex("#2e2440"),
-		hover:  ui.RGBA(212, 175, 55, 0.06),
+		editor: ui.Hex("#1b0f26"),
+		chrome: ui.Hex("#12091a"),
+		panel:  ui.Hex("#150b1f"),
+		border: ui.Hex("#33204a"),
+		hover:  ui.RGBA(227, 184, 74, 0.07),
 		// A tint, not a color: the mark of a chosen row is drawn over it.
-		active:    ui.RGBA(212, 175, 55, 0.16),
-		text:      ui.Hex("#e8e2d4"),
-		muted:     ui.Hex("#a59cae"),
-		faint:     ui.Hex("#6e6380"),
-		accent:    ui.Hex("#d4af37"),
-		accentDim: ui.RGBA(212, 175, 55, 0.5),
-		line:      ui.RGBA(212, 175, 55, 0.035),
-		selection: ui.RGBA(120, 80, 190, 0.4),
-		gutter:    ui.Hex("#5a5068"),
-		gutterNow: ui.Hex("#d4af37"),
-		status:    ui.Hex("#2a1650"),
-		statusFg:  ui.Hex("#d4af37"),
-		modified:  ui.Hex("#e0b872"),
-		danger:    ui.Hex("#f0707e"),
-		match:     ui.RGBA(212, 175, 55, 0.22),
-		matchNow:  ui.RGBA(212, 175, 55, 0.38),
-		matchRing: ui.RGBA(212, 175, 55, 0.85),
-		guide:     ui.RGBA(212, 175, 55, 0.07),
-		guideNow:  ui.RGBA(212, 175, 55, 0.2),
-		bracket:   ui.RGBA(212, 175, 55, 0.3),
-		word:      ui.RGBA(212, 175, 55, 0.1),
-		shadow:    ui.RGBA(0, 0, 0, 0.5),
-		added:     ui.Hex("#6fbf8e"),
-		changed:   ui.Hex("#e0b872"),
-		removed:   ui.Hex("#f0707e"),
-		// Deep purple on the gold, as the status bar is gold on purple.
-		fill:           ui.Hex("#d4af37"),
-		fillHover:      ui.Hex("#dfbd4f"),
-		fillText:       ui.Hex("#1a0f2e"),
-		dangerFill:     ui.Hex("#f0707e"),
-		dangerText:     ui.Hex("#1a0f2e"),
-		surface:        ui.Hex("#1d1826"),
-		surfaceHover:   ui.Hex("#261f31"),
-		surfacePressed: ui.Hex("#30283d"),
-		scrollbar:      ui.RGBA(212, 175, 55, 0.16),
-		inverse:        ui.Hex("#2a1650"),
-		inverseText:    ui.Hex("#f0e6c8"),
+		active:    ui.RGBA(227, 184, 74, 0.15),
+		text:      ui.Hex("#f1e7d0"),
+		muted:     ui.Hex("#b6a5c4"),
+		faint:     ui.Hex("#7d6a93"),
+		accent:    ui.Hex("#e3b84a"),
+		accentDim: ui.RGBA(227, 184, 74, 0.5),
+		line:      ui.RGBA(227, 184, 74, 0.05),
+		selection: ui.RGBA(156, 72, 214, 0.42),
+		gutter:    ui.Hex("#5f4c78"),
+		gutterNow: ui.Hex("#f0cc6a"),
+		status:    ui.Hex("#3e1058"),
+		statusFg:  ui.Hex("#f3d47c"),
+		modified:  ui.Hex("#f0c46a"),
+		danger:    ui.Hex("#f07a86"),
+		match:     ui.RGBA(227, 184, 74, 0.24),
+		matchNow:  ui.RGBA(227, 184, 74, 0.4),
+		matchRing: ui.RGBA(227, 184, 74, 0.85),
+		guide:     ui.RGBA(227, 184, 74, 0.08),
+		guideNow:  ui.RGBA(227, 184, 74, 0.24),
+		bracket:   ui.RGBA(227, 184, 74, 0.32),
+		word:      ui.RGBA(227, 184, 74, 0.1),
+		shadow:    ui.RGBA(0, 0, 0, 0.55),
+		added:     ui.Hex("#79c79a"),
+		changed:   ui.Hex("#f0c46a"),
+		removed:   ui.Hex("#f07a86"),
+		// Deep purple on the gold leaf, as the status bar is gold on purple.
+		fill:           ui.Hex("#e3b84a"),
+		fillText:       ui.Hex("#2a0a38"),
+		dangerFill:     ui.Hex("#f07a86"),
+		dangerText:     ui.Hex("#2a0a38"),
+		surface:        ui.Hex("#221432"),
+		surfaceHover:   ui.Hex("#2a1a3d"),
+		surfacePressed: ui.Hex("#332148"),
+		scrollbar:      ui.RGBA(227, 184, 74, 0.16),
+		inverse:        ui.Hex("#4b1468"),
+		inverseText:    ui.Hex("#f8ecc8"),
+		rule:           ui.Hex("#8a6a2a"),
+		gilt:           ui.Hex("#fbe9a6"),
 		ansi: [16]ui.Color{
-			ui.Hex("#2a2438"), ui.Hex("#f0707e"), ui.Hex("#8cc79a"), ui.Hex("#e0b872"),
-			ui.Hex("#8fa8e8"), ui.Hex("#c49be0"), ui.Hex("#7ec4c4"), ui.Hex("#d8cfc9"),
-			ui.Hex("#645877"), ui.Hex("#ff8c98"), ui.Hex("#a6dbb2"), ui.Hex("#f0cf90"),
-			ui.Hex("#aec2f5"), ui.Hex("#d9b6f2"), ui.Hex("#9cdada"), ui.Hex("#ffffff"),
+			ui.Hex("#2c1d3e"), ui.Hex("#f07a86"), ui.Hex("#8fd3a3"), ui.Hex("#f0c46a"),
+			ui.Hex("#93acf0"), ui.Hex("#cf9bf2"), ui.Hex("#86cfc6"), ui.Hex("#e6dccb"),
+			ui.Hex("#6a5880"), ui.Hex("#ff98a2"), ui.Hex("#ade3bd"), ui.Hex("#f8d88e"),
+			ui.Hex("#b3c6f8"), ui.Hex("#e2bbf8"), ui.Hex("#a6e2da"), ui.Hex("#fff8e8"),
 		},
 	}
-	p.fillPressed = p.fill.Mix(black, 0.15)
+	p.fillHover, p.fillPressed = p.fill.Mix(white, 0.12), p.fill.Mix(black, 0.15)
 	s := &p.syntax
-	s[highlight.Plain] = ui.Hex("#dcd3cc")
-	s[highlight.Keyword] = ui.Hex("#c9a0e8")
-	s[highlight.Type] = ui.Hex("#e6c068")
-	s[highlight.Function] = ui.Hex("#f0c9a8")
-	s[highlight.String] = ui.Hex("#e8a6b4")
-	s[highlight.Number] = ui.Hex("#d4af37")
-	s[highlight.Comment] = ui.Hex("#7a6e8a")
-	s[highlight.Operator] = ui.Hex("#b8acc0")
-	s[highlight.Punctuation] = ui.Hex("#9488a0")
-	s[highlight.Constant] = ui.Hex("#d4af37")
-	s[highlight.Builtin] = ui.Hex("#8ccaca")
-	s[highlight.Tag] = ui.Hex("#c9a0e8")
-	s[highlight.Attribute] = ui.Hex("#e6c068")
-	s[highlight.Variable] = ui.Hex("#dcd3cc")
-	s[highlight.Heading] = ui.Hex("#d4af37")
+	s[highlight.Plain] = ui.Hex("#e6dccb")
+	s[highlight.Keyword] = ui.Hex("#d29bf5")
+	s[highlight.Type] = ui.Hex("#f0c75e")
+	s[highlight.Function] = ui.Hex("#f6dcae")
+	s[highlight.String] = ui.Hex("#eaa6c0")
+	s[highlight.Number] = p.accent
+	s[highlight.Comment] = ui.Hex("#857199")
+	s[highlight.Operator] = ui.Hex("#c2b0d2")
+	s[highlight.Punctuation] = ui.Hex("#9a82ab")
+	s[highlight.Constant] = p.accent
+	s[highlight.Builtin] = ui.Hex("#8fd6c6")
+	s[highlight.Tag] = ui.Hex("#d29bf5")
+	s[highlight.Attribute] = ui.Hex("#f0c75e")
+	s[highlight.Variable] = ui.Hex("#e6dccb")
+	s[highlight.Heading] = p.accent
+	s[highlight.Deleted] = p.removed
+	s[highlight.Inserted] = p.added
+	return p
+}
+
+// pumpkinPalette is Jack-o'-Lantern, always dark: candlelight through a
+// carved pumpkin. Soot-black chrome around a warm editor, pumpkin orange
+// for the accent and the buttons, with near-black labels on them, and a
+// status bar that glows as the lantern's face does. Its code is lit in
+// candle yellow, ember and vine green, with witch-purple keywords.
+func pumpkinPalette() *palette {
+	p := &palette{
+		dark:      true,
+		editor:    ui.Hex("#1a1512"),
+		chrome:    ui.Hex("#130f0d"),
+		panel:     ui.Hex("#16120f"),
+		border:    ui.Hex("#2c231d"),
+		hover:     ui.RGBA(255, 230, 200, 0.05),
+		active:    ui.RGBA(255, 138, 31, 0.15),
+		text:      ui.Hex("#efe2cf"),
+		muted:     ui.Hex("#a8927c"),
+		faint:     ui.Hex("#73624f"),
+		accent:    ui.Hex("#ff8a1f"),
+		accentDim: ui.RGBA(255, 138, 31, 0.5),
+		line:      ui.RGBA(255, 200, 140, 0.045),
+		selection: ui.RGBA(255, 138, 31, 0.28),
+		gutter:    ui.Hex("#6b5a4c"),
+		gutterNow: ui.Hex("#ffb066"),
+		status:    ui.Hex("#a04606"),
+		statusFg:  ui.Hex("#fff1e0"),
+		modified:  ui.Hex("#ffc247"),
+		danger:    ui.Hex("#ff5a4a"),
+		match:     ui.RGBA(255, 194, 71, 0.22),
+		matchNow:  ui.RGBA(255, 194, 71, 0.40),
+		matchRing: ui.RGBA(255, 194, 71, 0.85),
+		guide:     ui.RGBA(255, 230, 200, 0.07),
+		guideNow:  ui.RGBA(255, 180, 100, 0.28),
+		bracket:   ui.RGBA(255, 230, 200, 0.32),
+		word:      ui.RGBA(255, 230, 200, 0.08),
+		shadow:    ui.RGBA(0, 0, 0, 0.45),
+		added:     ui.Hex("#8fbf4a"),
+		changed:   ui.Hex("#ffc247"),
+		removed:   ui.Hex("#ff5a4a"),
+		// Near-black on the pumpkin, as the lantern's carving is dark on
+		// its glow.
+		fill:           ui.Hex("#ff8a1f"),
+		fillText:       ui.Hex("#1a0d03"),
+		dangerFill:     ui.Hex("#c8321f"),
+		dangerText:     ui.Hex("#ffffff"),
+		surface:        ui.Hex("#221b17"),
+		surfaceHover:   ui.Hex("#2a221d"),
+		surfacePressed: ui.Hex("#332923"),
+		scrollbar:      ui.RGBA(255, 230, 200, 0.16),
+		inverse:        ui.Hex("#2c211a"),
+		inverseText:    ui.Hex("#fbeedc"),
+		ansi: [16]ui.Color{
+			ui.Hex("#2c231d"), ui.Hex("#ff5a4a"), ui.Hex("#a8cf6a"), ui.Hex("#ffc247"),
+			ui.Hex("#8aa8e8"), ui.Hex("#b88cf0"), ui.Hex("#7cc8b8"), ui.Hex("#efe2cf"),
+			ui.Hex("#6f5f51"), ui.Hex("#ff7a6a"), ui.Hex("#c0e08a"), ui.Hex("#ffd77a"),
+			ui.Hex("#a8c0f5"), ui.Hex("#cfaaf8"), ui.Hex("#9ee0d0"), ui.Hex("#fff8ee"),
+		},
+	}
+	p.fillHover, p.fillPressed = p.fill.Mix(white, 0.12), p.fill.Mix(black, 0.15)
+	s := &p.syntax
+	s[highlight.Plain] = p.text
+	s[highlight.Keyword] = ui.Hex("#b88cf0")
+	s[highlight.Type] = ui.Hex("#ffc247")
+	s[highlight.Function] = ui.Hex("#ff9e4a")
+	s[highlight.String] = ui.Hex("#a8cf6a")
+	s[highlight.Number] = ui.Hex("#ff7a59")
+	s[highlight.Comment] = ui.Hex("#7d6c5d")
+	s[highlight.Operator] = ui.Hex("#c9a98a")
+	s[highlight.Punctuation] = ui.Hex("#9a8470")
+	s[highlight.Constant] = ui.Hex("#ff7a59")
+	s[highlight.Builtin] = ui.Hex("#e8b45a")
+	s[highlight.Tag] = ui.Hex("#ff8a1f")
+	s[highlight.Attribute] = ui.Hex("#ffc247")
+	s[highlight.Variable] = ui.Hex("#f2e6d6")
+	s[highlight.Heading] = ui.Hex("#ff8a1f")
+	s[highlight.Deleted] = p.removed
+	s[highlight.Inserted] = ui.Hex("#a8cf6a")
+	return p
+}
+
+// witchsBrewPalette is Witch's Brew, always dark: a potion bubbling in a
+// plum-dark hut. Plum chrome, a witch-purple status bar, and slime green
+// for the accent and the buttons, with plum labels on them. Its code is in
+// violets, slime greens, potion teals and lilacs, and its selection is
+// purple, so that the green stays the accent's.
+func witchsBrewPalette() *palette {
+	p := &palette{
+		dark:      true,
+		editor:    ui.Hex("#15111c"),
+		chrome:    ui.Hex("#0f0b15"),
+		panel:     ui.Hex("#120e19"),
+		border:    ui.Hex("#2a2238"),
+		hover:     ui.RGBA(200, 170, 255, 0.05),
+		active:    ui.RGBA(142, 240, 79, 0.13),
+		text:      ui.Hex("#e4dcef"),
+		muted:     ui.Hex("#9d90b3"),
+		faint:     ui.Hex("#6c6082"),
+		accent:    ui.Hex("#8ef04f"),
+		accentDim: ui.RGBA(142, 240, 79, 0.5),
+		line:      ui.RGBA(200, 170, 255, 0.045),
+		selection: ui.RGBA(150, 90, 220, 0.42),
+		gutter:    ui.Hex("#5c5070"),
+		gutterNow: ui.Hex("#8ef04f"),
+		status:    ui.Hex("#3a1d63"),
+		statusFg:  ui.Hex("#c8ff9a"),
+		modified:  ui.Hex("#f0c860"),
+		danger:    ui.Hex("#ff5c8a"),
+		match:     ui.RGBA(240, 200, 96, 0.22),
+		matchNow:  ui.RGBA(240, 200, 96, 0.40),
+		matchRing: ui.RGBA(240, 200, 96, 0.85),
+		guide:     ui.RGBA(200, 170, 255, 0.07),
+		guideNow:  ui.RGBA(142, 240, 79, 0.28),
+		bracket:   ui.RGBA(200, 170, 255, 0.35),
+		word:      ui.RGBA(200, 170, 255, 0.1),
+		shadow:    ui.RGBA(0, 0, 0, 0.5),
+		// A greener teal than the accent, so that what is added does
+		// not read as what is chosen.
+		added:          ui.Hex("#5fd08a"),
+		changed:        ui.Hex("#b07ef5"),
+		removed:        ui.Hex("#ff5c8a"),
+		fill:           ui.Hex("#8ef04f"),
+		fillText:       ui.Hex("#0f0b15"),
+		dangerFill:     ui.Hex("#ff5c8a"),
+		dangerText:     ui.Hex("#0f0b15"),
+		surface:        ui.Hex("#1d1726"),
+		surfaceHover:   ui.Hex("#251e30"),
+		surfacePressed: ui.Hex("#2d253a"),
+		scrollbar:      ui.RGBA(200, 170, 255, 0.16),
+		inverse:        ui.Hex("#3a1d63"),
+		inverseText:    ui.Hex("#eadcff"),
+		ansi: [16]ui.Color{
+			ui.Hex("#2a2238"), ui.Hex("#ff5c8a"), ui.Hex("#8ef04f"), ui.Hex("#f0c860"),
+			ui.Hex("#8aa0ff"), ui.Hex("#c18cff"), ui.Hex("#6ef0c8"), ui.Hex("#e4dcef"),
+			ui.Hex("#675b7c"), ui.Hex("#ff85a8"), ui.Hex("#b4ff85"), ui.Hex("#ffdc8a"),
+			ui.Hex("#aab8ff"), ui.Hex("#d8b0ff"), ui.Hex("#9ef8dc"), ui.Hex("#ffffff"),
+		},
+	}
+	p.fillHover, p.fillPressed = p.fill.Mix(white, 0.15), p.fill.Mix(black, 0.15)
+	s := &p.syntax
+	s[highlight.Plain] = p.text
+	s[highlight.Keyword] = ui.Hex("#c18cff")
+	s[highlight.Type] = ui.Hex("#6ef0c8")
+	s[highlight.Function] = ui.Hex("#a8ff6a")
+	s[highlight.String] = ui.Hex("#f0a6d8")
+	s[highlight.Number] = ui.Hex("#f0c860")
+	s[highlight.Comment] = ui.Hex("#716588")
+	s[highlight.Operator] = ui.Hex("#b3a6c8")
+	s[highlight.Punctuation] = ui.Hex("#8b7fa0")
+	s[highlight.Constant] = ui.Hex("#f0c860")
+	s[highlight.Builtin] = ui.Hex("#6ef0c8")
+	s[highlight.Tag] = ui.Hex("#c18cff")
+	s[highlight.Attribute] = ui.Hex("#a8ff6a")
+	s[highlight.Variable] = ui.Hex("#e8e0f2")
+	s[highlight.Heading] = ui.Hex("#8ef04f")
+	s[highlight.Deleted] = p.removed
+	s[highlight.Inserted] = p.added
+	return p
+}
+
+// bloodMoonPalette is Blood Moon, always dark: a vampire's study under a
+// red moon. Near-black with a red undertone, crimson for the accent and
+// the buttons, with white on them, and a dark-blood status bar. Danger is
+// a lighter scarlet with dark labels, so that Discard never looks like the
+// crimson of a button that keeps. Its code bleeds red in its keywords, with
+// old-gold strings and moonlight blue.
+func bloodMoonPalette() *palette {
+	p := &palette{
+		dark:      true,
+		editor:    ui.Hex("#140e10"),
+		chrome:    ui.Hex("#0d090a"),
+		panel:     ui.Hex("#110c0d"),
+		border:    ui.Hex("#2e1a1e"),
+		hover:     ui.RGBA(255, 200, 210, 0.045),
+		active:    ui.RGBA(240, 67, 90, 0.15),
+		text:      ui.Hex("#ecdfe0"),
+		muted:     ui.Hex("#a68d91"),
+		faint:     ui.Hex("#75595e"),
+		accent:    ui.Hex("#f0435a"),
+		accentDim: ui.RGBA(240, 67, 90, 0.5),
+		line:      ui.RGBA(255, 200, 210, 0.04),
+		selection: ui.RGBA(196, 30, 58, 0.38),
+		gutter:    ui.Hex("#6e5559"),
+		gutterNow: ui.Hex("#ff8a9a"),
+		status:    ui.Hex("#5c0f1d"),
+		statusFg:  ui.Hex("#ffd0d6"),
+		modified:  ui.Hex("#e8b04a"),
+		danger:    ui.Hex("#ff7a5c"),
+		match:     ui.RGBA(232, 176, 74, 0.22),
+		matchNow:  ui.RGBA(232, 176, 74, 0.40),
+		matchRing: ui.RGBA(232, 176, 74, 0.85),
+		guide:     ui.RGBA(255, 200, 210, 0.065),
+		guideNow:  ui.RGBA(240, 67, 90, 0.32),
+		bracket:   ui.RGBA(255, 200, 210, 0.32),
+		word:      ui.RGBA(255, 200, 210, 0.08),
+		shadow:    ui.RGBA(0, 0, 0, 0.5),
+		added:     ui.Hex("#7fb88a"),
+		changed:   ui.Hex("#9aa8e8"),
+		removed:   ui.Hex("#ff5470"),
+		// White on the crimson of the accent reads at 3.7:1, so buttons
+		// take a deeper one, with white on it at 5.4:1.
+		fill:           ui.Hex("#c41e3a"),
+		fillText:       ui.Hex("#fff4f4"),
+		dangerFill:     ui.Hex("#ff7a5c"),
+		dangerText:     ui.Hex("#1a0507"),
+		surface:        ui.Hex("#1c1315"),
+		surfaceHover:   ui.Hex("#24191c"),
+		surfacePressed: ui.Hex("#2d1f23"),
+		scrollbar:      ui.RGBA(255, 200, 210, 0.16),
+		inverse:        ui.Hex("#5c0f1d"),
+		inverseText:    ui.Hex("#ffe6ea"),
+		ansi: [16]ui.Color{
+			ui.Hex("#2e1a1e"), ui.Hex("#ff5470"), ui.Hex("#8fc49a"), ui.Hex("#e8b04a"),
+			ui.Hex("#9aa8e8"), ui.Hex("#c4a0f0"), ui.Hex("#8acfc8"), ui.Hex("#ecdfe0"),
+			ui.Hex("#6e5559"), ui.Hex("#ff7a90"), ui.Hex("#aedcb6"), ui.Hex("#f5cc75"),
+			ui.Hex("#b8c3f5"), ui.Hex("#dbbcff"), ui.Hex("#aee6e0"), ui.Hex("#ffffff"),
+		},
+	}
+	p.fillHover, p.fillPressed = p.fill.Mix(white, 0.1), p.fill.Mix(black, 0.15)
+	s := &p.syntax
+	s[highlight.Plain] = p.text
+	s[highlight.Keyword] = ui.Hex("#ff5470")
+	s[highlight.Type] = ui.Hex("#c4a0f0")
+	s[highlight.Function] = ui.Hex("#ffb3a8")
+	s[highlight.String] = ui.Hex("#e8c48a")
+	s[highlight.Number] = ui.Hex("#ff8a7a")
+	s[highlight.Comment] = ui.Hex("#7a5f64")
+	s[highlight.Operator] = ui.Hex("#c0a5a9")
+	s[highlight.Punctuation] = ui.Hex("#94797e")
+	s[highlight.Constant] = ui.Hex("#ff8a7a")
+	s[highlight.Builtin] = ui.Hex("#9aa8e8")
+	s[highlight.Tag] = ui.Hex("#ff5470")
+	s[highlight.Attribute] = ui.Hex("#c4a0f0")
+	s[highlight.Variable] = ui.Hex("#efe3e4")
+	s[highlight.Heading] = ui.Hex("#f0435a")
 	s[highlight.Deleted] = p.removed
 	s[highlight.Inserted] = p.added
 	return p
@@ -1035,10 +1287,15 @@ var (
 	cursorDarkPal  = cursorDarkPalette().derive()
 
 	purpleGoldPal = purpleGoldPalette().derive()
+
+	pumpkinPal    = pumpkinPalette().derive()
+	witchsBrewPal = witchsBrewPalette().derive()
+	bloodMoonPal  = bloodMoonPalette().derive()
 )
 
-// The Themes of the settings beside Mayoi's own, "": The Matrix and Purple
-// Gold, which are always dark, and Claude, Qoder, Grok Bot and Cursor,
+// The Themes of the settings beside Mayoi's own, "": The Matrix, Purple
+// Gold, and the Halloween themes Jack-o'-Lantern, Witch's Brew and Blood
+// Moon, which are always dark, and Claude, Qoder, Grok Bot and Cursor,
 // light or dark as the Appearance is.
 const (
 	themeMatrix     = "matrix"
@@ -1047,11 +1304,18 @@ const (
 	themeGrokBot    = "grokbot"
 	themeCursor     = "cursor"
 	themePurpleGold = "purplegold"
+	themePumpkin    = "pumpkin"
+	themeWitchsBrew = "witchsbrew"
+	themeBloodMoon  = "bloodmoon"
 )
 
 // alwaysDark is whether a theme is dark whatever the Appearance is.
 func alwaysDark(theme string) bool {
-	return theme == themeMatrix || theme == themePurpleGold
+	switch theme {
+	case themeMatrix, themePurpleGold, themePumpkin, themeWitchsBrew, themeBloodMoon:
+		return true
+	}
+	return false
 }
 
 // paletteFor returns the palette of a theme of the settings, in a window
@@ -1078,6 +1342,12 @@ func paletteFor(theme string, dark bool) *palette {
 		return cursorLightPal
 	case theme == themePurpleGold:
 		return purpleGoldPal
+	case theme == themePumpkin:
+		return pumpkinPal
+	case theme == themeWitchsBrew:
+		return witchsBrewPal
+	case theme == themeBloodMoon:
+		return bloodMoonPal
 	case dark:
 		return darkPal
 	}
@@ -1085,8 +1355,9 @@ func paletteFor(theme string, dark bool) *palette {
 }
 
 // themeSource is the light or dark appearance of the native window for a
-// theme and an appearance of the settings: The Matrix and Purple Gold are
-// dark, and the other themes are as the appearance is, the system's for "".
+// theme and an appearance of the settings: dark for the themes that are
+// always dark, and as the appearance is for the others, the system's for
+// "".
 func themeSource(theme, appearance string) mygo.ThemeSource {
 	if alwaysDark(theme) {
 		return mygo.ThemeDark
@@ -1109,6 +1380,15 @@ func (p *palette) derive() *palette {
 	p.selectedDim = p.selection.Alpha(0.5).Over(p.editor)
 	p.cursor = p.accent.Alpha(0.5)
 	return p
+}
+
+// hairline is the line along the foot of the title bar and the top of the
+// status bar: the theme's own rule, or the border.
+func (p *palette) hairline() ui.Color {
+	if p.rule.A == 0 {
+		return p.border
+	}
+	return p.rule
 }
 
 // legible returns col as text that reads at 4.5:1, WCAG's AA, on each of
@@ -1153,16 +1433,20 @@ func contrast(x, y ui.Color) float64 {
 
 // applyTheme sets the window's theme from the palette of its theme,
 // and returns that palette.
-func (a *app) applyTheme(c *ui.Context) *palette {
+func (a *app) applyTheme(c *ui.Context) *palette { return applyTheme(c, &a.settings.Prefs, &a.fade) }
+
+// applyTheme sets the theme of a window from the palette of the theme of
+// the preferences, on its way there by fade, and returns that palette.
+func applyTheme(c *ui.Context, prefs *settings.Prefs, fade *paletteFade) *palette {
 	t := *c.Theme()
 	dark := t.Dark
-	switch a.settings.Appearance {
+	switch prefs.Appearance {
 	case "light":
 		dark = false
 	case "dark":
 		dark = true
 	}
-	p := a.fade.step(c, paletteFor(a.settings.Theme, dark))
+	p := fade.step(c, paletteFor(prefs.Theme, dark))
 	t.Dark = p.dark
 	t.Background = p.editor
 	// Every state of the accent, or a hovered button would turn the
@@ -1182,7 +1466,7 @@ func (a *app) applyTheme(c *ui.Context) *palette {
 	t.Scrollbar = p.scrollbar
 	t.Inverse, t.InverseText = p.inverse, p.inverseText
 	if p.mono {
-		t.Font = a.settings.FontFamily
+		t.Font = prefs.FontFamily
 	}
 	c.SetTheme(&t)
 	return p
@@ -1434,6 +1718,10 @@ var fieldFocus = ui.ElementTransition{Colors: true, Duration: 120 * time.Millise
 func (a *app) floating(c *ui.Context, box ui.Element, dialog bool) ui.Element {
 	p := a.pal
 	box.Background(c.Theme().Surface).Border(1, p.border)
+	if dialog && a.settings.Theme == themeClaude {
+		// In the accent, as Claude Code boxes what it asks.
+		box.Border(1, p.accent.Alpha(0.8))
+	}
 	switch {
 	case dialog && p.dark:
 		box.Shadow(0, 16, 40, 0, ui.RGBA(0, 0, 0, 0.40))

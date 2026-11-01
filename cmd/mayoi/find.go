@@ -41,6 +41,9 @@ type findState struct {
 	pendingDoc int
 
 	input ui.Handle
+	// box is the find widget, whose bounds tell how far down the editor
+	// it covers.
+	box ui.Handle
 	// shook is when Return found no match, which shakes the box.
 	shook  time.Time
 	reveal bool // select the current match
@@ -60,6 +63,10 @@ func (f *findState) pattern() string {
 // openFind opens the find widget, with the selection's text as the query
 // when it is on one line, and selects the query so typing replaces it.
 func (a *app) openFind(replace bool) {
+	if s := a.findTerminal(); s != nil {
+		a.openTermFind(s)
+		return
+	}
 	f := &a.find
 	if v := a.activeMarkdown(); v != nil && !replace {
 		// A preview finds in its rendered text, which it cannot replace.
@@ -84,8 +91,13 @@ func (a *app) openFind(replace bool) {
 }
 
 // findStep goes to the next match of find, or the previous, opening find:
-// in a Markdown preview its rendered text's, else the editor's.
+// in a terminal with the keyboard its output's, in a Markdown preview its
+// rendered text's, else the editor's.
 func (a *app) findStep(by int) {
+	if s := a.findTerminal(); s != nil {
+		a.termFindStep(s, by)
+		return
+	}
 	a.find.open = true
 	if v := a.activeMarkdown(); v != nil {
 		a.findPreview = v.markdown
@@ -405,7 +417,7 @@ func (a *app) findBoxView(c *ui.Context, b findBox) {
 			f.stale = true
 		}
 	}
-	box := a.floating(c, ui.Column(c).Absolute().Top(4).Right(22).Width(430).Padding(5, 6).Gap(4).Radius(8), false).Transition(popIn)
+	box := a.floating(c, ui.Column(c).Absolute().Top(4).Right(22).Width(430).Padding(5, 6).Gap(4).Radius(8), false).Transition(popIn).Bind(&f.box)
 	shake(c, box, f.shook)
 	box.Role(ui.RoleToolbar).Label(locales.FindLabel())
 	box.Children(func() {

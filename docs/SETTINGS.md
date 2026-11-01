@@ -1,7 +1,8 @@
 # Settings
 
-Mayoi's preferences and keyboard shortcuts are two JSON files that you can edit with Mayoi or any other editor. When
-you save one, the change applies in every window right away. You don't need to restart.
+Mayoi's preferences and keyboard shortcuts are two JSON files. You can change them in the
+[settings window](#the-settings-window), or edit the files with Mayoi or any other editor. Either way, the change
+applies in every window right away. You don't need to restart.
 
 ## Where the files are
 
@@ -16,7 +17,7 @@ All of Mayoi's files are in one data folder:
 | File                | Who writes it | What it holds                                                                     |
 | ------------------- | ------------- | --------------------------------------------------------------------------------- |
 | `settings.json`     | you and Mayoi | [Preferences](#settingsjson): fonts, theme, auto save, vim and more               |
-| `keybindings.json`  | you           | [Keyboard shortcuts](#keybindingsjson), in VS Code's format                       |
+| `keybindings.json`  | you and Mayoi | [Keyboard shortcuts](#keybindingsjson), in VS Code's format                       |
 | `state.json`        | Mayoi         | Windows, tabs, recent folders and layout                                          |
 | `window-state.json` | Mayoi         | Each window's position and size                                                   |
 | `updater.json`      | Mayoi         | Update choices: automatic downloads, a skipped version, the last check            |
@@ -33,11 +34,26 @@ mkdir -p ~/mayoi-test
 MAYOI_DATA_DIR=~/mayoi-test /Applications/Mayoi.app/Contents/MacOS/Mayoi
 ```
 
+## The settings window
+
+**Mayoi → Settings…** (⌘,), or **File → Settings…** on Windows and Linux, opens the settings window. It lists every
+preference by category, with what it does and its key in `settings.json`:
+
+- **Search** at the top finds preferences in every category, by name, description or key.
+- A dot marks a preference that isn't at its default, and the arrow beside it resets it.
+- A change applies in every window at once, and is written to `settings.json`.
+- **Keyboard Shortcuts** lists every command with its keys. See [Changing shortcuts](#changing-shortcuts).
+- With a folder open, the menu at the top right switches between your settings and that folder's own. See
+  [Folder settings](#folder-settings).
+- `settings.json` and `keybindings.json` at the bottom of the sidebar open the files in the front window.
+
+Some menu items open the window at the preference they're about. For example, the hint under **What syncs** in the
+account's panel opens it at `syncIgnored`.
+
 ## settings.json
 
-**File → Settings** (⌘,) opens the settings dialog, where the common settings are grouped and changed as you go.
-**File → Open Settings (JSON)** opens `settings.json` in a tab instead. Each key below is optional, and a key you
-leave out takes its default.
+**File → Open Settings (JSON)** opens `settings.json` in a tab. Each key below is optional, and a key you leave out
+takes its default.
 
 | Key                     | Default       | Values                                                      | Also set by                                    |
 | ----------------------- | ------------- | ----------------------------------------------------------- | ---------------------------------------------- |
@@ -51,7 +67,7 @@ leave out takes its default.
 | `terminalFontFamily`    | `""`          | Font names, separated by commas                             |                                                |
 | `terminalFontSize`      | `0`           | 0, or 9 to 28                                               |                                                |
 | `terminalCopyOnSelect`  | `true`        | `true`, `false`                                             |                                                |
-| `theme`                 | `""`          | `""` (Mayoi), `"matrix"`, `"claude"`, `"qoder"`, `"grokbot"`, `"cursor"`, `"purplegold"` | **View → Theme**, **Color Theme…**             |
+| `theme`                 | `""`          | `""` (Mayoi), `"matrix"`, `"claude"`, `"qoder"`, `"grokbot"`, `"cursor"`, `"purplegold"`, `"pumpkin"`, `"witchsbrew"`, `"bloodmoon"` | **View → Theme**, **Color Theme…**             |
 | `appearance`            | `""`          | `""` (follow the system), `"light"`, `"dark"`               | **View → Theme**                               |
 | `sidebarRight`          | `false`       | `true`, `false`                                             | **View → Sidebar on Right**                    |
 | `menuBarExpanded`       | `false`       | `true`, `false`                                             | **View → Menu Bar**                            |
@@ -63,22 +79,28 @@ leave out takes its default.
 | `locale`                | `""`          | `""` (follow the system), `"en"`, `"zh-Hans"`, `"ja"`       | **View → Language**                            |
 | `autoSave`              | `true`        | `true`, `false`                                             | **File → Auto Save**                           |
 | `wordWrap`              | `false`       | `true`, `false`                                             | **View → Word Wrap**                           |
-| `showFoldingControls`   | `""`          | `""` (on hover), `"always"`                                 | **File → Settings → Editor**                   |
+| `showFoldingControls`   | `""`          | `""` (on hover), `"always"`                                 | **Settings → Editor**                          |
+| `editorAgentContext`    | `false`       | `true`, `false`                                             | Only this file                                 |
 | `previewMermaid`        | `true`        | `true`, `false`                                             | Only this file                                 |
 | `previewMath`           | `true`        | `true`, `false`                                             | Only this file                                 |
 | `markdownPreview`       | `false`       | `true`, `false`                                             | **View → Preview Markdown on Open**            |
 | `vim`                   | `false`       | `true`, `false`                                             | **View → Vim Mode**                            |
 | `vimCtrlKeys`           | `false`       | `true`, `false`                                             | Only this file                                 |
 | `blame`                 | `true`        | `true`, `false`                                             | **Git → Inline Blame**                         |
-| `lsp`                   | `false`       | `true`, `false`                                             | **File → Settings → Advanced**                 |
-| `lspCommand`            | `"gopls"`     | A command, or the path of one                               | Only this file                                 |
-| `lspServers`            | none          | Servers by language: `extensions`, `languageId`, `command`, `args`, `roots` | Only this file                  |
+| `lsp`                   | `false`       | `true`, `false`                                             | **Settings → General**                         |
+| `lspCommand`            | `""`          | A command, or the path of one                              | Only this file                                 |
 | `diffLayout`            | `""`          | `""` (side by side when wide enough), `"split"`, `"inline"` | A diff's **Layout** button                     |
 | `diffCrossFiles`        | `""`          | `""` (say it, and cross on one more step), `"always"`, `"never"` | Only this file                            |
 | `diffHighlight`         | `""`          | `""` (changed words), `"line"`, `"char"`                       | A diff's **Highlight** menu                |
+| `diffWhitespace`        | `""`          | `""` (exact), `"eol"`, `"all"`, `"blank"`                      | A diff's **Whitespace** menu               |
 | `diffContext`           | `3`           | `0` to `100` unchanged lines around each change                | A diff's **Context** menu                  |
 | `diffSyncScroll`        | `true`        | `true`, `false`                                                | A diff's **Synchronized Scrolling** menu   |
 | `diffAlignedRows`       | `true`        | `true`, `false`                                                | A diff's **Layout** menu                   |
+| `mergeAutoApply`        | `true`        | `true`, `false`                                                | **Apply Automatically** in a merge's menu  |
+| `explorerCompactFolders` | `false`     | `true`, `false`                                                | **View → Compact Folders**                 |
+| `outlinePosition`       | `""`          | `""` (below the files), `"above"`, `"view"`                 | **Settings → Appearance**                      |
+| `outlineSort`           | `""`          | `""` (in the document's order), `"name"`, `"kind"`          | **Settings → Appearance**                      |
+| `outlineKinds`          | none          | The kinds of declaration to show, as `["function", "class"]` | **Settings → Appearance**                     |
 | `scmTree`               | `false`       | `true`, `false`                                             | **View as Tree** in Source Control's menu      |
 | `scmAllBranches`        | `false`       | `true`, `false`                                             | **Show All Branches** in Source Control's menu |
 | `syncIgnored`           | none          | Keys, `"settings.json"`, `"keybindings.json"`               | The [settings sync](#settings-sync) panel      |
@@ -100,7 +122,7 @@ leave out takes its default.
   starts for the project it serves, found by markers such as `go.mod`, `package.json`, `Cargo.toml`, `pyproject.toml`
   and `CMakeLists.txt`, so a folder within a folder gets a server of its own. The problems of the open file count in
   the status bar, and **Go to Definition** (`F12`) jumps to where a symbol is defined. It is off until turned on in
-  **File → Settings → Advanced**, and a server whose command is not installed says so in the status bar.
+  **Settings → General**, and a server whose command is not installed says so in the status bar.
 - **`lspCommand`** is Go's command, `gopls` by default. Mayoi finds it in Go's `bin` folder even when your shell's
   `PATH` lacks it, and a path of your own works too.
 - **`lspServers`** adds a server Mayoi does not know, or overrides one of its own by its name, as `typescript`:
@@ -153,8 +175,9 @@ differ in width lines them up only roughly.
 
 ### The rest
 
-- **`theme`** is Mayoi's own theme, The Matrix, Claude, Qoder, Grok Bot, Cursor or Purple Gold. The Matrix and Purple Gold are always
-  dark, so they ignore `appearance`.
+- **`theme`** is Mayoi's own theme, The Matrix, Claude, Qoder, Grok Bot, Cursor, Purple Gold, or a Halloween theme:
+  `"pumpkin"` for Jack-o'-Lantern, `"witchsbrew"` for Witch's Brew and `"bloodmoon"` for Blood Moon. The Matrix, Purple
+  Gold and the Halloween themes are always dark, so they ignore `appearance`.
 - **`panelPosition`** is where the terminal panel is: `""` or `"bottom"` below the editors, `"left"` or `"right"` at a
   side of the window. At a side it sits past the sidebar, so with the sidebar on the same side the panel is the outer
   of the two.
@@ -186,6 +209,12 @@ differ in width lines them up only roughly.
   setting changes.
 - **`showFoldingControls`** shows the fold markers of the gutter while the pointer is over it, or always as
   `"always"`.
+- **`editorAgentContext`** shows a **+** beside the line under the pointer in ordinary files. Click it
+  to comment on that line or the selected lines in an inline review card; an empty comment collects the
+  code alone. Collect snippets across files and send them together from the editor toolbar. It is off
+  by default; changes apply immediately and do not discard pending items. Closing the draft’s tab,
+  starting another comment, or jumping to code keeps its text in the Review queue. **Send** saves the
+  current draft before sending the batch.
 - **`previewMermaid`** draws the `mermaid` code blocks of a Markdown preview as diagrams. Turn it off to show
   them as code. A `.mmd` or `.mermaid` file's own preview draws its diagram either way.
 - **`previewMath`** draws the LaTeX math of a Markdown preview, between `$` and `$`, `$$` and `$$`, or in a
@@ -204,6 +233,11 @@ differ in width lines them up only roughly.
 - **`vimCtrlKeys`** gives ⌃F, ⌃B, ⌃R, ⌃A and ⌃X to vim's normal mode on Windows and Linux, rather than to Find,
   Toggle Sidebar, Open Recent, Select All and Cut. On macOS, where those commands use ⌘, vim always has them.
 - **`blame`** shows who last changed the caret's line, and when, at the end of the line.
+- **`explorerCompactFolders`** shows each chain of folders that contain only one child folder on one Explorer row,
+  as `src/main/java/com/example`. The row's actions use the last folder in the chain. Turn it off to show the
+  folders separately, including when you want to rename or move an intermediate folder. The Explorer folder
+  header's context menu also has **Compact Folders**. Dependency and build folders such as `node_modules`,
+  `.venv` and `target` stay separate and are read only when expanded.
 - **`scmTree`** lists Source Control's changes in a tree of their folders, rather than by path.
 - **`scmAllBranches`** shows the commits of every branch and tag, not only those of the branch checked out.
 - **`aiModel`** is the model of Mon's AI gateway that writes commit messages, `deepseek-flash` when empty. The models
@@ -239,6 +273,31 @@ differ in width lines them up only roughly.
   `"monospace"`.
 - **Older files still work.** Themes used to be appearances, so Mayoi reads `"appearance": "matrix"` or `"claude"`
   as that `theme`.
+
+### Folder settings
+
+A folder can choose some preferences for itself in `.mayoi/settings.json`, which overrides yours in that folder's
+window. **File → Open Folder Settings (JSON)** opens the file, and creates it if there is none. In the settings
+window, choose the folder in the menu at the top right: it lists only the preferences a folder can set, and the arrow
+beside one returns it to your setting.
+
+A folder can set these: `autoSave`, `wordWrap`, `markdownPreview`, `previewMermaid`, `previewMath`,
+`terminalCopyOnSelect`, `diffHighlight`, `diffWhitespace`, `diffContext`, `diffCrossFiles`, `mergeAutoApply`,
+`blame`, `aiModel`, `vim` and `vimCtrlKeys`.
+
+```json
+{
+  "vim": true,
+  "wordWrap": true
+}
+```
+
+- **Mayoi ignores the folder's other keys** and leaves them in the file as they are.
+- **A change to one of these preferences goes to the folder's file** while the folder sets it. For example, with
+  `vim` in the file, **View → Vim Mode** changes the folder's `vim`, not yours.
+- **Saving the file applies it** to the folder's window at once, as does a checkout that changes it.
+- **Remote folders have no settings of their own.** Folder settings don't sync, since they're part of the folder,
+  which you can commit along with it.
 
 ## Files Mayoi keeps itself
 
@@ -322,8 +381,8 @@ the Keychain would ask again after every rebuild.
 
 ## keybindings.json
 
-**File → Open Keyboard Shortcuts** opens `keybindings.json`, beside `settings.json`, in VS Code's format, comments and
-all, so a VS Code or Cursor file can be pasted in. Saving it applies it in every window at once. A file that does not
+**File → Open Keyboard Shortcuts (JSON)** opens `keybindings.json`, beside `settings.json`, in VS Code's format,
+comments and all, so a VS Code or Cursor file can be pasted in. Saving it applies it in every window at once. A file that does not
 parse is left alone until it does, and a key or a condition Mayoi can't read is named in a toast.
 
 - **`key`** is a key, as `"cmd+1"`, or a chord, as `"ctrl+. g c"`. Its modifiers are `cmd`, `ctrl`, `alt` and `shift`.
@@ -350,6 +409,26 @@ Explorer, diffs, pictures, and the text fields of find, search, quick open and t
   { "key": "d", "command": "deleteFile", "when": "filesExplorerFocus && !inputFocus" },
   { "key": "cmd+1", "command": "workbench.action.toggleSidebarVisibility" }
 ]
+```
+
+### Changing shortcuts
+
+**File → Keyboard Shortcuts…** opens the settings window at its list of commands. Each command shows its keys and
+where they come from: **Default** for Mayoi's own, **User** for `keybindings.json`'s, and **Removed** when the file
+takes them away. **+1 more** means the file has further keys for the command, with a `when` or `args`.
+
+- **Search** finds commands by name, id or keys. The keyboard button next to it finds them by keys you press.
+- **Click a command**, or its pencil, and press its new keys: two for a chord. Enter saves, Escape cancels and
+  Backspace starts over. If other commands have those keys, the dialog says which.
+- **The minus** removes the command's keys, and **the arrow** gives it back Mayoi's own.
+
+Mayoi writes each change to `keybindings.json` and applies it at once. It changes only the command's entries without
+a `when` or `args`, and keeps the file's comments and order. New keys go at the end, with an entry that takes away
+Mayoi's own, as VS Code writes them:
+
+```json
+{ "key": "cmd+s", "command": "-file.save" },
+{ "key": "ctrl+k s", "command": "file.save" }
 ```
 
 ### Windows and Linux shortcuts

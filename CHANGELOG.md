@@ -3,6 +3,94 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
+## Unreleased
+
+- Mermaid diagrams copy as an image from their hover buttons or the opened diagram's header.
+- Mermaid diagrams export as PNG or SVG from their export button, in the colors of the current theme.
+- `.mmd` previews copy and export their diagram with **Copy Mermaid Diagram as Image** and the export commands.
+- Pinching a touchpad zooms images, SVG and Mermaid previews, and opened diagrams around the pointer.
+- On Windows, Ctrl with two-finger scrolling now zooms a picture instead of doing nothing.
+- **View → Theme → Claude** now looks like Claude Code in a terminal, with the whole window in the code's font.
+- Under Claude, the status bar shows Claude Code's ✻ spinner, the work's name and its seconds while Git runs.
+- Claude's errors and removed lines are rose now, apart from its orange, and chosen rows are periwinkle.
+- In Claude Light, the terminal's white and bright white text is readable on the light background.
+- **View → Compact Folders** shows chains of single-child folders on one Explorer row.
+- The Explorer header's context menu, the settings window and `explorerCompactFolders` toggle it too.
+- Hover a compact row to see its whole path when the sidebar cuts it off.
+- `⌘F` in a terminal opens a find bar that searches its output and scrollback, highlighting each match.
+- In the terminal's find bar, `Return` goes to the match above and `Shift+Return` to the one below.
+- On Linux and Windows, `Ctrl+F` in a terminal opens find instead of reaching the shell.
+- Under Purple Gold, the welcome page drops the mosaic apse and arch and matches the other themes.
+- The settings window replaces the settings dialog, with a search, folders' own settings and a shortcuts editor.
+- The sidebar and the panel's button sit at the side each belongs to, as VS Code's title bar.
+- Add Review Comment is ⇧⌥M, as ⇧⌘M is Toggle Problems.
+- Folding has no default keys now that ⇧⌘[ and ⇧⌘] switch projects; **Keyboard Shortcuts** sets its own.
+- The outline's place, sort and kinds are in **Settings → Appearance**.
+- `tabSize`, `showFoldingControls` and the language servers are in the settings window too.
+
+## 0.16.1
+
+- **View → Theme → Purple Gold** is now Porphyry: Tyrian purple chrome, gold leaf and gold hairlines.
+- Under Purple Gold, a gold mosaic apse shimmers behind the welcome page, under an arched card.
+- Purple Gold has a character, Corona, a jeweled crown that blinks, glances and hops while Git works.
+- Purple Gold's code is in amethyst, gold, rose quartz and jade, and the open tab gets a gilded line.
+
+## 0.16.0
+
+- Turn on `editorAgentContext` to show a gutter **+** in ordinary files that collects code with a comment.
+- Leave the comment empty and choose **Add to Agent** to collect the code alone.
+- Code collected across files goes to the last terminal together with **Send N Items**.
+- The **…** button above the editor lists collected items to go to, edit or remove; they survive restarts.
+- **Mayoi → Settings…** (⌘,) opens a settings window with every preference by category, and a search.
+- Changes in the settings window apply to every window at once, and each one resets with one click.
+- **File → Keyboard Shortcuts…** lists every command's keys; double-click one and press its new keys to change them.
+- The shortcuts editor warns when other commands use the keys, and keeps the comments of `keybindings.json`.
+- A folder can set preferences such as `vim` or `autoSave` for itself in `.mayoi/settings.json`.
+- Pick a folder at the top of the settings window to change its own settings rather than yours.
+- `settings.json` and `keybindings.json` still open as files from **File → Open Settings (JSON)** and the like.
+- **View → Theme** adds three Halloween themes, always dark: Jack-o'-Lantern, Witch's Brew and Blood Moon.
+- Jack-o'-Lantern is pumpkin orange by candlelight, with a carved pumpkin on the welcome page and status bar.
+- Witch's Brew is plum dark with slime green, and a bubbling cauldron for its character.
+- Blood Moon is crimson and old gold on a red-tinged black, with a bat that flaps its wings as it hops.
+- The settings window groups each section's settings in cards, and marks the ones you changed.
+- The settings sidebar shows how many settings you have changed in each section.
+- **Keyboard Shortcuts** shows each key as its own cap, and tags your own keys and removed ones.
+- The dialog for new keys shows them large, and turns amber when another command has them.
+- **Settings → Appearance** shows every theme as a small preview window; click one to switch to it.
+- Font size, weight, line height and window zoom have sliders that show their value as you drag.
+- **Settings → Fonts** shows sample code in your font, and it updates as you change the font settings.
+- Settings with two or three short choices, such as `appearance`, are a row of buttons instead of a menu.
+- Resetting a setting or a command's keys shows a notice with **Undo** for a few seconds.
+- **Keyboard Shortcuts** groups commands by menu, and each menu's name stays at the top as you scroll.
+- Filter the shortcuts to **All**, **Changed by Me** or **Conflicts**, each with how many it shows.
+- Keys that two commands share show in amber with a warning sign in the list itself.
+- In the shortcuts list, arrows choose a command, `Enter` changes its keys and `Delete` removes them.
+- `⌘F` in the settings window goes to its search, and `↓` goes on from the search to the list.
+- The arrow keys switch settings sections, and `→` or `Enter` moves into the section shown.
+- **Settings → Fonts** picks the font from your installed monospaced fonts, each shown in itself.
+- The font sample previews the font you point at or arrow to in the list, before you choose it.
+- Text settings, such as the font, apply when you press `Enter` or leave the field, not at each key.
+- A folder's own setting changed in the settings window no longer, now and then, snaps back.
+- Headings in the Markdown preview take the color theme's heading color, as the editor does.
+- Command-clicking a terminal path or URL followed by Chinese punctuation no longer takes the text after it.
+- Switching back to a tab no longer flashes a blank editor for a frame before its text shows.
+- When a file changes on disk, the editor stays where you were reading instead of jumping to the caret.
+- The caret stays on its line when a file changes on disk above it, rather than drifting to other text.
+- Select All no longer flashes the end of the file before the view settles.
+- With word wrap on, switching back to a tab returns to the same lines, not lines nearby.
+- Switching back to a tab whose caret is out of view no longer flashes a blank editor.
+- With word wrap on, Enter, Tab, undo and redo no longer move the text around the screen.
+- Pressing Enter or moving a line at the edge of the editor scrolls one line, not a third of the page.
+- Clicking or holding near the right edge of a long line no longer runs the text sideways.
+- Find scrolls a match at the top of the editor out from under the find bar.
+- Deleting the longest line shrinks how far the editor scrolls sideways.
+- A tab you switch back to shows the same lines after edits in another column added lines above them.
+- With word wrap on, moving a tab to another column keeps the same lines in view.
+- The folder button by the branch in source control opens **Switch Worktree…** to change checkouts.
+- **Switch Worktree…** finds a checkout by folder or branch; Enter on a new name makes a worktree.
+- Typing an existing branch's name in **Switch Worktree…** points to **Switch Branch…** instead.
+- **Switch Branch…** lists local branches first, with each branch's last author and time.
+
 ## 0.15.1
 
 - The Explorer shows a timeline of the file shown, with each change's kind, author and time.

@@ -331,6 +331,38 @@ func TestTerminalCopyOnSelect(t *testing.T) {
 	}
 }
 
+func TestEditorAgentContext(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "settings.json")
+	s := Load(path)
+	if s.EditorAgentContext {
+		t.Fatal("agent context enabled by default")
+	}
+	if err := os.WriteFile(path, []byte(`{"editorAgentContext":true}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p, ok := s.Edited()
+	if !ok || !p.EditorAgentContext {
+		t.Fatal("did not pick up the edited preference")
+	}
+	s.SetPrefs(p)
+	w := s.NewWindow()
+	w.Review = []ReviewNote{{Context: true, Path: "/repo/file.go", From: 0, To: 1,
+		Snippet: []string{"hello()"}, Lines: []string{"hello()"}}}
+	s.Flush()
+	loaded := Load(path)
+	if !loaded.EditorAgentContext || len(loaded.Windows) != 1 || len(loaded.Windows[0].Review) != 1 ||
+		!loaded.Windows[0].Review[0].Context || loaded.Windows[0].Review[0].Text != "" {
+		t.Fatal("preference or uncommented context was not persisted")
+	}
+	if err := os.WriteFile(path, []byte(`{}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p, ok = s.Edited()
+	if !ok || p.EditorAgentContext {
+		t.Fatal("removing the setting did not disable it")
+	}
+}
+
 // An edit of the file changes the preferences it watches, but not the
 // windows; the settings' own writes and a file that does not parse
 // change nothing.
@@ -496,6 +528,25 @@ func TestSyncIgnoredPrefs(t *testing.T) {
 		t.Fatal(err)
 	}
 	if q.FontSize != 18 || !q.Vim || q.Theme != "qoder" || len(q.SyncIgnored) != 4 {
+		t.Errorf("prefs = %+v", q)
+	}
+}
+
+// TestMachineKept: what a development build keeps stays on the machine
+// though syncIgnored leaves it out.
+func TestMachineKept(t *testing.T) {
+	MachineKept = []string{"theme", "appearance"}
+	defer func() { MachineKept = nil }()
+	p := Default().Prefs
+	p.Theme = "pumpkin"
+	if keys, _ := p.SyncKept(); len(keys) != 2 || !slices.Contains(keys, "theme") || !slices.Contains(keys, "appearance") {
+		t.Errorf("kept %v", keys)
+	}
+	q, err := p.WithSynced(map[string]json.RawMessage{"theme": json.RawMessage(`"qoder"`), "fontSize": json.RawMessage("12")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if q.Theme != "pumpkin" || q.FontSize != 12 {
 		t.Errorf("prefs = %+v", q)
 	}
 }

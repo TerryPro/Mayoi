@@ -23,6 +23,7 @@ import (
 	"mayoi/internal/git"
 	"mayoi/internal/highlight"
 	"mayoi/internal/remote"
+	"mayoi/internal/settings"
 	"mayoi/locales"
 )
 
@@ -70,6 +71,7 @@ func (a *app) view(c *ui.Context) {
 	a.fontTerminals()
 	a.copyTerminals()
 	p := a.pal
+	a.builds++
 	if now := c.Now(); now != a.frameAt {
 		a.frameAt = now
 		a.frame++
@@ -85,7 +87,7 @@ func (a *app) view(c *ui.Context) {
 		case t.ed != nil && t.ed.vscroll.FocusWithin(c):
 			a.focus, a.col = paneEditor, i
 			t.ed.typist = t.ed
-		case t.term != nil && t.term.view.FocusWithin(c):
+		case t.term != nil && (t.term.view.FocusWithin(c) || t.term.findInput.Focused(c)):
 			a.focus, a.col = paneEditor, i
 		case t.view != nil && t.view.pane.FocusWithin(c):
 			a.focus, a.col = paneEditor, i
@@ -97,7 +99,7 @@ func (a *app) view(c *ui.Context) {
 	}
 	a.autoSaveTick()
 	switch {
-	case a.panelTerm != nil && a.panelTerm.view.FocusWithin(c):
+	case a.panelTerm != nil && (a.panelTerm.view.FocusWithin(c) || a.panelTerm.findInput.Focused(c)):
 		a.focus = paneTerminal
 	case a.panelProblems && (a.problemsUI.listView.FocusWithin(c) || a.problemsUI.input.FocusWithin(c)):
 		a.focus = paneProblems
@@ -171,10 +173,10 @@ func (a *app) view(c *ui.Context) {
 	a.stashPickerView(c)
 	a.prPickerView(c)
 	a.prChecksView(c)
+	a.worktreePickerView(c)
 	a.repositoryPickerView(c)
 	a.recentPickerView(c)
 	a.themePickerView(c)
-	a.settingsDialogView(c)
 	a.remotePickerView(c)
 	a.conflictsView(c)
 	a.diagramOverlayView(c)
@@ -361,18 +363,21 @@ func (a *app) titleBar(c *ui.Context) {
 		rightPad = bar.Right - 2
 	}
 	ui.Row(c).Height(max(bar.Height, titleBarH)).Padding(0, rightPad, 0, bar.Left+10).AlignItems(ui.Center).
-		BorderWidth(0, 0, 1, 0).BorderColor(p.border).DragWindow().Children(func() {
-		// The layout buttons are at the right of the bar, as VS Code's:
-		// the project's sidebar, the sidebar on the right, and the
-		// terminal.
+		BorderWidth(0, 0, 1, 0).BorderColor(p.hairline()).DragWindow().Children(func() {
+		// The sidebar's button is on its side. The terminal's is on the
+		// panel's: at the left of the bar when the panel is at the
+		// window's left, past the sidebar's button when the sidebar is
+		// there too, as the panel lies past the sidebar; at the right
+		// otherwise.
+		right := a.settings.SidebarRight
+		panelLeft := a.panelSide() == "left"
 		sidebarButton := func() {
-			if a.iconButton(c, iconSidebar, a.withKey(locales.CmdViewSidebar(), "view.sidebar"), !a.window.SidebarClosed).Clicked() {
-				a.toggleSidebar()
+			icon := iconSidebar
+			if right {
+				icon = iconSidebarRight
 			}
-		}
-		sidebarRightButton := func() {
-			if a.iconButton(c, iconSidebarRight, a.withKey(locales.CmdViewSidebarRight(), "view.sidebarRight"), a.settings.SidebarRight).Clicked() {
-				a.toggleSidebarRight()
+			if a.iconButton(c, icon, a.withKey(locales.CmdViewSidebar(), "view.sidebar"), !a.window.SidebarClosed).Clicked() {
+				a.toggleSidebar()
 			}
 		}
 		terminalButton := func() {
@@ -392,14 +397,23 @@ func (a *app) titleBar(c *ui.Context) {
 					a.iconButton(c, iconMenu, locales.Menu(), false).Menu(a.appUIMenu)
 				}
 			}
+			if panelLeft {
+				terminalButton()
+			}
+			if !right {
+				sidebarButton()
+			}
 		})
 		ui.Row(c).Width(420).MaxWidthPercent(68).Shrink(1).MinWidth(140).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
 			a.commandCenter(c)
 		})
 		ui.Row(c).Basis(0).Grow(1).MinWidth(56).Justify(ui.End).Gap(2).Children(func() {
-			sidebarButton()
-			sidebarRightButton()
-			terminalButton()
+			if !panelLeft {
+				terminalButton()
+			}
+			if right {
+				sidebarButton()
+			}
 		})
 	})
 }
@@ -608,9 +622,20 @@ func (a *app) columnView(c *ui.Context, col *column) {
 						a.previewFindView(c, v)
 					}
 				default:
+					if a.editorReviewView(c, shown.ed) {
+						break
+					}
+					shown.ed.areaKept = shown.ed.areaShown(a, col)
+					if ed := shown.ed; !ed.areaKept && ed.areaCol != nil && ed.areaCol != col {
+						// Moved to another column, it gets a new text area: it
+						// comes back to its place as a tab shown again does.
+						a.hideEditor(ed)
+					}
+					shown.ed.areaCol, shown.ed.areaBuild, shown.ed.seenBuild = col, a.builds, a.builds
 					a.editorView(c, shown.ed)
 					a.hunkPeekView(c, shown.ed)
 					a.reviewBoxView(c, shown.ed)
+					a.agentContextView(c, shown.ed)
 					if col == a.findCol {
 						a.findView(c, shown.ed)
 					}
@@ -619,12 +644,54 @@ func (a *app) columnView(c *ui.Context, col *column) {
 			})
 		}
 		a.dropZones(c, col, over)
+		a.keepEditors(c, col, shown)
 	})
+}
+
+// keepTabs is how many of a column's tabs out of sight keep their text
+// areas: those shown last. The others come back with a new one.
+const keepTabs = 8
+
+// keepEditors builds the text areas of a column's tabs that showed and are
+// out of sight now, hidden, where they show: they stay as they were, the
+// heights of their rows and their place among them, for when the tab comes
+// back, rather than start anew from estimates and scroll to their caret.
+// Only the keepTabs shown last do, as an area keeps the layout of its text.
+func (a *app) keepEditors(c *ui.Context, col *column, shown *colTab) {
+	kept := a.keptTabs[:0]
+	for _, t := range col.tabs {
+		if d := t.ed; t != shown && d != nil && d.areaShown(a, col) {
+			kept = append(kept, t)
+		}
+	}
+	if len(kept) > keepTabs {
+		slices.SortStableFunc(kept, func(x, y *colTab) int { return y.ed.seenBuild - x.ed.seenBuild })
+		kept = kept[:keepTabs]
+	}
+	for _, t := range kept {
+		d := t.ed
+		d.areaCol, d.areaBuild = col, a.builds
+		ui.Column(c.Key(t.id)).Hidden(true).Children(func() {
+			ui.ScrollHorizontal(c).Children(func() {
+				ui.TextAreaBufferBase(c, d.buf)
+			})
+		})
+	}
+	clear(kept)
+	a.keptTabs = kept[:0]
 }
 
 func (a *app) hideEditor(d *editor) {
 	if !d.hidden {
 		d.hidden, d.hiddenY = true, d.vscroll.Y
+		if d.areaCol == nil {
+			return // never shown: no area laid its lines out
+		}
+		snap := d.buf.Snapshot()
+		g := a.geometry(d, snap.LineCount())
+		top := g.at(d.vscroll.Y - editorPadY)
+		d.hiddenAt, _ = snap.LineRange(top)
+		d.hiddenOff, d.hiddenPlaced = editorPadY+g.top(top)-d.vscroll.Y, true
 	}
 }
 
@@ -850,9 +917,20 @@ func (a *app) breadcrumbs(c *ui.Context, col *column, t *colTab) {
 				ui.Icon(c, iconChevronRight).FontSize(11).TextColor(p.faint)
 			}
 		}
-		if d != nil && canPreview(d.document) {
+		if d != nil && (canPreview(d.document) || a.settings.EditorAgentContext) {
 			ui.Spacer(c)
-			a.previewButton(c, t, d)
+			if a.settings.EditorAgentContext {
+				a.reviewSendButton(c)
+				if len(a.review.notes) > 0 {
+					b := ui.ButtonBase(c.Key("agent-context-list")).Size(26, crumbsH-6).Radius(4).
+						AlignItems(ui.Center).Justify(ui.Center).Label(locales.AgentContextList()).Tooltip(locales.AgentContextList())
+					b.Children(func() { ui.Icon(c, iconMore).FontSize(14).TextColor(p.muted) })
+					b.Menu(a.reviewMenu)
+				}
+			}
+			if canPreview(d.document) {
+				a.previewButton(c, t, d)
+			}
 		}
 		if t.diff != nil {
 			ui.Spacer(c)
@@ -972,7 +1050,7 @@ func (a *app) statusFit(c *ui.Context, width float32) statusVisibility {
 		snap := d.buf.Snapshot()
 		n := snap.LineCount()
 		used += measure(locales.StatusPos(n, 999), false)
-		if a.settings.Vim {
+		if a.prefs().Vim {
 			// The mode's badge, and the keys typed after it.
 			used += measure(d.vim.mode.String(), false) + 2*6
 			if k := d.vim.pending(); k != "" {
@@ -1118,7 +1196,7 @@ func (a *app) statusBar(c *ui.Context) {
 	width, _ := c.Size()
 	visible := a.statusFit(c, width)
 	ui.Row(c).Height(statusBarH).Padding(0, 6).Gap(2).AlignItems(ui.Center).Background(p.status).
-		BorderWidth(1, 0, 0, 0).BorderColor(p.border).Children(func() {
+		BorderWidth(1, 0, 0, 0).BorderColor(p.hairline()).Children(func() {
 		text := func(s string) ui.Element {
 			return ui.Text(c, s).FontSize(11.5).TextColor(p.statusFg).SingleLine()
 		}
@@ -1199,7 +1277,9 @@ func (a *app) statusBar(c *ui.Context) {
 				text(busy)
 			})
 		}
-		if busy := repo.git.busy; busy != "" {
+		if busy := repo.git.busy; busy != "" && a.settings.Theme == themeClaude {
+			a.claudeSpinner(c, busy)
+		} else if busy != "" {
 			ui.Row(c.Key("status:busy")).Height(statusBarH).Padding(0, 6).Gap(5).AlignItems(ui.Center).Children(func() {
 				// In a theme with a character, it hops for it instead.
 				if a.themeMascot() == nil {
@@ -1258,12 +1338,16 @@ func (a *app) statusBar(c *ui.Context) {
 		switch {
 		case a.settings.LSP && server != nil && server.err != "" && server.client == nil:
 			// A language server that cannot start, its error a tooltip.
-			item("lsp", locales.LspUnavailable(), server.err, iconTriangleAlert, a.openSettingsDialog)
+			item("lsp", locales.LspUnavailable(), server.err, iconTriangleAlert, func() {
+				a.host.showSettings(settings.CatGeneral, "lsp")
+			})
 		case errors+warnings > 0:
 			n := strconv.Itoa(errors + warnings)
 			item("lsp", n, locales.LspProblems(n), iconTriangleAlert, a.openProblems)
 		case server != nil && server.client != nil:
-			item("lsp", "LSP", locales.LspRunning(), iconBraces, a.openSettingsDialog)
+			item("lsp", "LSP", locales.LspRunning(), iconBraces, func() {
+				a.host.showSettings(settings.CatGeneral, "lsp")
+			})
 		}
 		if d.diskGone {
 			ui.Row(c).Padding(0, 6).Gap(5).AlignItems(ui.Center).Children(func() {
@@ -1273,7 +1357,7 @@ func (a *app) statusBar(c *ui.Context) {
 		}
 		snap := d.buf.Snapshot()
 		caret := min(d.caret, snap.Len())
-		if a.settings.Vim && d.vim.mode.visual() {
+		if a.prefs().Vim && d.vim.mode.visual() {
 			caret = vimCursor(d, snap)
 		}
 		line := snap.LineAt(caret)
@@ -1282,7 +1366,7 @@ func (a *app) statusBar(c *ui.Context) {
 		if n := abs(d.sel[1] - d.sel[0]); n > 0 {
 			pos += locales.StatusSelected(n)
 		}
-		if a.settings.Vim {
+		if a.prefs().Vim {
 			a.vimBadge(c, &d.vim, text)
 		}
 		item("pos", pos, a.withKey(locales.GoToLineLabel(), "go.line"), nil, func() { a.openQuick(":") })
