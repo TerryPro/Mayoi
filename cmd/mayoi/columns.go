@@ -160,6 +160,19 @@ func (a *app) activeEditor() *editor {
 	return nil
 }
 
+// shownPath returns the file the Explorer shows the outline and timeline
+// of: the active editor's, or the file of the diff in the active tab, as
+// VS Code keeps them on the file a diff shows.
+func (a *app) shownPath() string {
+	if d := a.activeEditor(); d != nil {
+		return d.path
+	}
+	if t := a.activeTab(); t != nil && t.diff != nil {
+		return t.diff.shownPath()
+	}
+	return ""
+}
+
 // activeViewer returns the viewer shown in the column that has the
 // keyboard: an image or a document's preview. Nil when it shows none.
 func (a *app) activeViewer() *viewer {
@@ -895,7 +908,8 @@ func (a *app) rememberTabs() {
 			case t.term != nil:
 				ts = settings.Tab{Terminal: true, HC: t.term.hc}
 			case t.diff != nil && t.diff.commit != nil:
-				ts = settings.Tab{Diff: "commit:" + t.diff.commit.key(), Layout: t.diff.layout.key(), Transient: t.transient}
+				ts = settings.Tab{Diff: "commit:" + t.diff.commit.key(), DiffFile: t.diff.commit.only,
+					Layout: t.diff.layout.key(), Transient: t.transient}
 			case t.diff != nil:
 				ts = settings.Tab{Diff: "all", Layout: t.diff.layout.key()}
 			case t.merge != nil:
@@ -1097,8 +1111,17 @@ func (a *app) restoreTabs() {
 				}
 			case strings.HasPrefix(ts.Diff, "commit:"):
 				hash := strings.TrimPrefix(ts.Diff, "commit:")
-				if c, _ := a.commitTab(hash, ts.RepoRoot); c == nil && hash != "" {
+				only := ts.DiffFile
+				var c *column
+				if only != "" {
+					c, _ = a.fileCommitTab(hash, only, ts.RepoRoot)
+				} else {
+					c, _ = a.commitTab(hash, ts.RepoRoot)
+				}
+				if c == nil && hash != "" {
 					v := newCommitView(parseDiffLayout(ts.Layout), hash, git.Commit{})
+					v.commit.only = only
+					v.titlePath = only
 					v.repoRoot = ts.RepoRoot
 					a.addTab(col, len(col.tabs), &colTab{diff: v, transient: ts.Transient})
 					a.activate(col, len(col.tabs)-1, false)

@@ -320,6 +320,15 @@ func (a *gitContext) showCommit(cm git.Commit, focus bool) *diffView {
 	}
 	return nil
 }
+
+// showFileCommit shows only one file's change in a commit, as the timeline
+// does.
+func (a *gitContext) showFileCommit(cm git.Commit, path string, focus bool) *diffView {
+	if a.git.repo != nil {
+		return a.app.showFileCommit(cm, path, focus, a.git.repo.Root)
+	}
+	return nil
+}
 func (a *gitContext) previewCommit(cm git.Commit) *diffView {
 	if a.git.repo != nil {
 		return a.app.previewCommit(cm, a.git.repo.Root)

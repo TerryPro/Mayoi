@@ -5,6 +5,12 @@ needs a `## <version>` section here, or its build fails.
 
 ## Unreleased
 
+- The Explorer shows a timeline of the file shown, with each change's kind, author and time.
+- A click on a timeline change opens only that file's change in the commit, named with both versions.
+- A commit's file, right-clicked in **Source Control**, opens only that file's change in the commit.
+- The timeline folds behind its header, its splitter sets its height, and the window remembers both.
+- Dragging the timeline's splitter no longer moves the outline, and a folded tree gives it more room.
+- The Explorer's folder row folds the file tree away with a chevron, and shows it again.
 - The Explorer shows an outline of the file shown under the files, with its declarations nested.
 - A click on an outline declaration goes to its line, and its arrow folds the declarations under it.
 - The outline's header folds the section, and dragging its splitter sets how tall it is.

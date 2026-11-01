@@ -12,6 +12,7 @@ import (
 
 	"mayoi/internal/bg"
 	"mayoi/internal/highlight"
+	"mayoi/internal/settings"
 	"mayoi/internal/symbols"
 	"mayoi/locales"
 )
@@ -88,6 +89,59 @@ const (
 	outlineRowH  = 22
 )
 
+// explorerChromeH is what the Explorer's switches and folder row take
+// above its views, and explorerFilesMinH the least the files keep under
+// the outline and the timeline.
+const (
+	explorerChromeH   = 34 + 24
+	explorerFilesMinH = 24
+)
+
+// explorerPaneHeight is the height the Explorer's files, outline and
+// timeline share, under its switches and folder row.
+func explorerPaneHeight(c *ui.Context) float32 {
+	_, h := c.Size()
+	return h - titleBarH - statusBarH - explorerChromeH
+}
+
+// sidebarArrow is the fold arrow of a sidebar row, in a box that lines it
+// up with the arrows of the other rows and starts their titles together.
+func sidebarArrow(c *ui.Context, open bool, col ui.Color) ui.Element {
+	b := ui.Box(c).Width(16).Height(18).Shrink(0).Justify(ui.Center).AlignItems(ui.Center)
+	b.Children(func() { chevron(c, open).FontSize(11).TextColor(col) })
+	return b
+}
+
+// explorerSectionHeights returns how tall the Explorer's outline and
+// timeline show in pane, and the most each may be dragged to. The outline
+// is kept at its own height while the timeline is dragged: it reserves
+// the timeline at its least, not at its own height.
+func explorerSectionHeights(pane float32, w *settings.Window, position string) (outline, timeline, outlineMax, timelineMax float32) {
+	treeMin := float32(explorerFilesMinH)
+	if w.FilesClosed {
+		treeMin = 0
+	}
+	timelineReserve := float32(timelineHeadH)
+	if w.TimelineOpen {
+		timelineReserve = timelineMinH
+	}
+	outlineMax = max(pane-timelineReserve-treeMin, outlineMinH)
+	outline = outlineHeadH
+	if position != "view" && !w.OutlineClosed {
+		outline = clamp(w.OutlineHeight, outlineMinH, outlineMax)
+	}
+	outlineReserve := float32(outlineHeadH)
+	if position != "view" && !w.OutlineClosed {
+		outlineReserve = outline
+	}
+	timelineMax = max(pane-outlineReserve-treeMin, timelineMinH)
+	timeline = timelineHeadH
+	if w.TimelineOpen {
+		timeline = clamp(w.TimelineHeight, timelineMinH, timelineMax)
+	}
+	return
+}
+
 // outlineAllKinds are the kinds of declaration the outline knows, in the
 // order it groups them.
 var outlineAllKinds = []string{"namespace", "class", "interface", "type", "enum", "function", "method", "variable", "heading"}
@@ -117,7 +171,7 @@ var outlineKindRank = map[string]int{"namespace": 0, "class": 1, "interface": 2,
 // read again.
 func (a *app) outlineSymbols() ([]symbols.Symbol, bool) {
 	o := &a.outline
-	d := a.activeEditor()
+	d := a.outlineDoc()
 	if d == nil {
 		return nil, true
 	}
@@ -169,7 +223,7 @@ func (a *app) outlineSymbols() ([]symbols.Symbol, bool) {
 // outlineTree returns the tree of the outline, and whether its symbols are
 // ready, worked out again only as the text or its settings change.
 func (a *app) outlineTree() ([]*outlineNode, bool) {
-	if a.activeEditor() == nil {
+	if a.outlineDoc() == nil {
 		return nil, true
 	}
 	o := &a.outline
@@ -315,10 +369,26 @@ func outlineFlatten(nodes []*outlineNode, path string, collapsed map[string]bool
 	}
 }
 
+// outlineDoc returns the document the Explorer's outline is of: the
+// active editor's, or the one open of the file a diff shows.
+func (a *app) outlineDoc() *document {
+	if d := a.activeEditor(); d != nil {
+		return d.document
+	}
+	path := a.shownPath()
+	if path == "" {
+		return nil
+	}
+	if i := a.docIndex(path); i >= 0 {
+		return a.docs[i]
+	}
+	return nil
+}
+
 // outlineDocKey names the document the outline shows, for the folded
 // state of its declarations.
 func (a *app) outlineDocKey() string {
-	d := a.activeEditor()
+	d := a.outlineDoc()
 	if d == nil {
 		return ""
 	}
@@ -336,7 +406,7 @@ func (a *app) outlineView(c *ui.Context) {
 		ui.Row(c).Height(26).Padding(0, 10, 0, 12).Gap(6).AlignItems(ui.Center).
 			BorderWidth(0, 0, 1, 0).BorderColor(p.border).Children(func() {
 			name := ""
-			if d := a.activeEditor(); d != nil {
+			if d := a.outlineDoc(); d != nil {
 				name = d.title
 				if d.path != "" {
 					name = filepath.Base(d.path)
@@ -358,9 +428,7 @@ func (a *app) outlineView(c *ui.Context) {
 func (a *app) outlineSection(c *ui.Context, above bool) {
 	p, w := a.pal, a.window
 	open := !w.OutlineClosed
-	_, windowH := c.Size()
-	room := windowH - titleBarH - statusBarH - outlineHeadH
-	height := clamp(w.OutlineHeight, outlineMinH, max(room-outlineMinH, outlineMinH))
+	height, _, maxH, _ := explorerSectionHeights(explorerPaneHeight(c), w, a.settings.OutlinePosition)
 	box := ui.Column(c.Key("outline-section")).Shrink(0).Background(p.chrome)
 	if above {
 		box.BorderWidth(0, 0, 1, 0)
@@ -384,7 +452,7 @@ func (a *app) outlineSection(c *ui.Context, above bool) {
 			edge, drag = edgeBottom, float32(1)
 		}
 		a.splitter(c, edge, func(d float32) {
-			w.OutlineHeight = clamp(w.OutlineHeight+drag*d, outlineMinH, max(room-outlineMinH, outlineMinH))
+			w.OutlineHeight = clamp(w.OutlineHeight+drag*d, outlineMinH, maxH)
 		})
 	})
 }
@@ -396,7 +464,7 @@ func (a *app) outlineHeader(c *ui.Context, open bool) {
 	b := ui.ButtonBase(c.Key("outline-header")).Height(outlineHeadH).Padding(0, 4, 0, 8).Gap(4).
 		Justify(ui.Start).AlignItems(ui.Center).Label(locales.OutlineTitle())
 	b.Children(func() {
-		chevron(c, open).FontSize(11).TextColor(p.muted)
+		sidebarArrow(c, open, p.muted)
 		ui.Text(c, strings.ToUpper(locales.OutlineTitle())).FontSize(11).FontWeight(600).
 			LetterSpacing(titleSpacing).TextColor(p.muted).SingleLine()
 		ui.Spacer(c)
@@ -424,7 +492,7 @@ func (a *app) outlineBody(c *ui.Context) {
 	rows := a.outlineRows()
 	if len(rows) == 0 {
 		msg := locales.OutlineNoSymbols()
-		if a.activeEditor() == nil {
+		if a.outlineDoc() == nil && a.shownPath() == "" {
 			msg = locales.OutlineNoFile()
 		}
 		a.outlineNote(c, msg)
@@ -542,19 +610,32 @@ func (a *app) foldOutlineNode(n *outlineNode, folded bool) {
 
 // openOutlineNode shows the line of a declaration, and chooses its name.
 func (a *app) openOutlineNode(n *outlineNode) {
-	a.editActive(func(d *editor) {
-		snap := d.buf.Snapshot()
-		if snap.LineCount() == 0 {
-			return
-		}
-		line := min(max(n.sym.Line, 0), snap.LineCount()-1)
-		a.jumpToScope(d, line)
-		s, e := snap.LineRange(line)
-		text := snap.Slice(s, e)
-		at := s + min(n.sym.Col, utf8.RuneCountInString(text))
-		d.selectRange(at, at+utf8.RuneCountInString(n.sym.Name), false)
-		d.lightLanding()
-	})()
+	path := a.shownPath()
+	if path == "" {
+		return
+	}
+	if d := a.activeEditor(); d != nil && d.path == path {
+		a.editActive(func(d *editor) { a.revealOutlineSymbol(d, n) })()
+		return
+	}
+	// The outline is of a diff's file: its text opens in a tab there.
+	a.openFileAt(path, n.sym.Line, true)
+}
+
+// revealOutlineSymbol moves an editor to the line of a declaration, and
+// chooses its name.
+func (a *app) revealOutlineSymbol(d *editor, n *outlineNode) {
+	snap := d.buf.Snapshot()
+	if snap.LineCount() == 0 {
+		return
+	}
+	line := min(max(n.sym.Line, 0), snap.LineCount()-1)
+	a.jumpToScope(d, line)
+	s, e := snap.LineRange(line)
+	text := snap.Slice(s, e)
+	at := s + min(n.sym.Col, utf8.RuneCountInString(text))
+	d.selectRange(at, at+utf8.RuneCountInString(n.sym.Name), false)
+	d.lightLanding()
 }
 
 // showOutline shows the outline in a view of the sidebar of its own.

@@ -99,11 +99,28 @@ func (a *app) sidebar(c *ui.Context) {
 // explorerView is the Explorer's files, and the outline of the document
 // shown under them, above them, or in a view of its own.
 func (a *app) explorerView(c *ui.Context, hovered bool) {
-	p := a.pal
+	p, w := a.pal, a.window
 	// The folder's row, with the explorer's actions while the pointer
 	// is over the sidebar or the tree has the keyboard: on the title's
 	// row, they would leave the title no room.
-	ui.Row(c).Height(24).Padding(0, 6, 0, 16).Gap(2).AlignItems(ui.Center).Children(func() {
+	ui.Row(c).Height(24).Padding(0, 4, 0, 8).Gap(4).AlignItems(ui.Center).Children(func() {
+		closed := w.FilesClosed
+		label := locales.ExplorerHideFiles()
+		if closed {
+			label = locales.ExplorerShowFiles()
+		}
+		fold := ui.ButtonBase(c.Key("explorer-fold")).Size(16, 18).Radius(3).
+			Justify(ui.Center).AlignItems(ui.Center).Label(label).Tooltip(label)
+		fold.Children(func() { chevron(c, !closed).FontSize(11).TextColor(p.muted) })
+		if fold.Hovered() {
+			fold.Background(p.hover)
+		}
+		fold.Transition(hoverFade)
+		if fold.Clicked() {
+			w.FilesClosed = !closed
+			a.settings.Changed()
+			a.invalidate()
+		}
 		ui.Text(c, strings.ToUpper(filepath.Base(a.root))).FontSize(11).FontWeight(700).LetterSpacing(0.4).
 			TextColor(p.text).SingleLine().Grow(1)
 		if !hovered && !a.files.List.FocusWithin(c) {
@@ -123,26 +140,39 @@ func (a *app) explorerView(c *ui.Context, hovered bool) {
 			a.files.Open.Clear()
 		}
 	})
-	if t := a.tree; t.Loaded(a.root) && len(t.Children(a.root)) == 0 {
-		a.emptyFolder(c)
+	closed := w.FilesClosed
+	if !closed {
+		if t := a.tree; t.Loaded(a.root) && len(t.Children(a.root)) == 0 {
+			a.emptyFolder(c)
+		}
+		if a.conn != nil && !a.tree.Loaded(a.root) {
+			a.remoteTreeWaits(c)
+			return
+		}
 	}
-	if a.conn != nil && !a.tree.Loaded(a.root) {
-		a.remoteTreeWaits(c)
-		return
-	}
-	// The outline is beside the files unless it has a view of its own.
+	// The outline is beside the files unless it has a view of its own, and
+	// the timeline is under them both.
 	above := a.settings.OutlinePosition == "above"
 	if a.settings.OutlinePosition == "view" {
-		a.fileTree(c)
+		if !closed {
+			a.fileTree(c)
+		}
+		a.timelineSection(c, closed)
 		return
 	}
 	if above {
 		a.outlineSection(c, true)
-		a.fileTree(c)
+		if !closed {
+			a.fileTree(c)
+		}
+		a.timelineSection(c, closed)
 		return
 	}
-	a.fileTree(c)
+	if !closed {
+		a.fileTree(c)
+	}
 	a.outlineSection(c, false)
+	a.timelineSection(c, closed)
 }
 
 // emptyFolder is what the explorer shows of a folder with no files yet,

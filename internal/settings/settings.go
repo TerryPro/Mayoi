@@ -382,10 +382,16 @@ type Layout struct {
 	// Explorer, or above them, and OutlineClosed hides it behind its header.
 	OutlineHeight float32 `json:"outlineHeight,omitempty"`
 	OutlineClosed bool    `json:"outlineClosed,omitempty"`
+	// TimelineOpen shows the timeline under the outline, and TimelineHeight
+	// is how tall it is.
+	TimelineOpen   bool    `json:"timelineOpen,omitempty"`
+	TimelineHeight float32 `json:"timelineHeight,omitempty"`
+	// FilesClosed folds the Explorer's file tree behind its folder's row.
+	FilesClosed bool `json:"filesClosed,omitempty"`
 }
 
 // DefaultLayout is the layout of a first launch.
-var DefaultLayout = Layout{SidebarWidth: 248, PanelHeight: 260, PanelWidth: 400, CommitFilesWidth: 240, OutlineHeight: 220}
+var DefaultLayout = Layout{SidebarWidth: 248, PanelHeight: 260, PanelWidth: 400, CommitFilesWidth: 240, OutlineHeight: 220, TimelineHeight: 190}
 
 // Normalize keeps the layout in its bounds, as base has it where it has
 // none, as a session an older version kept.
@@ -402,11 +408,15 @@ func (l *Layout) Normalize(base Layout) {
 	if l.OutlineHeight == 0 {
 		l.OutlineHeight = base.OutlineHeight
 	}
+	if l.TimelineHeight == 0 {
+		l.TimelineHeight = base.TimelineHeight
+	}
 	l.SidebarWidth = clamp(l.SidebarWidth, 160, 600)
 	l.PanelWidth = clamp(l.PanelWidth, 160, 2000)
 	l.CommitFilesWidth = clamp(l.CommitFilesWidth, 140, 800)
 	l.PanelHeight = clamp(l.PanelHeight, 100, 2000)
 	l.OutlineHeight = clamp(l.OutlineHeight, 80, 2000)
+	l.TimelineHeight = clamp(l.TimelineHeight, 80, 2000)
 }
 
 // Column is a column of the editor area, as the settings keep it.
@@ -443,7 +453,10 @@ type Tab struct {
 	// the changes of every file, against that. Layout is the diff's, as
 	// the settings' DiffLayout; Split is what an older version kept for
 	// "split". "commit:" and a hash is the changes of that commit.
-	Diff     string `json:"diff,omitempty"`
+	Diff string `json:"diff,omitempty"`
+	// DiffFile is the only file a commit's diff shows, for the timeline's
+	// tabs; empty shows every file the commit changed.
+	DiffFile string `json:"diffFile,omitempty"`
 	RepoRoot string `json:"repoRoot,omitempty"` // relative to the workspace; empty is its root repository
 	Layout   string `json:"layout,omitempty"`
 	Split    bool   `json:"split,omitempty"`

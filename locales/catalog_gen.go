@@ -10896,6 +10896,16 @@ func (msgs Messages) ScmShowCommitFiles() string {
 	return Catalog.Format(msgs.locale, "scmShowCommitFiles", nil)
 }
 
+// ScmShowThisFileChanges says "Show This File's Changes"
+// in the language the app shows.
+func ScmShowThisFileChanges() string { return In(i18n.Locale()).ScmShowThisFileChanges() }
+
+// ScmShowThisFileChanges says "Show This File's Changes"
+// in the language of msgs.
+func (msgs Messages) ScmShowThisFileChanges() string {
+	return Catalog.Format(msgs.locale, "scmShowThisFileChanges", nil)
+}
+
 // ScmHideCommitFiles says "Hide Files"
 // in the language the app shows.
 func ScmHideCommitFiles() string { return In(i18n.Locale()).ScmHideCommitFiles() }
@@ -11330,6 +11340,26 @@ func (msgs Messages) SidebarOutline() string {
 	return Catalog.Format(msgs.locale, "sidebarOutline", nil)
 }
 
+// ExplorerHideFiles says "Hide Files"
+// in the language the app shows.
+func ExplorerHideFiles() string { return In(i18n.Locale()).ExplorerHideFiles() }
+
+// ExplorerHideFiles says "Hide Files"
+// in the language of msgs.
+func (msgs Messages) ExplorerHideFiles() string {
+	return Catalog.Format(msgs.locale, "explorerHideFiles", nil)
+}
+
+// ExplorerShowFiles says "Show Files"
+// in the language the app shows.
+func ExplorerShowFiles() string { return In(i18n.Locale()).ExplorerShowFiles() }
+
+// ExplorerShowFiles says "Show Files"
+// in the language of msgs.
+func (msgs Messages) ExplorerShowFiles() string {
+	return Catalog.Format(msgs.locale, "explorerShowFiles", nil)
+}
+
 // SidebarTitleOutline says "OUTLINE"
 // in the language the app shows.
 func SidebarTitleOutline() string { return In(i18n.Locale()).SidebarTitleOutline() }
@@ -11518,6 +11548,166 @@ func OutlineKindHeadings() string { return In(i18n.Locale()).OutlineKindHeadings
 // in the language of msgs.
 func (msgs Messages) OutlineKindHeadings() string {
 	return Catalog.Format(msgs.locale, "outlineKindHeadings", nil)
+}
+
+// TimelineTitle says "TIMELINE"
+// in the language the app shows.
+func TimelineTitle() string { return In(i18n.Locale()).TimelineTitle() }
+
+// TimelineTitle says "TIMELINE"
+// in the language of msgs.
+func (msgs Messages) TimelineTitle() string {
+	return Catalog.Format(msgs.locale, "timelineTitle", nil)
+}
+
+// TimelineNoFile says "Open a file to see its timeline."
+// in the language the app shows.
+func TimelineNoFile() string { return In(i18n.Locale()).TimelineNoFile() }
+
+// TimelineNoFile says "Open a file to see its timeline."
+// in the language of msgs.
+func (msgs Messages) TimelineNoFile() string {
+	return Catalog.Format(msgs.locale, "timelineNoFile", nil)
+}
+
+// TimelineNoRepo says "This file is not in a Git repository."
+// in the language the app shows.
+func TimelineNoRepo() string { return In(i18n.Locale()).TimelineNoRepo() }
+
+// TimelineNoRepo says "This file is not in a Git repository."
+// in the language of msgs.
+func (msgs Messages) TimelineNoRepo() string {
+	return Catalog.Format(msgs.locale, "timelineNoRepo", nil)
+}
+
+// TimelineNoHistory says "This file has no history."
+// in the language the app shows.
+func TimelineNoHistory() string { return In(i18n.Locale()).TimelineNoHistory() }
+
+// TimelineNoHistory says "This file has no history."
+// in the language of msgs.
+func (msgs Messages) TimelineNoHistory() string {
+	return Catalog.Format(msgs.locale, "timelineNoHistory", nil)
+}
+
+// TimelineLoading says "Reading the history…"
+// in the language the app shows.
+func TimelineLoading() string { return In(i18n.Locale()).TimelineLoading() }
+
+// TimelineLoading says "Reading the history…"
+// in the language of msgs.
+func (msgs Messages) TimelineLoading() string {
+	return Catalog.Format(msgs.locale, "timelineLoading", nil)
+}
+
+// TimelineFailed says "Could not read the history."
+// in the language the app shows.
+func TimelineFailed() string { return In(i18n.Locale()).TimelineFailed() }
+
+// TimelineFailed says "Could not read the history."
+// in the language of msgs.
+func (msgs Messages) TimelineFailed() string {
+	return Catalog.Format(msgs.locale, "timelineFailed", nil)
+}
+
+// TimelineWorking says "Uncommitted changes"
+// in the language the app shows.
+func TimelineWorking() string { return In(i18n.Locale()).TimelineWorking() }
+
+// TimelineWorking says "Uncommitted changes"
+// in the language of msgs.
+func (msgs Messages) TimelineWorking() string {
+	return Catalog.Format(msgs.locale, "timelineWorking", nil)
+}
+
+// TimelineYou says "You"
+// in the language the app shows.
+func TimelineYou() string { return In(i18n.Locale()).TimelineYou() }
+
+// TimelineYou says "You"
+// in the language of msgs.
+func (msgs Messages) TimelineYou() string {
+	return Catalog.Format(msgs.locale, "timelineYou", nil)
+}
+
+// TimelineAdded says "Added"
+// in the language the app shows.
+func TimelineAdded() string { return In(i18n.Locale()).TimelineAdded() }
+
+// TimelineAdded says "Added"
+// in the language of msgs.
+func (msgs Messages) TimelineAdded() string {
+	return Catalog.Format(msgs.locale, "timelineAdded", nil)
+}
+
+// TimelineModified says "Modified"
+// in the language the app shows.
+func TimelineModified() string { return In(i18n.Locale()).TimelineModified() }
+
+// TimelineModified says "Modified"
+// in the language of msgs.
+func (msgs Messages) TimelineModified() string {
+	return Catalog.Format(msgs.locale, "timelineModified", nil)
+}
+
+// TimelineDeleted says "Deleted"
+// in the language the app shows.
+func TimelineDeleted() string { return In(i18n.Locale()).TimelineDeleted() }
+
+// TimelineDeleted says "Deleted"
+// in the language of msgs.
+func (msgs Messages) TimelineDeleted() string {
+	return Catalog.Format(msgs.locale, "timelineDeleted", nil)
+}
+
+// TimelineRenamed says "Renamed"
+// in the language the app shows.
+func TimelineRenamed() string { return In(i18n.Locale()).TimelineRenamed() }
+
+// TimelineRenamed says "Renamed"
+// in the language of msgs.
+func (msgs Messages) TimelineRenamed() string {
+	return Catalog.Format(msgs.locale, "timelineRenamed", nil)
+}
+
+// TimelineCopied says "Copied"
+// in the language the app shows.
+func TimelineCopied() string { return In(i18n.Locale()).TimelineCopied() }
+
+// TimelineCopied says "Copied"
+// in the language of msgs.
+func (msgs Messages) TimelineCopied() string {
+	return Catalog.Format(msgs.locale, "timelineCopied", nil)
+}
+
+// TimelineMerge says "Merge"
+// in the language the app shows.
+func TimelineMerge() string { return In(i18n.Locale()).TimelineMerge() }
+
+// TimelineMerge says "Merge"
+// in the language of msgs.
+func (msgs Messages) TimelineMerge() string {
+	return Catalog.Format(msgs.locale, "timelineMerge", nil)
+}
+
+// TimelineCompare says "Compare with Previous Version"
+// in the language the app shows.
+func TimelineCompare() string { return In(i18n.Locale()).TimelineCompare() }
+
+// TimelineCompare says "Compare with Previous Version"
+// in the language of msgs.
+func (msgs Messages) TimelineCompare() string {
+	return Catalog.Format(msgs.locale, "timelineCompare", nil)
+}
+
+// TimelineShowMore says "Show More"
+// in the language the app shows.
+func TimelineShowMore() string { return In(i18n.Locale()).TimelineShowMore() }
+
+// TimelineShowMore says "Show More"
+// in the language of msgs.
+func (msgs Messages) TimelineShowMore() string {
+	return Catalog.Format(msgs.locale, "timelineShowMore", nil)
 }
 
 // StageAllCommit says "Stage All & Commit"

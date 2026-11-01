@@ -448,6 +448,9 @@ func (a *gitContext) scmCommitFile(c *ui.Context, i int, r scmRow, action *func(
 	if r.dir == "" && r.note == "" {
 		row.Tooltip(a.git.repo.Rel(r.e.Path))
 		row.ContextMenu(func(m *ui.Menu) {
+			if m.Item(locales.ScmShowThisFileChanges()).Chosen() {
+				*action = func() { a.showFileCommit(*cm, r.e.Path, true) }
+			}
 			if m.Item(locales.CmdGitOpenChanges()).Chosen() {
 				*action = func() { a.showCommitFile(*cm, r.e.Path, true) }
 			}

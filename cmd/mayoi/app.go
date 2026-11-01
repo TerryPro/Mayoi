@@ -284,6 +284,7 @@ type app struct {
 	problemsCache problemsCache // what the panel last worked out
 	problemsGen   int           // counts the changes of the diagnostics
 	outline       outlineState  // the declarations of the document shown
+	timeline      timelineState // the history of the file shown
 	complete      completionState
 	hover         hoverState
 	fix           fixState
@@ -393,7 +394,7 @@ const (
 func newApp(h host, s *settings.Settings, w *settings.Window) *app {
 	a := &app{host: h, settings: s, window: w, fileRow: -1}
 	w.Normalize(settings.DefaultLayout)
-	a.scm.row, a.inFiles.row = -1, -1
+	a.scm.row, a.inFiles.row, a.outline.row, a.timeline.row = -1, -1, -1, -1
 	a.files.List.Selected = &a.fileRow
 	a.cols = []*column{a.newColumn()}
 	return a
