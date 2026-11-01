@@ -312,14 +312,17 @@ func (f *diffFile) counts() (add, del int) {
 // lines removed and added interleaved, or side by side, and those
 // unchanged away from them folded.
 type diffView struct {
-	repoRoot  string // work tree that owns this view, fixed when opened
-	layout    diffLayout
-	split     bool // as the layout and the width chose last
-	full      bool // every unchanged line shows
-	local     bool // a comparison of two local files, outside Git status
-	wrap      *bool
-	wrapGen   int
-	titlePath string // the file a timeline comparison names in its tab
+	repoRoot string // work tree that owns this view, fixed when opened
+	layout   diffLayout
+	split    bool // as the layout and the width chose last
+	full     bool // every unchanged line shows
+	local    bool // a comparison of two local files, outside Git status
+	wrap     *bool
+	wrapGen  int
+
+	// titlePath is the file a timeline comparison names in its tab, apart
+	// from upstream's fields so that they hold their shape.
+	titlePath string
 
 	files []*diffFile
 	// status is the status of the repository the files were listed from.
@@ -425,7 +428,8 @@ type commitDiff struct {
 	from string
 	// only is the file a timeline shows, of all the commit changed; "" for
 	// every file.
-	only            string
+	only string
+
 	info            git.Commit
 	files           []git.CommitFile
 	loading, loaded bool
@@ -506,11 +510,7 @@ func newCommitView(layout diffLayout, key string, info git.Commit) *diffView {
 		return v
 	}
 	if from, to, ok := strings.Cut(key, ".."); ok {
-		if info.Hash == "" {
-			info = git.Commit{Hash: to}
-		}
-		info.Hash, info.Parents = to, []string{from}
-		v.commit = &commitDiff{hash: to, from: from, info: info}
+		v.commit = &commitDiff{hash: to, from: from, info: forkCommitInfo(from, to, info)}
 		return v
 	}
 	v.commit = &commitDiff{hash: key, info: info}
@@ -538,14 +538,13 @@ func (v *diffView) name() string {
 			return c.pr.name()
 		}
 		if c.from != "" {
-			if v.titlePath != "" {
-				name := filepath.Base(v.titlePath)
-				return name + " (" + git.ShortHash(c.from) + ") ↔ " + name + " (" + git.ShortHash(c.hash) + ")"
+			if title := v.fileTitle(c.from, c.hash); title != "" {
+				return title
 			}
 			return git.ShortHash(c.from) + " → " + git.ShortHash(c.hash)
 		}
-		if v.titlePath != "" {
-			return filepath.Base(v.titlePath) + " (" + git.ShortHash(c.hash) + ")"
+		if title := v.fileTitle("", c.hash); title != "" {
+			return title
 		}
 		if c.info.Subject != "" {
 			return c.info.Subject
@@ -759,24 +758,6 @@ func (a *app) commitTab(hash string, roots ...string) (*column, int) {
 	return nil, -1
 }
 
-// fileCommitTab returns the tab of a commit's changes in only one file,
-// nil when none shows it.
-func (a *app) fileCommitTab(hash, only string, roots ...string) (*column, int) {
-	root := a.diffRoot(roots)
-	for _, col := range a.cols {
-		if col.locked {
-			continue
-		}
-		for i, t := range col.tabs {
-			if t.diff != nil && t.diff.commit != nil && t.diff.commit.only == only &&
-				t.diff.commit.key() == hash && a.diffBelongs(t.diff, root) {
-				return col, i
-			}
-		}
-	}
-	return nil, -1
-}
-
 // showCommit shows the changes of a commit in a tab of its own, made after
 // the tab shown of the column that has the keyboard when there is none,
 // and returns its diff.
@@ -790,61 +771,6 @@ func (a *app) showCommit(c git.Commit, focus bool, roots ...string) *diffView {
 	col := a.fileColumn()
 	at := min(col.active+1, len(col.tabs))
 	v := newCommitView(parseDiffLayout(a.settings.DiffLayout), c.Hash, c)
-	v.repoRoot = root
-	a.addTab(col, at, &colTab{diff: v})
-	a.activate(col, at, focus)
-	a.rememberTabs()
-	return v
-}
-
-// showFileCommit shows the changes a commit made to only one file in a tab
-// of its own, against the commit's first parent, and returns its diff.
-func (a *app) showFileCommit(c git.Commit, only string, focus bool, roots ...string) *diffView {
-	key := c.Hash
-	if len(c.Parents) > 0 {
-		key = c.Parents[0] + ".." + c.Hash
-	}
-	root := a.diffRoot(roots)
-	if col, i := a.fileCommitTab(key, only, root); col != nil {
-		a.keepTab(col.tabs[i])
-		a.activate(col, i, focus)
-		return col.tabs[i].diff
-	}
-	col := a.fileColumn()
-	at := min(col.active+1, len(col.tabs))
-	v := newCommitView(parseDiffLayout(a.settings.DiffLayout), key, c)
-	v.commit.only = only
-	v.titlePath = only
-	v.repoRoot = root
-	a.addTab(col, at, &colTab{diff: v})
-	a.activate(col, at, focus)
-	a.rememberTabs()
-	return v
-}
-
-// showComparison shows the changes from one commit to another in a tab of
-// its own, of only one file when only is not "", and returns its diff.
-func (a *app) showComparison(from, to git.Commit, only string, focus bool, roots ...string) *diffView {
-	key := from.Hash + ".." + to.Hash
-	root := a.diffRoot(roots)
-	if only != "" {
-		if col, i := a.fileCommitTab(key, only, root); col != nil {
-			a.keepTab(col.tabs[i])
-			a.activate(col, i, focus)
-			return col.tabs[i].diff
-		}
-	} else if col, i := a.commitTab(key, root); col != nil {
-		a.keepTab(col.tabs[i])
-		a.activate(col, i, focus)
-		return col.tabs[i].diff
-	}
-	col := a.fileColumn()
-	at := min(col.active+1, len(col.tabs))
-	v := newCommitView(parseDiffLayout(a.settings.DiffLayout), key, to)
-	v.commit.only = only
-	if only != "" {
-		v.titlePath = only
-	}
 	v.repoRoot = root
 	a.addTab(col, at, &colTab{diff: v})
 	a.activate(col, at, focus)
@@ -993,7 +919,7 @@ func (a *app) listCommitFiles(v *diffView) {
 			cm.info, cm.files = info, files
 			v.files = make([]*diffFile, 0, len(files))
 			for _, e := range commitEntries(files) {
-				if cm.only != "" && e.Path != cm.only && e.Orig != cm.only {
+				if !cm.showsFile(e) {
 					continue
 				}
 				f := &diffFile{path: e.Path, base: diffCommit, group: groupCommits, letter: e.X, gitStale: true}
@@ -1879,30 +1805,6 @@ func (v *diffView) fileAt(k int) *diffFile {
 	return v.files[v.rows[v.starts[k]].file]
 }
 
-// shownPath returns the path of the file a diff shows: the one at its
-// cursor, the one at the top of a commit's files, or the one it is about
-// to reveal when its files are not read yet.
-func (v *diffView) shownPath() string {
-	if v.cursor >= 0 && v.cursor < len(v.rows) {
-		if i := v.rows[v.cursor].file; i >= 0 && i < len(v.files) {
-			return v.files[i].path
-		}
-	}
-	if v.tree.top != nil {
-		return v.tree.top.path
-	}
-	if v.synced != nil {
-		return v.synced.path
-	}
-	if v.reveal != nil {
-		return v.reveal.path
-	}
-	if len(v.files) > 0 {
-		return v.files[0].path
-	}
-	return ""
-}
-
 // atEdge reports whether the kth change of a diff is the last of its
 // file for a step of 1, or the first for -1.
 func (v *diffView) atEdge(k, step int) bool {
@@ -2332,9 +2234,7 @@ func (a *app) openFileAt(path string, line int, focus bool) {
 	// The line is in the text, whatever markdownPreview says.
 	a.openText(func() { a.openPath(path, focus) })
 	if d := a.activeEditor(); d != nil && d.path == path {
-		if d.loading {
-			// The text comes in a frame: the line waits for it.
-			d.seekLine, d.seekChar = line, 0
+		if a.deferSeek(d, line) {
 			return
 		}
 		if a.review.ed == d {

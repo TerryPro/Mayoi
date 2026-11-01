@@ -10,17 +10,15 @@ import (
 
 	"mayoi/internal/highlight"
 	"mayoi/internal/linediff"
-	"mayoi/internal/lsp"
 	"mayoi/internal/settings"
 	"mayoi/locales"
 )
 
 const (
-	nearRows   = 3 // how far past an edge of the view an edit scrolls as little as it takes
+	nearRows   = 3  // how far past an edge of the view an edit scrolls as little as it takes
 	editorPadY = 8  // above the first line
 	gutterGap  = 10 // between the line numbers and the text
 	textPadR   = 32 // right of the widest line
-	foldBadgeW = 36 // the width of a folded block's {…}
 	// widestWhole is the size of the largest text, in bytes, whose longest
 	// line is measured again at every edit: that of a larger one only grows.
 	widestWhole = 1 << 20
@@ -216,11 +214,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 	snap := d.buf.Snapshot()
 	edited := snap.Version() != d.version
 	d.version = snap.Version()
-	if len(d.folds) > 0 {
-		a.refreshFolds(d, snap)
-	}
-	a.clampFoldSelection(d)
-	a.requestLSPFolds(d, snap)
+	a.editorForkHooks(d, snap)
 	lines := snap.LineCount()
 	gutterW := a.editorGutterWidth(lines)
 	d.gutterW = gutterW
@@ -268,10 +262,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 			Label(locales.EditorLabel(d.name())).
 			ReadOnly(vimKeys || a.chording() || d.locked())
 		a.takeKeys(area, placeEditor, func(ev ui.InputEvent) bool {
-			if a.completionKey(d, ev) {
-				return true
-			}
-			if a.fixKey(d, ev) {
+			if a.editorForkKeys(d, ev) {
 				return true
 			}
 			switch ev.Kind {
@@ -319,40 +310,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 				d.vscroll.Y = max(0, editorPadY+g.top(keepLine)-keepY)
 			}
 		}
-		// A hand over the fold marker, which folds the block on a click,
-		// over the area, whose own press would move the caret.
-		if line := d.foldHover; line >= 0 && line < lines {
-			_, folded := d.foldStarting(line)
-			_, foldable := a.foldRangeFor(d, snap, line)
-			if folded || foldable {
-				b := ui.ButtonBase(c.Key("fold-chevron:" + strconv.Itoa(line))).Absolute().
-					Left(d.hscroll.X + gutterW - 15).Top(editorPadY + g.top(line) - d.vscroll.Y).
-					Width(14).Height(f.lineH).Cursor(ui.CursorPointer)
-				if b.Clicked() {
-					a.post(func() { a.toggleFold(d, line, snap) })
-				}
-			}
-		}
-		// The end of a folded block, which unfolds it as a click does. Wrapped
-		// lines keep no place for it, where their rows end.
-		for _, fold := range d.folds {
-			if wrap || fold.start < 0 || fold.start >= lines || d.folded(fold.start) {
-				continue
-			}
-			y := editorPadY + g.top(fold.start) - d.vscroll.Y
-			if y < -f.lineH || view.H > 0 && y > view.H {
-				continue
-			}
-			s, e := snap.LineRange(fold.start)
-			text := snap.Slice(s, e)
-			bx := d.hscroll.X + textX + f.width(text) + 4
-			b := ui.ButtonBase(c.Key("fold-open:" + strconv.Itoa(fold.start))).Absolute().
-				Left(bx).Top(y).Width(foldBadgeW).Height(f.lineH).Cursor(ui.CursorPointer)
-			if b.Clicked() {
-				line := fold.start
-				a.post(func() { a.toggleFold(d, line, snap) })
-			}
-		}
+		a.editorForkOverlays(c, d, snap, g, view, gutterW, textX, f, lines)
 
 		// A new area puts the caret at the end: at the editor's selection,
 		// which is the start for a file just opened.
@@ -540,7 +498,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 			matches = a.vimMatches(d, snap, first, last)
 		}
 		deco := a.decorate(d, snap, first, last)
-		diagFile := a.lspDiags[lsp.Key(d.path)]
+		diags := a.forkProblems(d)
 		d.git.Refresh(d.path, d.buf.Snapshot(), a.post)
 		marks := d.git.Lines
 		gitRuns := d.gitRuns()
@@ -749,13 +707,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 			from, to := a.linesInView(g, top, r.H)
 			stuck := float32(len(sticky)) * lineH
 			_, numH := pt.MeasureText(0, ui.Span{Text: "0", Font: family, Size: size})
-			// The problems the language server found, as wavy underlines
-			// over the text.
-			for _, dm := range deco.diags {
-				place(r, dm.line, dm.x0, dm.x1, func(y, x0, x1 float32) {
-					wavyUnderline(pt, x0, x1, y+lineH-2, severityColor(p, dm.severity))
-				})
-			}
+			drawForkDiags(pt, r, lineH, deco, p, place)
 			number := func(i int, y float32, col ui.Color) {
 				label := strconv.Itoa(i + 1)
 				pt.RichText(x+gutterW-14-float32(len(label))*charW, y+(lineH-numH)/2, 0,
@@ -784,7 +736,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 			// Along the right edge, where the scroll bar goes, the whole
 			// document: the lines changed since the last commit, find's
 			// matches and the caret's line.
-			if lines > 1 && (len(gitRuns)+len(rows)+len(noted) > 0 || len(diagFile.diags) > 0) {
+			if lines > 1 && (len(gitRuns)+len(rows)+len(noted) > 0 || len(diags) > 0) {
 				right := x + view.W - 10
 				for _, g := range gitRuns {
 					y, h := r.Y+g.from*r.H, max((g.to-g.from)*r.H, 2)
@@ -803,14 +755,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 				for _, n := range noted {
 					pt.Fill(ui.Rect{X: right + 4, Y: r.Y + float32(n.from)/float32(lines)*r.H - 1, W: 5, H: 3}, p.accent, 1)
 				}
-				for _, dg := range diagFile.diags {
-					line := dg.Range.Start.Line
-					if line < 0 || line >= lines {
-						continue
-					}
-					y := r.Y + float32(line)/float32(lines)*r.H
-					pt.Fill(ui.Rect{X: right + 4, Y: y, W: 5, H: 2}, severityColor(p, dg.Severity), 1)
-				}
+				drawForkDiagMarks(pt, r, right, lines, diags, p)
 				caretAt := float32(caretLine) / float32(lines)
 				pt.Fill(ui.Rect{X: right, Y: r.Y + caretAt*r.H - 1, W: 9, H: 2}, p.text.Alpha(0.6), 1)
 			}
@@ -868,58 +813,10 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 					}
 					number(i, lineY(r, i), col)
 				}
-				// A fold's marker, always, and another line's while the
-				// pointer is on it, as VS Code shows them.
-				for i := from; i <= to; i++ {
-					if d.folded(i) {
-						continue
-					}
-					show, folded := false, false
-					if _, ok := d.foldStarting(i); ok {
-						show, folded = true, true
-					} else if d.foldGutter || a.settings.ShowFoldingControls == "always" {
-						// Over the markers, or as the settings always show
-						// them, every foldable line shows its own, as VS
-						// Code does.
-						if _, ok := a.foldRangeFor(d, snap, i); ok {
-							show = true
-						}
-					}
-					if !show {
-						continue
-					}
-					icon := iconChevronDown
-					if folded {
-						icon = iconChevronRight
-					}
-					side := float32(12)
-					y := lineY(r, i)
-					col := p.muted
-					if d.foldHover == i {
-						pt.Fill(ui.Rect{X: x + gutterW - 15, Y: y + 1, W: 14, H: lineH - 2}, p.hover, 3)
-						col = p.text
-					}
-					pt.Icon(icon, ui.Rect{
-						X: x + gutterW - 13, Y: y + (lineH-side)/2, W: side, H: side,
-					}, col)
-				}
+				a.drawForkFoldGutter(pt, r, d, snap, from, to, x, gutterW, lineY, lineH, p)
 			})
-			// A folded block shows where it ends, at the end of its first
-			// line. Wrapped lines keep no place for it.
 			if g.lines == nil {
-				for _, fold := range d.folds {
-					if fold.start < from || fold.start > to || d.folded(fold.start) {
-						continue
-					}
-					y := lineY(r, fold.start)
-					s, e := snap.LineRange(fold.start)
-					text := snap.Slice(s, e)
-					bx := r.X + textX + f.width(text) + 4 - d.hscroll.X
-					pt.Fill(ui.Rect{X: bx, Y: y + 1, W: foldBadgeW, H: lineH - 2}, p.active, 3)
-					span := ui.Span{Text: "{…}", Font: family, Size: size, Color: p.muted}
-					tw, th := pt.MeasureText(0, span)
-					pt.RichText(bx+(foldBadgeW-tw)/2, y+(lineH-th)/2, 0, span)
-				}
+				a.drawForkFoldBadges(pt, r, d, snap, from, to, textX, f, lineY, lineH, p)
 			}
 			for k, row := range sticky {
 				if d.folded(row.line) {
@@ -928,14 +825,7 @@ func (a *app) editorView(c *ui.Context, d *editor) {
 				number(row.line, r.Y+float32(k)*lineH, p.muted)
 			}
 		})
-		// The language server's words at the caret, and what it says of the
-		// symbol there, over the text and the area's own drawing.
-		a.completionView(c, d, func(line int) float32 {
-			return editorPadY + g.top(line) - d.vscroll.Y
-		}, textX, f.lineH, view)
-		a.fixView(c, d, func(line int) float32 {
-			return editorPadY + g.top(line) - d.vscroll.Y
-		}, textX, f.lineH, view)
+		a.lspForkOverlays(c, d, g, textX, f.lineH, view)
 	})
 	if d.coverFrame == a.frame {
 		// Built again, the text area scrolls to the selection it is given:
