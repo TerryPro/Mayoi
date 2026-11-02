@@ -3,9 +3,9 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
-
 ## Unreleased
 
+## 0.17.0
 
 - Terminal tabs show the shell's name, as PowerShell, not the path in its title.
 - Hovering a terminal in the list shows the title its shell gave and the folder it started in.
