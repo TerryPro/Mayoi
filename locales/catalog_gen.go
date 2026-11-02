@@ -1634,6 +1634,36 @@ func (msgs Messages) ButtonCancel() string {
 	return Catalog.Format(msgs.locale, "buttonCancel", nil)
 }
 
+// ButtonClose says "Close"
+// in the language the app shows.
+func ButtonClose() string { return In(i18n.Locale()).ButtonClose() }
+
+// ButtonClose says "Close"
+// in the language of msgs.
+func (msgs Messages) ButtonClose() string {
+	return Catalog.Format(msgs.locale, "buttonClose", nil)
+}
+
+// AboutVersion says "Version {version}"
+// in the language the app shows.
+func AboutVersion(version string) string { return In(i18n.Locale()).AboutVersion(version) }
+
+// AboutVersion says "Version {version}"
+// in the language of msgs.
+func (msgs Messages) AboutVersion(version string) string {
+	return Catalog.Format(msgs.locale, "aboutVersion", map[string]any{"version": version})
+}
+
+// CmdHelpAbout says "About Mayoi…"
+// in the language the app shows.
+func CmdHelpAbout() string { return In(i18n.Locale()).CmdHelpAbout() }
+
+// CmdHelpAbout says "About Mayoi…"
+// in the language of msgs.
+func (msgs Messages) CmdHelpAbout() string {
+	return Catalog.Format(msgs.locale, "cmdHelpAbout", nil)
+}
+
 // ButtonCompare says "Compare"
 // in the language the app shows.
 func ButtonCompare() string { return In(i18n.Locale()).ButtonCompare() }

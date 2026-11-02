@@ -5,6 +5,8 @@ needs a `## <version>` section here, or its build fails.
 
 ## Unreleased
 
+- **About Mayoi…** in the Help menu, or the app menu on macOS, shows the version this build runs.
+
 ## 0.17.0
 
 - Terminal tabs show the shell's name, as PowerShell, not the path in its title.

@@ -203,6 +203,7 @@ func (a *app) commandsIn(t locales.Messages) []command {
 		{"view.togglePreview", t.CmdViewTogglePreview(), "Shift+CmdOrCtrl+V", a.togglePreview},
 		{"view.previewToSide", t.CmdViewPreviewToSide(), "", a.previewToSide},
 		{"view.markdownPreview", t.CmdViewMarkdownPreview(), "", a.toggleMarkdownPreview},
+		{"help.about", t.CmdHelpAbout(), "", a.showAbout},
 		// The whole window, independent of the focused pane.
 		{"view.zoomIn", t.CmdViewZoomIn(), "CmdOrCtrl+=", func() { a.zoom(1) }},
 		{"view.zoomOut", t.CmdViewZoomOut(), "CmdOrCtrl+-", func() { a.zoom(-1) }},
@@ -545,12 +546,15 @@ func (a *app) menu(cli bool, run func(id string, win *mygo.Window)) *mygo.Menu {
 	// "Check for Updates…" after About and for settings sync, and the Help
 	// menu elsewhere with them.
 	var help []*mygo.MenuItem
-	about := []*mygo.MenuItem{{Role: mygo.RoleAbout}}
+	about := []*mygo.MenuItem{item("help.about")}
 	if mygo.Updater.Enabled() {
 		about = append(about, a.updateItem())
 		help = append(help, a.updateItem(), mygo.Separator())
 	}
 	help = append(help, account...)
+	if runtime.GOOS != "darwin" {
+		help = append(help, mygo.Separator(), item("help.about"))
+	}
 	appMenu := &mygo.MenuItem{Role: mygo.RoleAppMenu}
 	if runtime.GOOS == "darwin" {
 		help = nil
