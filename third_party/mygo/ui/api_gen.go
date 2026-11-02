@@ -5538,6 +5538,19 @@ func (_handle Element) Submitted() bool {
 	return _node.Submitted()
 }
 
+// SubmittedMods returns the modifiers held with the Enter that Submitted
+// reports, as Shift for a find field that goes back with Shift+Enter: the
+// input keeps Enter with any modifiers, so no Shortcut sees it.
+func (_handle Element) SubmittedMods() Modifiers {
+	_node := _handle.node()
+	if _node == nil {
+		return 0
+	}
+	_ctx := _node.c
+	_ = _ctx
+	return _node.SubmittedMods()
+}
+
 // TextAlign aligns the lines of text: Start, Center or End.
 func (_handle Element) TextAlign(a Align) Element {
 	_node := _handle.node()

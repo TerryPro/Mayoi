@@ -99,7 +99,51 @@ type Effects struct {
 	// 0 to remove it, 1 to set it to progress (0 to 100), 2 for an error,
 	// 3 for indeterminate progress and 4 paused.
 	Progress func(state, progress int)
+	// ProgramStatus reports what the program says it is doing (OSC
+	// 7501), checked and decoded by the library. While it is set, the
+	// terminal answers programs that ask whether it understands them.
+	ProgramStatus func(r StatusReport)
+	// PromptStart tells that the shell started a prompt (OSC 133 A).
+	PromptStart func()
 }
+
+// StatusState is what a program says it is doing (OSC 7501), a
+// GhosttyProgramStatusState.
+type StatusState int32
+
+const (
+	StatusIdle StatusState = iota
+	StatusWorking
+	StatusDone
+	StatusBlocked
+	StatusError
+	// StatusClear removes the record of the report's id and those under
+	// it, or all of them for an empty id.
+	StatusClear
+)
+
+// StatusKind is what a blocked program needs from the user, a
+// GhosttyProgramStatusKind.
+type StatusKind int32
+
+const (
+	KindNone StatusKind = iota
+	KindPermission
+	KindQuestion
+	KindAuth
+)
+
+// StatusReport is a program status report (OSC 7501). Progress is 0 to
+// 100, or -1 for none.
+type StatusReport struct {
+	State                   StatusState
+	Kind                    StatusKind
+	Progress                int
+	ID, App, Title, Message string
+}
+
+// promptStart is GHOSTTY_SEMANTIC_PROMPT_PROMPT_START.
+const promptStart = 1
 
 // terminals finds the terminal of a callback by its userdata.
 var terminals struct {
@@ -141,6 +185,8 @@ const (
 	optTerminfoName        = 37
 	optResizePullBack      = 40
 	optRenderHold          = 41
+	optSemanticPrompt      = 42
+	optProgramStatus       = 46
 
 	dataCols           = 1
 	dataRows           = 2
@@ -188,6 +234,10 @@ func NewTerminal(cols, rows int, effects Effects) (*Terminal, error) {
 	t.setValue(optDeviceAttributes, cbDeviceAttributes)
 	t.setValue(optDesktopNotification, cbDesktopNotification)
 	t.setValue(optProgressReport, cbProgressReport)
+	t.setValue(optSemanticPrompt, cbSemanticPrompt)
+	if effects.ProgramStatus != nil {
+		t.setValue(optProgramStatus, cbProgramStatus)
+	}
 	// Images of the Kitty graphics protocol are refused until SetImageLimit
 	// takes them, so that programs fall back to something else.
 	t.SetImageLimit(0)
@@ -634,7 +684,8 @@ func clamp16(v int) int { return max(1, min(v, 0xFFFF)) }
 // The callbacks of every terminal, made once: purego's are never freed.
 var (
 	cbWritePTY, cbBell, cbTitleChanged, cbPwdChanged, cbRenderHold, cbClipboardWrite, cbClipboardRead, cbSize,
-	cbColorScheme, cbDeviceAttributes, cbDesktopNotification, cbProgressReport, cbNoRead uintptr
+	cbColorScheme, cbDeviceAttributes, cbDesktopNotification, cbProgressReport, cbProgramStatus, cbSemanticPrompt,
+	cbNoRead uintptr
 )
 
 func makeCallbacks() {
@@ -813,6 +864,23 @@ func makeCallbacks() {
 		if t := terminalOf(id); t != nil && t.effects.Progress != nil {
 			p := (*progressReport)(mem(req))
 			t.effects.Progress(int(p.state), int(p.progress))
+		}
+		return 0
+	})
+	cbProgramStatus = newCallback(func(_, id, req uintptr) uintptr {
+		if t := terminalOf(id); t != nil && t.effects.ProgramStatus != nil {
+			p := (*programStatus)(mem(req))
+			t.effects.ProgramStatus(StatusReport{
+				State: StatusState(p.state), Kind: StatusKind(p.kind), Progress: int(p.progress),
+				ID: goString(p.id.ptr, p.id.len), App: goString(p.app.ptr, p.app.len),
+				Title: goString(p.title.ptr, p.title.len), Message: goString(p.message.ptr, p.message.len),
+			})
+		}
+		return 0
+	})
+	cbSemanticPrompt = newCallback(func(_, id, ev uintptr) uintptr {
+		if t := terminalOf(id); t != nil && t.effects.PromptStart != nil && (*semanticPrompt)(mem(ev)).kind == promptStart {
+			t.effects.PromptStart()
 		}
 		return 0
 	})

@@ -318,6 +318,9 @@ var enums = []struct {
 	value     int64
 }{
 	{"GhosttyKey", "A", int64(KeyA)},
+	{"GhosttyProgramStatusState", "CLEAR", int64(StatusClear)},
+	{"GhosttyProgramStatusKind", "AUTH", int64(KindAuth)},
+	{"GhosttySemanticPromptKind", "PROMPT_START", promptStart},
 	{"GhosttyKey", "ARROW_UP", int64(KeyArrowUp)},
 	{"GhosttyKey", "ESCAPE", int64(KeyEscape)},
 	{"GhosttyKey", "F1", int64(KeyF1)},

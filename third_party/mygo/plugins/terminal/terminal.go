@@ -198,6 +198,13 @@ type Options struct {
 	OnExit   func(code int)
 	OnBell   func()
 	OnNotify func(title, body string)
+	// OnProgramStatus runs on a goroutine of the terminal when what its
+	// programs say they are doing changes (OSC 7501, see ProgramStatus):
+	// once for the reports of a piece of output, or as a prompt starts
+	// (OSC 133 A) or the program ends, which drop the work that was going
+	// on. With it, the terminal tells programs that ask that it
+	// understands them.
+	OnProgramStatus func(s ProgramStatus)
 	// OnPasteStatus tells how a paste goes that a program reads itself
 	// (mode 5522, see PasteData), on a goroutine of the terminal: offered,
 	// then sending as the program reads, then sent; or not taken when the
@@ -476,6 +483,7 @@ type Terminal struct {
 	size    gridSize
 	asked   gridSize // what the view last asked Conn for, with ResizeByConn
 	events  events
+	status  statuses
 	closed  bool
 	clipOut []string // what programs copied, for the view to write
 	// clipForward are reads of the clipboard for a Mirror to pass on, with
@@ -546,6 +554,7 @@ type events struct {
 	title  bool
 	bells  int
 	notify [][2]string
+	status bool // the records changed
 }
 
 // New makes a terminal running opts.Command, or connected to opts.Conn.
@@ -560,7 +569,7 @@ func New(opts Options) (*Terminal, error) {
 	t.binds = keybinds(&opts)
 	t.size = gridSize{80, 24, 8, 16}
 	var err error
-	t.term, err = vt.NewTerminal(80, 24, vt.Effects{
+	effects := vt.Effects{
 		WritePTY: func(p []byte) {
 			if !t.replying {
 				t.in.push(append([]byte(nil), p...))
@@ -589,7 +598,20 @@ func New(opts Options) (*Terminal, error) {
 		Notify: func(title, body string) {
 			t.events.notify = append(t.events.notify, [2]string{title, body})
 		},
-	})
+		PromptStart: func() {
+			if t.status.ended() {
+				t.events.status = true
+			}
+		},
+	}
+	if opts.OnProgramStatus != nil {
+		effects.ProgramStatus = func(r vt.StatusReport) {
+			if t.status.apply(r) {
+				t.events.status = true
+			}
+		}
+	}
+	t.term, err = vt.NewTerminal(80, 24, effects)
 	if err != nil {
 		return nil, err
 	}
@@ -780,22 +802,29 @@ func (t *Terminal) write(p []byte) {
 	t.mu.Lock()
 	var ev events
 	var title string
+	var st ProgramStatus
 	if t.term != nil {
 		t.term.Write(p)
 		ev, t.events = t.events, events{}
 		if ev.title {
 			title = t.term.Title()
 		}
+		if ev.status {
+			st = t.status.snapshot()
+		}
 	}
 	t.mu.Unlock()
-	t.fire(ev, title)
+	t.fire(ev, title, st)
 	t.redraw()
 }
 
-func (t *Terminal) fire(ev events, title string) {
+func (t *Terminal) fire(ev events, title string, st ProgramStatus) {
 	o := &t.opts
 	if ev.title && o.OnTitle != nil {
 		o.OnTitle(title)
+	}
+	if ev.status && o.OnProgramStatus != nil {
+		o.OnProgramStatus(st)
 	}
 	for range ev.bells {
 		if o.OnBell != nil {
@@ -830,7 +859,13 @@ func (t *Terminal) ended() {
 		}
 		t.term.Write([]byte("\x1b[0;2m" + msg + "\x1b[0m"))
 	}
+	// The work of the program that ended ended with it.
+	changed := t.status.ended()
+	st := t.status.snapshot()
 	t.mu.Unlock()
+	if changed && t.opts.OnProgramStatus != nil {
+		t.opts.OnProgramStatus(st)
+	}
 	t.finish()
 }
 

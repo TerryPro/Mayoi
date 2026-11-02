@@ -932,3 +932,22 @@ func TestOnTextKeySeesKeysThatTypeNoText(t *testing.T) {
 		t.Fatalf("Up in an empty input: %q, want the last message", draft)
 	}
 }
+
+func TestSubmittedMods(t *testing.T) {
+	text := "x"
+	var got []Modifiers
+	tt := coreNewTester(func(c *context) {
+		in := coreTextInputBase(c, &text).Width(100).Label("find")
+		if in.Submitted() {
+			got = append(got, in.SubmittedMods())
+		}
+	}, 200, 50)
+	tt.Click("find")
+	tt.Key(0, KeyEnter)
+	tt.Frame()
+	tt.Key(Shift, KeyEnter)
+	tt.Frame()
+	if len(got) != 2 || got[0] != 0 || got[1] != Shift {
+		t.Fatalf("submitted with %v, want [0 Shift]", got)
+	}
+}

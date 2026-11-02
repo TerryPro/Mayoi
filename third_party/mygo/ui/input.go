@@ -1428,6 +1428,16 @@ func (e *node) Submitted() bool {
 	return e.st.submitted
 }
 
+// SubmittedMods returns the modifiers held with the Enter that Submitted
+// reports, as Shift for a find field that goes back with Shift+Enter: the
+// input keeps Enter with any modifiers, so no Shortcut sees it.
+func (e *node) SubmittedMods() Modifiers {
+	if !e.Submitted() {
+		return 0
+	}
+	return e.st.submitMods
+}
+
 // Dismissed reports whether pressing Escape or clicking outside closed the
 // dialog or popover (Modal, DialogBase, Popover, PopoverBase) returning the
 // element, in the frame it did, setting its *open to false: one that must

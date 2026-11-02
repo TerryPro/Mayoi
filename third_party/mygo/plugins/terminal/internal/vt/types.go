@@ -233,6 +233,23 @@ type progressReport struct {
 	progress int8
 }
 
+// programStatus is a GhosttyTerminalProgramStatus.
+type programStatus struct {
+	size                    uintptr
+	state, kind             int32
+	progress                int8
+	id, app, title, message cString
+}
+
+// semanticPrompt is a GhosttyTerminalSemanticPrompt.
+type semanticPrompt struct {
+	size               uintptr
+	kind, promptKind   int32
+	hasExitCode        bool
+	exitCode           int32
+	command, errorText cString
+}
+
 // deviceAttributes is a GhosttyDeviceAttributes.
 type deviceAttributes struct {
 	conformance                        uint16
@@ -273,6 +290,8 @@ func layouts() map[string]layout {
 		pa  paste
 		dn  desktopNotification
 		pr  progressReport
+		ps  programStatus
+		sp  semanticPrompt
 		da  deviceAttributes
 		fo  formatterOptions
 	)
@@ -345,8 +364,13 @@ func layouts() map[string]layout {
 		"GhosttyMimeReader":                  {unsafe.Sizeof(mimeReader{}), map[string]uintptr{"read": 0, "userdata": unsafe.Offsetof(mimeReader{}.userdata)}},
 		"GhosttyTerminalDesktopNotification": {unsafe.Sizeof(dn), map[string]uintptr{"title": unsafe.Offsetof(dn.title), "body": unsafe.Offsetof(dn.body)}},
 		"GhosttyTerminalProgressReport":      {unsafe.Sizeof(pr), map[string]uintptr{"state": unsafe.Offsetof(pr.state), "progress": unsafe.Offsetof(pr.progress)}},
-		"GhosttyDeviceAttributes":            {unsafe.Sizeof(da), map[string]uintptr{"primary": 0, "secondary": unsafe.Offsetof(da.deviceType), "tertiary": unsafe.Offsetof(da.unitID)}},
-		"GhosttyRenderStateRowId":            {unsafe.Sizeof(RowID{}), map[string]uintptr{"bits": 0}},
+		"GhosttyTerminalProgramStatus": {unsafe.Sizeof(ps), map[string]uintptr{
+			"state": unsafe.Offsetof(ps.state), "kind": unsafe.Offsetof(ps.kind), "progress": unsafe.Offsetof(ps.progress),
+			"id": unsafe.Offsetof(ps.id), "app": unsafe.Offsetof(ps.app), "title": unsafe.Offsetof(ps.title), "message": unsafe.Offsetof(ps.message),
+		}},
+		"GhosttyTerminalSemanticPrompt": {unsafe.Sizeof(sp), map[string]uintptr{"kind": unsafe.Offsetof(sp.kind)}},
+		"GhosttyDeviceAttributes":       {unsafe.Sizeof(da), map[string]uintptr{"primary": 0, "secondary": unsafe.Offsetof(da.deviceType), "tertiary": unsafe.Offsetof(da.unitID)}},
+		"GhosttyRenderStateRowId":       {unsafe.Sizeof(RowID{}), map[string]uintptr{"bits": 0}},
 		"GhosttyFormatterTerminalOptions": {unsafe.Sizeof(fo), map[string]uintptr{
 			"emit": unsafe.Offsetof(fo.emit), "unwrap": unsafe.Offsetof(fo.unwrap), "trim": unsafe.Offsetof(fo.trim),
 			"extra": unsafe.Offsetof(fo.extra), "selection": unsafe.Offsetof(fo.selection),
