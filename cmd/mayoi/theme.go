@@ -3,7 +3,10 @@ package main
 import (
 	"math"
 	"reflect"
+	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 	"unsafe"
 
 	"github.com/egoist/mygo"
@@ -81,6 +84,17 @@ type palette struct {
 	// gilt, when set, is the light of its gold, which runs to the middle
 	// of the line along the top of the tab shown, with a gem there.
 	rule, gilt ui.Color
+	// card, when set, is the radius of the card the editors and the panel
+	// below them sit in, as Qoder's workbench has: the title bar, the
+	// sidebar and the status bar are a shell around it in the chrome, with
+	// no lines between them, grained as much as grain says, from 0 to 1.
+	card, grain float32
+	// strip is the tab strip's background: the chrome, but for a theme
+	// whose editors sit in a card, whose own it is.
+	strip ui.Color
+	// sentence titles the sidebar and the panel in sentence case, as
+	// Explorer, rather than in capitals.
+	sentence bool
 
 	syntax [highlight.Kinds]ui.Color
 	// ansi is the terminal's 16 colors: black, red, green, yellow, blue,
@@ -234,79 +248,82 @@ func lightPalette() *palette {
 	return p
 }
 
-// matrixPalette is The Matrix: phosphor green on black, the code in
-// greens told apart by their brightness. What is removed or failed stays
-// red, and what is changed or found amber, so diffs and errors still
-// read.
+// matrixPalette is The Matrix in its two worlds: the chrome in the
+// gunmetal of the real one, and the code in the Matrix's greens, told
+// apart by their hues. Comments are people's notes, so they take the
+// real world's steel. Primary buttons take the red pill and what is
+// chosen the blue; what loses something takes the Sentinels' orange, so
+// that it is never taken for the red pill.
 func matrixPalette() *palette {
 	p := &palette{
 		dark:      true,
 		mono:      true,
-		editor:    ui.Hex("#050a06"),
-		chrome:    ui.Hex("#020503"),
-		panel:     ui.Hex("#040806"),
-		border:    ui.Hex("#0f2a16"),
-		hover:     ui.RGBA(0, 255, 65, 0.06),
-		active:    ui.RGBA(0, 255, 65, 0.14),
-		text:      ui.Hex("#4af07a"),
-		muted:     ui.Hex("#2a9d4c"),
-		faint:     ui.Hex("#1a5c2e"),
-		accent:    ui.Hex("#00ff41"),
-		accentDim: ui.RGBA(0, 255, 65, 0.5),
-		line:      ui.RGBA(0, 255, 65, 0.04),
-		selection: ui.RGBA(0, 255, 65, 0.22),
-		gutter:    ui.Hex("#1f6b36"),
-		gutterNow: ui.Hex("#6dff94"),
-		status:    ui.Hex("#020503"),
-		statusFg:  ui.Hex("#2a9d4c"),
-		modified:  ui.Hex("#d9b44a"),
-		danger:    ui.Hex("#ff4a5a"),
-		match:     ui.RGBA(217, 180, 74, 0.22),
-		matchNow:  ui.RGBA(217, 180, 74, 0.40),
-		matchRing: ui.RGBA(217, 180, 74, 0.85),
-		guide:     ui.RGBA(0, 255, 65, 0.07),
-		guideNow:  ui.RGBA(0, 255, 65, 0.25),
-		bracket:   ui.RGBA(0, 255, 65, 0.35),
-		word:      ui.RGBA(0, 255, 65, 0.09),
+		editor:    ui.Hex("#050d08"),
+		chrome:    ui.Hex("#0e1317"),
+		panel:     ui.Hex("#0c1215"),
+		border:    ui.Hex("#1f2930"),
+		hover:     ui.RGBA(180, 205, 220, 0.06),
+		active:    ui.RGBA(61, 123, 255, 0.16),
+		text:      ui.Hex("#cdd7de"),
+		muted:     ui.Hex("#8a9ba7"),
+		faint:     ui.Hex("#66767f"),
+		accent:    ui.Hex("#22e06b"),
+		accentDim: ui.RGBA(34, 224, 107, 0.5),
+		line:      ui.RGBA(34, 224, 107, 0.05),
+		selection: ui.RGBA(34, 224, 107, 0.22),
+		gutter:    ui.Hex("#3f8a58"),
+		gutterNow: ui.Hex("#b0f7c5"),
+		status:    ui.Hex("#0b1013"),
+		statusFg:  ui.Hex("#8a9ba7"),
+		modified:  ui.Hex("#e7b85a"),
+		danger:    ui.Hex("#ff8a3d"),
+		match:     ui.RGBA(231, 184, 90, 0.22),
+		matchNow:  ui.RGBA(231, 184, 90, 0.40),
+		matchRing: ui.RGBA(231, 184, 90, 0.85),
+		guide:     ui.RGBA(34, 224, 107, 0.07),
+		guideNow:  ui.RGBA(34, 224, 107, 0.25),
+		bracket:   ui.RGBA(34, 224, 107, 0.35),
+		word:      ui.RGBA(34, 224, 107, 0.10),
 		shadow:    ui.RGBA(0, 0, 0, 0.6),
-		added:     ui.Hex("#00d43a"),
-		changed:   ui.Hex("#3fd0b0"),
-		removed:   ui.Hex("#e0505e"),
-		// Black on the green, as a terminal's inverted text.
-		fill:           ui.Hex("#00d43a"),
-		fillText:       ui.Hex("#000000"),
-		dangerFill:     ui.Hex("#ff4a5a"),
+		added:     ui.Hex("#22e06b"),
+		changed:   ui.Hex("#4c8dff"),
+		removed:   ui.Hex("#ff5b6b"),
+		// The red pill, with white on it at 4.7:1.
+		fill:     ui.Hex("#d8323f"),
+		fillText: ui.Hex("#ffffff"),
+		// Black on the Sentinels' orange.
+		dangerFill:     ui.Hex("#ff8a3d"),
 		dangerText:     ui.Hex("#000000"),
-		surface:        ui.Hex("#08140b"),
-		surfaceHover:   ui.Hex("#0c1d10"),
-		surfacePressed: ui.Hex("#102615"),
-		scrollbar:      ui.RGBA(0, 255, 65, 0.2),
-		inverse:        ui.Hex("#0f2a16"),
-		inverseText:    ui.Hex("#8dffad"),
+		surface:        ui.Hex("#141b20"),
+		surfaceHover:   ui.Hex("#1a2329"),
+		surfacePressed: ui.Hex("#212b32"),
+		scrollbar:      ui.RGBA(180, 205, 220, 0.18),
+		inverse:        ui.Hex("#1f2930"),
+		inverseText:    ui.Hex("#e6edf1"),
 		ansi: [16]ui.Color{
-			ui.Hex("#0a1a0e"), ui.Hex("#e0505e"), ui.Hex("#00ff41"), ui.Hex("#d9b44a"),
-			ui.Hex("#2fbf8f"), ui.Hex("#8fd94a"), ui.Hex("#00ff9c"), ui.Hex("#4af07a"),
-			ui.Hex("#1f7a3a"), ui.Hex("#ff6b78"), ui.Hex("#6dff94"), ui.Hex("#f0d070"),
-			ui.Hex("#5fe8c4"), ui.Hex("#b0f070"), ui.Hex("#7dffcf"), ui.Hex("#c8ffd6"),
+			ui.Hex("#1a2228"), ui.Hex("#ff5b6b"), ui.Hex("#22e06b"), ui.Hex("#e7b85a"),
+			ui.Hex("#4c8dff"), ui.Hex("#c78bff"), ui.Hex("#4fe0c8"), ui.Hex("#cdd7de"),
+			ui.Hex("#66767f"), ui.Hex("#ff8590"), ui.Hex("#6dff9a"), ui.Hex("#f5d27f"),
+			ui.Hex("#7aa8ff"), ui.Hex("#d9a8ff"), ui.Hex("#7df0dc"), ui.Hex("#f2f6f8"),
 		},
 	}
-	p.fillHover, p.fillPressed = p.fill.Mix(white, 0.15), p.fill.Mix(black, 0.15)
+	p.fillHover, p.fillPressed = p.fill.Mix(white, 0.1), p.fill.Mix(black, 0.15)
 	s := &p.syntax
-	s[highlight.Plain] = p.text
-	s[highlight.Keyword] = ui.Hex("#b6ffc8")
-	s[highlight.Type] = ui.Hex("#00ff9c")
-	s[highlight.Function] = ui.Hex("#66ff8a")
-	s[highlight.String] = ui.Hex("#8fd94a")
-	s[highlight.Number] = ui.Hex("#c8ff5a")
-	s[highlight.Comment] = ui.Hex("#1f7a3a")
-	s[highlight.Operator] = ui.Hex("#3fbf63")
-	s[highlight.Punctuation] = ui.Hex("#2e8f4a")
-	s[highlight.Constant] = ui.Hex("#c8ff5a")
-	s[highlight.Builtin] = ui.Hex("#7dffcf")
-	s[highlight.Tag] = ui.Hex("#00ff9c")
-	s[highlight.Attribute] = ui.Hex("#8fd94a")
-	s[highlight.Variable] = ui.Hex("#5af58a")
-	s[highlight.Heading] = ui.Hex("#b6ffc8")
+	s[highlight.Plain] = ui.Hex("#b4ecc4")
+	s[highlight.Keyword] = ui.Hex("#e9fff0")
+	s[highlight.Type] = ui.Hex("#4fe0c8")
+	s[highlight.Function] = ui.Hex("#5cff8a")
+	s[highlight.String] = ui.Hex("#d2ec6a")
+	s[highlight.Number] = ui.Hex("#f0cc6a")
+	s[highlight.Comment] = p.muted
+	s[highlight.Operator] = ui.Hex("#62c482")
+	s[highlight.Punctuation] = ui.Hex("#56996a")
+	s[highlight.Constant] = ui.Hex("#f0cc6a")
+	s[highlight.Builtin] = ui.Hex("#8cc4ff")
+	s[highlight.Tag] = ui.Hex("#4fe0c8")
+	s[highlight.Attribute] = ui.Hex("#d2ec6a")
+	s[highlight.Variable] = ui.Hex("#b4ecc4")
+	s[highlight.Heading] = ui.Hex("#e9fff0")
 	s[highlight.Deleted] = p.removed
 	s[highlight.Inserted] = p.added
 	return p
@@ -468,13 +485,18 @@ func claudeLightPalette() *palette {
 
 // qoderLightPalette is Qoder in a light window, its Forest Light: white,
 // grey with a hint of green, and the forest green of its buttons for the
-// accent. Forest has no colors of code, so they are drawn from its
-// terminal's.
+// accent. As in Qoder's workbench, the editors and the panel are a white
+// card in a grained shell. Its code is in Qoder's chart series, the hues
+// it tells data apart by in every theme.
 func qoderLightPalette() *palette {
 	p := &palette{
 		editor:    ui.Hex("#ffffff"),
 		chrome:    ui.Hex("#f2f4f2"),
-		panel:     ui.Hex("#f5f7f5"),
+		panel:     ui.Hex("#ffffff"),
+		strip:     ui.Hex("#ffffff"),
+		card:      10,
+		grain:     0.2,
+		sentence:  true,
 		border:    ui.Hex("#e3e6e3"),
 		hover:     ui.RGBA(0, 0, 0, 0.04),
 		active:    ui.RGBA(75, 111, 90, 0.12),
@@ -524,36 +546,48 @@ func qoderLightPalette() *palette {
 			ui.Hex("#2b83c1"), ui.Hex("#aa69a7"), ui.Hex("#249d94"), ui.Hex("#d5dbd8"),
 		},
 	}
+	qoderSyntax(p, [5]string{"#477a61", "#427db5", "#9870b4", "#ba7b37", "#b7647b"})
 	s := &p.syntax
-	s[highlight.Plain] = p.text
-	s[highlight.Keyword] = ui.Hex("#2f7550")
-	s[highlight.Type] = ui.Hex("#0b7f78")
-	s[highlight.Function] = ui.Hex("#0969a8")
-	s[highlight.String] = ui.Hex("#8a5a00")
-	s[highlight.Number] = ui.Hex("#b85a1f")
 	s[highlight.Comment] = ui.Hex("#848c86")
 	s[highlight.Operator] = ui.Hex("#555b57")
 	s[highlight.Punctuation] = ui.Hex("#6c726d")
-	s[highlight.Constant] = ui.Hex("#b85a1f")
-	s[highlight.Builtin] = ui.Hex("#8e4e8b")
-	s[highlight.Tag] = ui.Hex("#b3434a")
-	s[highlight.Attribute] = ui.Hex("#8e4e8b")
 	s[highlight.Variable] = p.text
-	s[highlight.Heading] = ui.Hex("#2f7550")
 	s[highlight.Deleted] = ui.Hex("#c9363e")
 	s[highlight.Inserted] = ui.Hex("#2e7d4f")
 	return p
 }
 
+// qoderSyntax colors Qoder's code in its chart series, green, blue,
+// violet, amber and rose: keywords, functions, types, strings and
+// numbers, each as deep or as light as it must be to read at 4.5:1 on the
+// editor.
+func qoderSyntax(p *palette, chart [5]string) {
+	var c [5]ui.Color
+	for i, hex := range chart {
+		c[i] = legible(ui.Hex(hex), p.dark, p.editor)
+	}
+	s := &p.syntax
+	s[highlight.Plain] = p.text
+	s[highlight.Keyword], s[highlight.Heading] = c[0], c[0]
+	s[highlight.Function] = c[1]
+	s[highlight.Type], s[highlight.Builtin], s[highlight.Attribute] = c[2], c[2], c[2]
+	s[highlight.String] = c[3]
+	s[highlight.Number], s[highlight.Constant], s[highlight.Tag] = c[4], c[4], c[4]
+}
+
 // qoderDarkPalette is Qoder in a dark window, its Forest Dark: greys
 // with a little green, a deeper green for buttons, with dark labels, and
-// a light one for links and marks.
+// a light one for links and marks, the card darker than its shell.
 func qoderDarkPalette() *palette {
 	p := &palette{
 		dark:      true,
 		editor:    ui.Hex("#191b1a"),
 		chrome:    ui.Hex("#242624"),
-		panel:     ui.Hex("#1c1f1d"),
+		panel:     ui.Hex("#191b1a"),
+		strip:     ui.Hex("#191b1a"),
+		card:      10,
+		grain:     0.5,
+		sentence:  true,
 		border:    ui.Hex("#363c37"),
 		hover:     ui.RGBA(220, 240, 225, 0.05),
 		active:    ui.RGBA(77, 156, 97, 0.2),
@@ -605,22 +639,13 @@ func qoderDarkPalette() *palette {
 			ui.Hex("#a3d3ff"), ui.Hex("#e6b9e2"), ui.Hex("#a2ede5"), ui.Hex("#ffffff"),
 		},
 	}
+	// The chart series, lifted to read on the dark editor.
+	qoderSyntax(p, [5]string{"#7cb196", "#7fb0e0", "#c4a3dc", "#dcaa72", "#e095aa"})
 	s := &p.syntax
-	s[highlight.Plain] = p.text
-	s[highlight.Keyword] = ui.Hex("#73cd94")
-	s[highlight.Type] = ui.Hex("#82d2ce")
-	s[highlight.Function] = ui.Hex("#87c3ff")
-	s[highlight.String] = ui.Hex("#d8c07a")
-	s[highlight.Number] = ui.Hex("#efb080")
 	s[highlight.Comment] = ui.Hex("#758077")
 	s[highlight.Operator] = ui.Hex("#a3aba5")
 	s[highlight.Punctuation] = ui.Hex("#8a948c")
-	s[highlight.Constant] = ui.Hex("#efb080")
-	s[highlight.Builtin] = ui.Hex("#aaa0fa")
-	s[highlight.Tag] = ui.Hex("#e394dc")
-	s[highlight.Attribute] = ui.Hex("#aaa0fa")
 	s[highlight.Variable] = ui.Hex("#e4e7e4")
-	s[highlight.Heading] = ui.Hex("#8ee5a1")
 	s[highlight.Deleted] = ui.Hex("#ff6b70")
 	s[highlight.Inserted] = ui.Hex("#73cd94")
 	return p
@@ -1379,16 +1404,60 @@ func (p *palette) derive() *palette {
 	p.selected = p.selection.Over(p.editor)
 	p.selectedDim = p.selection.Alpha(0.5).Over(p.editor)
 	p.cursor = p.accent.Alpha(0.5)
+	if p.strip.A == 0 {
+		p.strip = p.chrome
+	}
 	return p
 }
 
 // hairline is the line along the foot of the title bar and the top of the
-// status bar: the theme's own rule, or the border.
+// status bar: the theme's own rule, or the border, or none around a card.
 func (p *palette) hairline() ui.Color {
-	if p.rule.A == 0 {
+	switch {
+	case p.card > 0:
+		return ui.Color{}
+	case p.rule.A == 0:
 		return p.border
 	}
 	return p.rule
+}
+
+// title is a title of the sidebar, Source Control or the panel as the
+// palette has them: in capitals, or in sentence case.
+func (p *palette) title(s string) string {
+	if p.sentence {
+		return sentenceCase(s)
+	}
+	return strings.ToUpper(s)
+}
+
+// titleLook is the size and the letter spacing of a title whose capitals
+// are of size and spacing, as the palette has them: in sentence case, a
+// point larger and not spaced.
+func (p *palette) titleLook(size, spacing float32) (float32, float32) {
+	if p.sentence {
+		return size + 1, 0
+	}
+	return size, spacing
+}
+
+// sentenceCase returns s with its first letter alone a capital, as
+// Source control for SOURCE CONTROL.
+func sentenceCase(s string) string {
+	if s == "" {
+		return s
+	}
+	r, n := utf8.DecodeRuneInString(s)
+	return string(unicode.ToUpper(r)) + strings.ToLower(s[n:])
+}
+
+// seam is the line between the sidebar or the rail and what is beside
+// them: the border, or none in the shell around a card.
+func (p *palette) seam() ui.Color {
+	if p.card > 0 {
+		return ui.Color{}
+	}
+	return p.border
 }
 
 // legible returns col as text that reads at 4.5:1, WCAG's AA, on each of
@@ -1481,19 +1550,24 @@ const paletteFadeFor = 220 * time.Millisecond
 type paletteFade struct {
 	from, to *palette
 	at       time.Time
+	// snap takes the window to the next palette at once, as the keys of
+	// the theme picker going from theme to theme want.
+	snap bool
 }
 
 // step returns the palette to paint with now, on the way to to: to
-// itself once there, or at once with less motion. Each palette on the way
+// itself once there, or at once with less motion or a snap. Each palette on the way
 // is new, so that what is cached of a palette is made anew.
 func (f *paletteFade) step(c *ui.Context, to *palette) *palette {
 	now := c.Now()
 	if to != f.to {
-		if f.to != nil && !c.Preferences().ReduceMotion {
+		if f.to != nil && !f.snap && !c.Preferences().ReduceMotion {
 			// From where the window is, as it may be on its way already.
 			f.from, f.at = f.paletteAt(now), now
+		} else {
+			f.from = nil
 		}
-		f.to = to
+		f.to, f.snap = to, false
 	}
 	p := f.paletteAt(now)
 	if p == to {
@@ -1565,26 +1639,20 @@ var tabMotion = ui.ElementTransition{
 }
 
 // dotPop is how a small mark comes and goes, as the dot of a tab's
-// unsaved changes: it grows from nothing and shrinks away.
+// unsaved changes: it grows from half its size and shrinks back.
 var dotPop = ui.ElementTransition{
 	Animation: &ui.Snappy,
-	Enter:     &ui.Motion{Scale: 0.2},
-	Exit:      &ui.Motion{Scale: 0.2},
+	Enter:     &ui.Motion{Scale: 0.5},
+	Exit:      &ui.Motion{Scale: 0.5},
 }
 
-// pickMark is the identity of the mark under the row chosen in a list of
-// a box, as quick open's, which slides from row to row as the choice
-// moves.
-type pickMark struct{ list string }
-
-// pickMark marks the row chosen in a list, first in the row's children:
-// it slides from the row chosen before, as the keys move the choice.
-func (a *app) pickMark(c *ui.Context, on bool, list string) {
+// pickMark marks the row chosen in a list, first in the row's children.
+// It moves at once with the keys that move the choice.
+func (a *app) pickMark(c *ui.Context, on bool) {
 	if !on {
 		return
 	}
-	ui.Box(c.Key("pick-mark")).Absolute().Left(0).Right(0).Top(0).Bottom(0).Radius(6).Background(a.pal.active).
-		Transition(ui.ElementTransition{Duration: 90 * time.Millisecond, Match: pickMark{list}})
+	ui.Box(c.Key("pick-mark")).Absolute().Left(0).Right(0).Top(0).Bottom(0).Radius(6).Background(a.pal.active)
 }
 
 // riseIn brings a block of a page in as the page shows: it fades in from
@@ -1593,6 +1661,12 @@ func riseIn(e ui.Element, delay time.Duration) ui.Element {
 	k := e.Keyframes("rise", []ui.Keyframe{{Value: 0}, {At: 240 * time.Millisecond, Value: 1, Ease: ui.EaseOut}},
 		ui.KeyframeOptions{Delay: delay})
 	return e.Opacity(k).Translate(0, 8*(1-k))
+}
+
+// fadePage brings a page in as it is chosen, as a section of the
+// settings: it fades in, without moving.
+func fadePage(e ui.Element) ui.Element {
+	return e.Opacity(e.Keyframes("show", []ui.Keyframe{{Value: 0}, {At: 150 * time.Millisecond, Value: 1, Ease: ui.EaseOut}}))
 }
 
 // showFor is how long a pane or a box that floats takes to come in as it
@@ -1673,7 +1747,7 @@ func chevron(c *ui.Context, open bool) ui.Element {
 func pressPose(b ui.Element) {
 	pose := ui.Pose{}
 	if b.Pressed() {
-		pose.Scale = 0.92
+		pose.Scale = 0.96
 	}
 	b.AnimatePose(pose, ui.Snappy)
 }
@@ -1696,16 +1770,11 @@ func shake(c *ui.Context, e ui.Element, at time.Time) ui.Element {
 }
 
 // popUp brings the badge of an empty view in as the view shows: it grows
-// from a little smaller, past its size and back, and fades in.
+// from a little smaller to its size, and fades in.
 func popUp(e ui.Element) ui.Element {
-	k := e.Keyframes("pop", []ui.Keyframe{{Value: 0}, {At: 320 * time.Millisecond, Value: 1, Ease: backOut}})
-	o := min(1, 2*k)
-	return e.Opacity(o).Scale(0.6+0.4*k, 0.6+0.4*k)
+	k := e.Keyframes("pop", []ui.Keyframe{{Value: 0}, {At: 240 * time.Millisecond, Value: 1, Ease: ui.EaseOut}})
+	return e.Opacity(k).Scale(0.92+0.08*k, 0.92+0.08*k)
 }
-
-// backOut goes a little past its end and comes back to it, as CSS's
-// easeOutBack does.
-var backOut = ui.CubicBezier(0.34, 1.56, 0.64, 1)
 
 // fieldFocus is how a field's border follows the keyboard: the accent
 // fades in as the field takes it, and out as it leaves.
@@ -1736,17 +1805,8 @@ func (a *app) floating(c *ui.Context, box ui.Element, dialog bool) ui.Element {
 }
 
 // dialogBack is the layer under a dialog, over the whole window, that
-// the dialog is in: label names the dialog. It fades in, from a little
-// above, as the dialog shows. The layer is new with the dialog, so a
-// Transition would not move it: its motion starts the first time it is
-// built for the dialog.
-func (a *app) dialogBack(c *ui.Context, label string) ui.Element {
-	back := ui.Column(c).Absolute().Left(0).Right(0).Bottom(0).AlignItems(ui.Center).Modal()
-	if a.dialog != label {
-		a.dialog = label
-		back.Animate("in", 0, 0)
-	}
-	a.dialogBuilt = true
-	k := back.Animate("in", 1, 130*time.Millisecond)
-	return back.Top(-6 * (1 - k)).Opacity(k)
+// the dialog is in. It shows at once, as the
+// keys that open a dialog want it there to type in.
+func (a *app) dialogBack(c *ui.Context) ui.Element {
+	return ui.Column(c).Absolute().Top(0).Left(0).Right(0).Bottom(0).AlignItems(ui.Center).Modal()
 }

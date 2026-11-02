@@ -63,6 +63,13 @@ type session struct {
 	// name is what the user renamed the terminal, "" while its title is
 	// the one its shell gives.
 	name string
+
+	// status is what its programs say they do (OSC 7501), statusSince
+	// when the record most in need of the user last changed, and
+	// statusFrom the state that record was in before.
+	status      terminal.ProgramStatus
+	statusSince time.Time
+	statusFrom  terminal.StatusState
 }
 
 type panelHeaderLayout struct {
@@ -169,8 +176,10 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 		conn = s.hcWait
 	}
 	// term is the terminal made, which OnExit tells from one that took
-	// its place.
+	// its place, and in what its programs last said that waits for the
+	// app.
 	var term *terminal.Terminal
+	var in statusIn
 	term, err := terminal.New(terminal.Options{
 		Command:   command,
 		Conn:      conn,
@@ -205,6 +214,9 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 				return true
 			}
 			id, ok := a.shellSkip(st)
+			if !ok {
+				a.seeProgramStatus(s)
+			}
 			if ok {
 				a.post(func() {
 					if id == "" {
@@ -238,6 +250,16 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 					a.alert = locales.NotificationFrom(s.title)
 				}
 			})
+		},
+		OnProgramStatus: func(st terminal.ProgramStatus) {
+			// Once a frame however often the program says it.
+			if in.put(st) {
+				a.post(func() {
+					if st, ok := in.take(); ok {
+						a.programStatus(s, term, st)
+					}
+				})
+			}
 		},
 	})
 	return term, err
@@ -472,7 +494,8 @@ func (a *app) panelTab(c *ui.Context, key, label string, on bool, count int, fn 
 		if on {
 			col = p.text
 		}
-		ui.Text(c, label).FontSize(11).FontWeight(600).LetterSpacing(0.7).TextColor(col).SingleLine()
+		size, spacing := p.titleLook(11, 0.7)
+		ui.Text(c, p.title(label)).FontSize(size).FontWeight(600).LetterSpacing(spacing).TextColor(col).SingleLine()
 		if count > 0 {
 			ui.Text(c, fmt.Sprintf("%d", count)).FontSize(10).TextColor(p.faint).
 				Padding(1, 5).Radius(7).Background(p.hover).SingleLine()

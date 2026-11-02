@@ -683,9 +683,12 @@ for options it doesn't know. A `mayoi` command an older Mayoi installed is broug
 themes, Jack-o'-Lantern, Witch's Brew and Blood Moon, and apart from it whether the window follows the system's light or
 dark mode or is always Light or Dark. Light and Dark are greyed out under The Matrix, Purple Gold and the Halloween
 themes, which are always dark.
-The Matrix is phosphor green on black, with the whole window in the code's font, file icons in greens, and red and amber
-kept for what is removed, failed or changed. Digital rain falls behind the welcome page while the window has the
-keyboard, and holds still without it or when the system asks for reduced motion. Claude is Claude Code as it draws itself in a
+The Matrix is its two worlds: the sidebar, tabs, panels and status bar in the real world's gunmetal steel, and the code
+and the terminal in the Matrix's greens, each kind of code in a hue of its own and comments in the steel. The whole
+window is in the code's font, with file icons in greens. Primary buttons take the red pill and chosen rows the blue;
+buttons that lose something take the Sentinels' orange. Mirrored digital rain falls in two depths behind the welcome
+page while the window has the keyboard, and holds still without it or when the system asks for reduced motion. The
+White Rabbit, with red-pill eyes, takes the logo's place and the status bar's start, and hops while Git works. Claude is Claude Code as it draws itself in a
 terminal, in a light and a dark kind: the whole window in the code's font, as The Matrix is, warm near-black or
 off-white, Claude's orange for the accent and the buttons, with dark labels on them, and periwinkle for what is chosen,
 with errors and what is removed in Claude Code's rose, apart from the orange. The boxes over the window, as Quick
@@ -694,9 +697,15 @@ through its glyphs, the command's name with a light running across it, and the s
 seconds now and then one of Claude Code's own words, as Clauding…, in its place. Clawd, Claude Code's character, takes
 the logo's place on the welcome page and sits at the start of the status bar: it blinks now and then, and hops while a
 Git command or a search of the files runs, and holds still as the rain does, as the spinner does. Qoder is Qoder's
-Forest theme: white or green-tinged greys with forest green,
-in a light and a dark kind, and its code in Forest's greens, blues, teals and ambers. Qoduck, Qoder's duck, takes the
-logo's place and the status bar's start as Clawd does, and blinks, bobs and hops as it does. Grok Bot is the Grok Bot
+Forest theme: white or green-tinged greys with forest green, in a light and a dark kind, laid out as Qoder's workbench.
+The editors and the terminal below them sit on a card with rounded corners, and the title bar, sidebar and status bar
+around it are a lightly grained shell with no lines between them. A sidebar or panel edge lights only around the
+pointer as you drag it. The sidebar, Source Control and terminal titles are in sentence case, Explorer rather than
+EXPLORER, and code is in Qoder's chart colors: green keywords, blue functions, violet types, amber strings and rose
+numbers. Qoduck, Qoder's duck, takes the logo's place and the status bar's start as Clawd does, and blinks, bobs and
+hops as it does. In the status bar it holds up a prop for the work going on: a magnifier while the files are
+searched, a laptop while Git works, a headset while AI writes the commit message, and a megaphone for a few seconds
+after a toast. Grok Bot is the Grok Bot
 app's Sand theme: white or near-black greys, near-black or near-white buttons and its blue for the accent, in a light
 and a dark kind, and its code in the warm colors of x.ai's terminal. Grok Bot's face, a round head with two slanted
 eyes, takes the logo's place and the status bar's start as Clawd does, looks up as it hops, and now and then glances

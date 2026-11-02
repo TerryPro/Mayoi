@@ -128,7 +128,8 @@ func (a *app) view(c *ui.Context) {
 				}
 				// Its splitter is along the edge facing the editors.
 				at, dir := edgeRight, float32(1)
-				box := fadeIn(ui.Column(c.Key("sidebar")).Width(w.SidebarWidth).Shrink(0).BorderColor(p.border))
+				box := ui.Column(c.Key("sidebar")).Width(w.SidebarWidth).Shrink(0).BorderColor(p.seam())
+				a.grained(box)
 				if s.SidebarRight {
 					at, dir = edgeLeft, -1
 					box.BorderWidth(0, 0, 0, 1)
@@ -157,6 +158,10 @@ func (a *app) view(c *ui.Context) {
 				main.Grow(0).Width(0)
 			} else {
 				main.Grow(1)
+				// Inset from the window's edges where it meets them.
+				left := a.rail == nil && side != "left" && (w.SidebarClosed || s.SidebarRight)
+				right := side != "right" && (w.SidebarClosed || !s.SidebarRight)
+				a.asCard(main, left, right)
 			}
 			main.Children(func() { a.main(c) })
 			if s.SidebarRight {
@@ -183,10 +188,6 @@ func (a *app) view(c *ui.Context) {
 	a.promptView(c)
 	a.confirmView(c)
 	a.signinView(c)
-	if !a.dialogBuilt {
-		a.dialog = ""
-	}
-	a.dialogBuilt = false
 	a.windowKeys(c)
 	if inEditor := a.keyFocus == placeEditor; inEditor != a.cutInEditor {
 		a.cutInEditor = inEditor
@@ -196,6 +197,10 @@ func (a *app) view(c *ui.Context) {
 		c.Toast(msg)
 	}
 	a.errors = a.errors[:0]
+	if len(a.notes) > 0 {
+		// The character holds up its megaphone for a while.
+		a.toldAt = c.Now()
+	}
 	for _, n := range a.notes {
 		if n.action != nil {
 			c.ToastAction(n.message, n.label, n.action)
@@ -225,7 +230,7 @@ func (a *app) main(c *ui.Context) {
 	_, h := c.Size()
 	room := h - titleBarH - statusBarH
 	height := clamp(w.PanelHeight, 80, max(room-80, 80))
-	box := fadeIn(ui.Column(c.Key("panel")).Shrink(0).BorderWidth(1, 0, 0, 0).BorderColor(p.border))
+	box := ui.Column(c.Key("panel")).Shrink(0).BorderWidth(1, 0, 0, 0).BorderColor(p.border)
 	if a.panelMax {
 		box.Grow(1)
 	} else {
@@ -257,7 +262,7 @@ func (a *app) sidePanel(c *ui.Context, right bool) {
 	p, w := a.pal, a.window
 	width, _ := c.Size()
 	at, dir := edgeRight, float32(1)
-	box := fadeIn(ui.Column(c.Key("panel")).Shrink(0).BorderColor(p.border))
+	box := ui.Column(c.Key("panel")).Shrink(0).BorderColor(p.border)
 	if right {
 		at, dir = edgeLeft, -1
 		box.BorderWidth(0, 0, 0, 1)
@@ -331,7 +336,21 @@ func (a *app) splitter(c *ui.Context, at edge, drag func(d float32)) ui.Element 
 		if lit < 0.01 {
 			return
 		}
-		line := ui.Box(c).Absolute().Background(a.pal.accentDim.Alpha(lit))
+		line := ui.Box(c).Absolute()
+		if a.pal.card > 0 {
+			// Around a card, it lights around the pointer, as Qoder's do.
+			px, py, _ := h.PointerPosition()
+			col := a.pal.accent.Alpha(lit)
+			line.Draw(func(pt *ui.Painter, r ui.Rect) {
+				if at == edgeTop {
+					drawSeamLight(pt, r, true, r.X+px, col)
+				} else {
+					drawSeamLight(pt, r, false, r.Y+py, col)
+				}
+			})
+		} else {
+			line.Background(a.pal.accentDim.Alpha(lit))
+		}
 		switch at {
 		case edgeTop:
 			line.Top(0).Left(0).Right(0).Height(2)
@@ -362,8 +381,10 @@ func (a *app) titleBar(c *ui.Context) {
 	if runtime.GOOS == "linux" && bar.Right > 0 {
 		rightPad = bar.Right - 2
 	}
-	ui.Row(c).Height(max(bar.Height, titleBarH)).Padding(0, rightPad, 0, bar.Left+10).AlignItems(ui.Center).
-		BorderWidth(0, 0, 1, 0).BorderColor(p.hairline()).DragWindow().Children(func() {
+	row := ui.Row(c).Height(max(bar.Height, titleBarH)).Padding(0, rightPad, 0, bar.Left+10).AlignItems(ui.Center).
+		BorderWidth(0, 0, 1, 0).BorderColor(p.hairline()).DragWindow()
+	a.grained(row)
+	row.Children(func() {
 		// The sidebar's button is on its side. The terminal's is on the
 		// panel's: at the left of the bar when the panel is at the
 		// window's left, past the sidebar's button when the sidebar is
@@ -1157,10 +1178,6 @@ func (a *app) vimBadge(c *ui.Context, v *vimState, text func(string) ui.Element)
 		bg, fg = p.modified.Alpha(0.22), p.modifiedFg
 	}
 	row := ui.Row(c.Key("status:vim")).Height(statusBarH).Padding(0, 6).Gap(6).AlignItems(ui.Center)
-	// From mode to mode, the badge's colors cross over. Its name changes at
-	// once: the old fading out over the new broke up the strokes of both.
-	fade := ui.Animation{Duration: 140 * time.Millisecond}
-	bg, fg = row.AnimateColor("bg", bg, fade), row.AnimateColor("fg", fg, fade)
 	row.Children(func() {
 		ui.Text(c, v.mode.String()).FontSize(10.5).FontWeight(650).LetterSpacing(0.6).TextColor(fg).SingleLine().
 			Padding(1, 6).Radius(4).Background(bg)
@@ -1195,8 +1212,10 @@ func (a *app) statusBar(c *ui.Context) {
 	repo := a.repository()
 	width, _ := c.Size()
 	visible := a.statusFit(c, width)
-	ui.Row(c).Height(statusBarH).Padding(0, 6).Gap(2).AlignItems(ui.Center).Background(p.status).
-		BorderWidth(1, 0, 0, 0).BorderColor(p.hairline()).Children(func() {
+	bar := ui.Row(c).Height(statusBarH).Padding(0, 6).Gap(2).AlignItems(ui.Center).Background(p.status).
+		BorderWidth(1, 0, 0, 0).BorderColor(p.hairline())
+	a.grained(bar)
+	bar.Children(func() {
 		text := func(s string) ui.Element {
 			return ui.Text(c, s).FontSize(11.5).TextColor(p.statusFg).SingleLine()
 		}

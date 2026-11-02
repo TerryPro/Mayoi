@@ -812,11 +812,11 @@ func (msgs Messages) ThemeAboutGrokBot() string {
 	return Catalog.Format(msgs.locale, "themeAboutGrokBot", nil)
 }
 
-// ThemeAboutMatrix says "Phosphor green, with digital rain"
+// ThemeAboutMatrix says "Green code in steel, with the White Rabbit"
 // in the language the app shows.
 func ThemeAboutMatrix() string { return In(i18n.Locale()).ThemeAboutMatrix() }
 
-// ThemeAboutMatrix says "Phosphor green, with digital rain"
+// ThemeAboutMatrix says "Green code in steel, with the White Rabbit"
 // in the language of msgs.
 func (msgs Messages) ThemeAboutMatrix() string {
 	return Catalog.Format(msgs.locale, "themeAboutMatrix", nil)
@@ -2274,6 +2274,16 @@ func CmdFileOpenRecent() string { return In(i18n.Locale()).CmdFileOpenRecent() }
 // in the language of msgs.
 func (msgs Messages) CmdFileOpenRecent() string {
 	return Catalog.Format(msgs.locale, "cmdFileOpenRecent", nil)
+}
+
+// CmdFileRename says "Rename Active File…"
+// in the language the app shows.
+func CmdFileRename() string { return In(i18n.Locale()).CmdFileRename() }
+
+// CmdFileRename says "Rename Active File…"
+// in the language of msgs.
+func (msgs Messages) CmdFileRename() string {
+	return Catalog.Format(msgs.locale, "cmdFileRename", nil)
 }
 
 // CmdFileReopenClosed says "Reopen Closed Tab"
@@ -7854,6 +7864,86 @@ func (msgs Messages) NotificationFrom(title string) string {
 	return Catalog.Format(msgs.locale, "notificationFrom", map[string]any{"title": title})
 }
 
+// ProgWorking says "Working"
+// in the language the app shows.
+func ProgWorking() string { return In(i18n.Locale()).ProgWorking() }
+
+// ProgWorking says "Working"
+// in the language of msgs.
+func (msgs Messages) ProgWorking() string {
+	return Catalog.Format(msgs.locale, "progWorking", nil)
+}
+
+// ProgBlocked says "Waiting for you"
+// in the language the app shows.
+func ProgBlocked() string { return In(i18n.Locale()).ProgBlocked() }
+
+// ProgBlocked says "Waiting for you"
+// in the language of msgs.
+func (msgs Messages) ProgBlocked() string {
+	return Catalog.Format(msgs.locale, "progBlocked", nil)
+}
+
+// ProgApproval says "Waiting for your approval"
+// in the language the app shows.
+func ProgApproval() string { return In(i18n.Locale()).ProgApproval() }
+
+// ProgApproval says "Waiting for your approval"
+// in the language of msgs.
+func (msgs Messages) ProgApproval() string {
+	return Catalog.Format(msgs.locale, "progApproval", nil)
+}
+
+// ProgAnswer says "Waiting for your answer"
+// in the language the app shows.
+func ProgAnswer() string { return In(i18n.Locale()).ProgAnswer() }
+
+// ProgAnswer says "Waiting for your answer"
+// in the language of msgs.
+func (msgs Messages) ProgAnswer() string {
+	return Catalog.Format(msgs.locale, "progAnswer", nil)
+}
+
+// ProgSignIn says "Waiting for you to sign in"
+// in the language the app shows.
+func ProgSignIn() string { return In(i18n.Locale()).ProgSignIn() }
+
+// ProgSignIn says "Waiting for you to sign in"
+// in the language of msgs.
+func (msgs Messages) ProgSignIn() string {
+	return Catalog.Format(msgs.locale, "progSignIn", nil)
+}
+
+// ProgDone says "Done"
+// in the language the app shows.
+func ProgDone() string { return In(i18n.Locale()).ProgDone() }
+
+// ProgDone says "Done"
+// in the language of msgs.
+func (msgs Messages) ProgDone() string {
+	return Catalog.Format(msgs.locale, "progDone", nil)
+}
+
+// ProgFailed says "Failed"
+// in the language the app shows.
+func ProgFailed() string { return In(i18n.Locale()).ProgFailed() }
+
+// ProgFailed says "Failed"
+// in the language of msgs.
+func (msgs Messages) ProgFailed() string {
+	return Catalog.Format(msgs.locale, "progFailed", nil)
+}
+
+// ProgIdle says "Idle"
+// in the language the app shows.
+func ProgIdle() string { return In(i18n.Locale()).ProgIdle() }
+
+// ProgIdle says "Idle"
+// in the language of msgs.
+func (msgs Messages) ProgIdle() string {
+	return Catalog.Format(msgs.locale, "progIdle", nil)
+}
+
 // OnHost says "on {host}"
 // in the language the app shows.
 func OnHost(host string) string { return In(i18n.Locale()).OnHost(host) }
@@ -11486,6 +11576,16 @@ func SearchHintOpen() string { return In(i18n.Locale()).SearchHintOpen() }
 // in the language of msgs.
 func (msgs Messages) SearchHintOpen() string {
 	return Catalog.Format(msgs.locale, "searchHintOpen", nil)
+}
+
+// SearchHintPrev says "Go to the previous result"
+// in the language the app shows.
+func SearchHintPrev() string { return In(i18n.Locale()).SearchHintPrev() }
+
+// SearchHintPrev says "Go to the previous result"
+// in the language of msgs.
+func (msgs Messages) SearchHintPrev() string {
+	return Catalog.Format(msgs.locale, "searchHintPrev", nil)
 }
 
 // SearchHintResults says "Go to the results"

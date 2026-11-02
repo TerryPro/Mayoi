@@ -3,7 +3,9 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
+
 ## Unreleased
+
 
 - Terminal tabs show the shell's name, as PowerShell, not the path in its title.
 - Hovering a terminal in the list shows the title its shell gave and the folder it started in.
@@ -11,6 +13,60 @@ needs a `## <version>` section here, or its build fails.
 - Drag the splitter on the list's left edge to widen or narrow it; a narrow one shows its icons alone.
 - The panel no longer repeats its terminals as tabs above them; the list on its right is the switcher.
 - A terminal renamed from its list row goes by that name in the list and in its tab.
+
+
+- Terminal icons show whether a program says it works, waits for you, finished or failed (OSC 7501).
+- While a program works or waits for you, a pill over its terminal says what it does, with its progress.
+- A program in a project out of sight that waits for you, finishes or fails marks the project on the rail.
+- Typing in a terminal clears the mark of a program's finished or failed work.
+- The program status pill shows the program's name in bold, its message, and its progress as a bar.
+- When a program waits for you, its pill gets a colored ring and its icon pulses in time with the badge.
+- As shown work finishes or fails, the pill says so with a check or a cross for a moment.
+- The pill counts the program's other active tasks, and the terminal icon's tooltip lists them.
+- A program that reports its status very often no longer slows the window down.
+- **Rename Active File…** in the command palette renames the current tab's file, bindable as `file.rename`.
+- Opening a file from outside the folder clears the selection in the Explorer.
+- Splitting a Markdown preview to the right keeps it a preview, scrolled to the same place.
+- **New File…** and the other items of the Explorer's menu below the files no longer do nothing at times.
+
+
+- **View → Theme → The Matrix** puts the code's green inside steel chrome, like the film's real world.
+- The Matrix gives each kind of code its own hue, and shows comments in steel that reads at 6.9:1.
+- Under The Matrix, primary buttons are the red pill, chosen rows the blue, and Discard is orange.
+- The White Rabbit is The Matrix's character on the welcome page and in the status bar, hopping while Git runs.
+- The Matrix's digital rain is mirrored, as in the film, with a dimmer far layer behind it.
+- Quick open, the command palette, pickers and dialogs now show at once instead of fading in.
+- The find box, the sidebar and the panel appear instantly when opened with their shortcuts.
+- Switching tabs or sidebar views no longer slides or fades the marks and the view.
+- The selected row in quick open and pickers moves at once with the arrow keys.
+- Vim's mode badge changes color at once on `i` and `Esc`.
+- The theme picker shows all its rows at once, and moving through it switches the theme without a fade.
+- Settings pages now fade in quickly without rising, and pressed buttons sink a little less.
+- Mermaid diagrams copy as an image from their hover buttons or the opened diagram's header.
+- Mermaid diagrams export as PNG or SVG from their export button, in the colors of the current theme.
+- `.mmd` previews copy and export their diagram with **Copy Mermaid Diagram as Image** and the export commands.
+- Pinching a touchpad zooms images, SVG and Mermaid previews, and opened diagrams around the pointer.
+- On Windows, Ctrl with two-finger scrolling now zooms a picture instead of doing nothing.
+- **View → Theme → Claude** now looks like Claude Code in a terminal, with the whole window in the code's font.
+- Under Claude, the status bar shows Claude Code's ✻ spinner, the work's name and its seconds while Git runs.
+- Claude's errors and removed lines are rose now, apart from its orange, and chosen rows are periwinkle.
+- In Claude Light, the terminal's white and bright white text is readable on the light background.
+- **View → Compact Folders** shows chains of single-child folders on one Explorer row.
+- The Explorer header's context menu, the settings window and `explorerCompactFolders` toggle it too.
+- Hover a compact row to see its whole path when the sidebar cuts it off.
+- `⌘F` in a terminal opens a find bar that searches its output and scrollback, highlighting each match.
+- In the terminal's find bar, `Return` goes to the match above and `Shift+Return` to the one below.
+- On Linux and Windows, `Ctrl+F` in a terminal opens find instead of reaching the shell.
+- Under Purple Gold, the welcome page drops the mosaic apse and arch and matches the other themes.
+- In the find bar, `Shift+Return` now goes to the previous match instead of the next one.
+- In the find bar's replace field, `Shift+Return` replaces the match and goes back to the one before it.
+- In **Search**, `Shift+Return` in the query selects and previews the previous result, wrapping to the last.
+- The Qoder theme lays the editors and terminal on a rounded card, in a grained shell without dividing lines.
+- In the Qoder theme, dragging a sidebar or panel edge lights the edge only around the pointer.
+- The Qoder theme titles the sidebar, Source Control and the terminal in sentence case, as Explorer.
+- The Qoder theme colors code in Qoder's own chart colors: green, blue, violet, amber and rose.
+- In the Qoder theme, Qoduck holds up a magnifier while searching and a laptop while Git works.
+- Qoduck wears a headset while AI writes a commit message, and raises a megaphone when a toast appears.
 
 ## 0.16.2
 
@@ -36,6 +92,7 @@ needs a `## <version>` section here, or its build fails.
 - Folding has no default keys now that ⇧⌘[ and ⇧⌘] switch projects; **Keyboard Shortcuts** sets its own.
 - The outline's place, sort and kinds are in **Settings → Appearance**.
 - `tabSize`, `showFoldingControls` and the language servers are in the settings window too.
+
 
 ## 0.16.1
 
@@ -99,56 +156,6 @@ needs a `## <version>` section here, or its build fails.
 - **Switch Worktree…** finds a checkout by folder or branch; Enter on a new name makes a worktree.
 - Typing an existing branch's name in **Switch Worktree…** points to **Switch Branch…** instead.
 - **Switch Branch…** lists local branches first, with each branch's last author and time.
-
-## 0.15.1
-
-- The Explorer shows a timeline of the file shown, with each change's kind, author and time.
-- A click on a timeline change opens only that file's change in the commit, named with both versions.
-- A commit's file, right-clicked in **Source Control**, opens only that file's change in the commit.
-- The timeline folds behind its header, its splitter sets its height, and the window remembers both.
-- Dragging the timeline's splitter no longer moves the outline, and a folded tree gives it more room.
-- The Explorer's folder row folds the file tree away with a chevron, and shows it again.
-- The Explorer shows an outline of the file shown under the files, with its declarations nested.
-- A click on an outline declaration goes to its line, and its arrow folds the declarations under it.
-- The outline's header folds the section, and dragging its splitter sets how tall it is.
-- **File → Settings → Editor** sets where the outline shows, which declarations it lists, and their order.
-- The sidebar's **Outline** switch shows the declarations of the file in a view of their own.
-- Folding stays in place as you type in a file folded whole or by level, which no longer lags.
-- Folds are found again when `tabSize` changes, so their blocks line up with the new indent.
-- A large file opens without holding the window, read in the background as its tab shows.
-- The problems panel is worked out again only as the problems or its filter change, not every frame.
-- **Language server** problems are underlined in the editor, and marked on the overview strip.
-- `Ctrl+Space` suggests the words the language server offers at the caret.
-- `Shift+F1` shows what the language server says of the symbol at the caret.
-- `Ctrl+.` offers the language server's quick fixes for the problem at the caret.
-- Headings in the Markdown preview take the color theme's heading color, as the editor does.
-- Command-clicking a terminal path or URL followed by Chinese punctuation no longer takes the text after it.
-- Switching back to a tab no longer flashes a blank editor for a frame before its text shows.
-- When a file changes on disk, the editor stays where you were reading instead of jumping to the caret.
-- The caret stays on its line when a file changes on disk above it, rather than drifting to other text.
-- **View → Menu Bar** shows **File** through **Help** across the title bar, rather than behind the menu icon.
-- Tab-indented code now sits at the next tab stop, lined up with its indent guides.
-- Tab width is configurable with `tabSize` in `settings.json`, from 1 to 8.
-- **File → Settings** opens a dialog with the settings grouped, and **File → Open Settings (JSON)** still opens the file.
-- The sidebar, sidebar-on-right and terminal buttons sit together at the right of the title bar, as VS Code's layout controls.
-- A Markdown preview lists its headings in a contents pane at its right, and a click scrolls to one.
-- **Go to Definition** (`F12`) jumps to where a Go symbol is defined, through `gopls`.
-- **File → Settings → Advanced** turns on the language server, whose problems count in the status bar.
-- The status bar says when the language server can't start, and clicking it opens the settings.
-- **View → Toggle Problems** (`Ctrl+Shift+M`) lists the language server's problems; a click jumps to one.
-- The problems panel filters by errors and warnings, searches, and folds files.
-- Arrow keys move the choice in the problems panel, Enter opens the problem, and Escape returns to the editor.
-- The language server serves TypeScript, JavaScript, Rust, Python and C/C++ as well as Go.
-- A language server starts for each project of a folder, as a nested module or a subproject.
-- `lspServers` in `settings.json` adds a language server, or overrides one of Mayoi's.
-- Code folds from a chevron in the gutter, a folded block showing an ellipsis on its first line.
-- **View → Fold**, **Unfold**, **Fold All** and **Unfold All** fold a block at the caret, or every block of the file.
-- Folds stay folded as you edit, and come back with a tab when the window opens again.
-- The language server's folding ranges fold imports and regions that brackets alone do not.
-- **View → Fold Level 1**, **Fold Level 2** and **Fold Level 3** fold the blocks up to that depth.
-- Folding works with word wrap, where a hidden line takes no rows.
-- **File → Settings → Editor** sets the fold markers to show always, or only on hover.
-- In Vim mode, `zc`, `zo`, `za`, `zR` and `zM` fold and unfold at the cursor.
 
 ## 0.15.0
 

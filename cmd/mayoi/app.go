@@ -210,6 +210,9 @@ type app struct {
 	// keyboard as it next shows.
 	filesView  ui.Handle
 	focusFiles bool
+	// filesMenuBelow is set while the menu of the space below the files
+	// shows: chosen, its item runs wherever the pointer went to choose it.
+	filesMenuBelow bool
 	// treeSynced is the document the tree last followed, selectInTree the
 	// file it should choose once its row shows.
 	treeSynced, selectInTree string
@@ -307,6 +310,7 @@ type app struct {
 	welcomeView   ui.Handle
 	rain          rainState   // The Matrix's, behind the welcome page
 	mascot        mascotState // the theme's character, Claude's or Qoder's
+	toldAt        time.Time   // when a toast last told what a command did
 	spin          spinState   // Claude's spinner, while Git works
 	// blurred is set while the window has not the keyboard.
 	blurred  bool
@@ -327,17 +331,17 @@ type app struct {
 	// its header, with the gap before the counts, as measured last.
 	viewedW float32
 
-	quick      quickOpen
-	palette    []paletteEntry    // the commands of the command palette, made as it first opens
-	waits      []docWait         // the mayoi --wait commands waiting for documents to close
-	hints      map[string]string // the keys of the commands, as tooltips show them
-	branches   branchPicker      // the box that switches branches
-	stashes    stashPicker       // the box of the stashes
-	prs        prPicker          // the box of the pull requests
-	checks     checksPicker      // the box of the checks of the pull request
-	worktrees  worktreePicker    // the box that switches worktrees
-	recents    recentPicker      // the box of the recent folders
-	themes     themePicker       // the box of the color themes
+	quick     quickOpen
+	palette   []paletteEntry    // the commands of the command palette, made as it first opens
+	waits     []docWait         // the mayoi --wait commands waiting for documents to close
+	hints     map[string]string // the keys of the commands, as tooltips show them
+	branches  branchPicker      // the box that switches branches
+	stashes   stashPicker       // the box of the stashes
+	prs       prPicker          // the box of the pull requests
+	checks    checksPicker      // the box of the checks of the pull request
+	worktrees worktreePicker    // the box that switches worktrees
+	recents   recentPicker      // the box of the recent folders
+	themes    themePicker       // the box of the color themes
 	// lspServers are the language servers running, by their command,
 	// arguments and root, and lspDiags their diagnostics by file. lspReg
 	// are the servers the settings name, made for the settings' lspGen
@@ -360,10 +364,6 @@ type app struct {
 	// bar, and tickAt is when a countdown shown repaints next.
 	syncOpen bool
 	tickAt   time.Time
-	// dialog is the dialog shown, which came in as it showed, and
-	// dialogBuilt says a build of the view built one.
-	dialog      string
-	dialogBuilt bool
 
 	errors []string // to show as toasts
 	// fails counts the errors shown, which stop the commands of

@@ -54,7 +54,12 @@ func (a *app) explorerView(c *ui.Context, hovered bool) {
 			a.settings.Changed()
 			a.invalidate()
 		}
-		ui.Text(c, strings.ToUpper(filepath.Base(a.root))).FontSize(11).FontWeight(700).LetterSpacing(0.4).
+		// The folder's own name in sentence case, not recased.
+		name, size, spacing := strings.ToUpper(filepath.Base(a.root)), float32(11), float32(0.4)
+		if p.sentence {
+			name, size, spacing = filepath.Base(a.root), 12, 0
+		}
+		ui.Text(c, name).FontSize(size).FontWeight(700).LetterSpacing(spacing).
 			TextColor(p.text).SingleLine().Grow(1)
 		if !hovered && !a.files.List.FocusWithin(c) {
 			return

@@ -62,7 +62,7 @@ func (a *app) termFindView(c *ui.Context, s *session) {
 	}
 	countW := a.findCountWidth(c)
 	box := a.floating(c, ui.Row(c.Key("term-find")).Absolute().Top(4).Right(22).Width(330).Padding(5, 6).Gap(4).
-		AlignItems(ui.Center).Radius(8), false).Transition(popIn)
+		AlignItems(ui.Center).Radius(8), false)
 	shake(c, box, s.findShook)
 	box.Role(ui.RoleToolbar).Label(locales.FindLabel())
 	count, none := locales.FindNoResults(), true
@@ -86,13 +86,11 @@ func (a *app) termFindView(c *ui.Context, s *session) {
 			if in.Changed() {
 				s.term.Search(s.findQuery)
 			}
-			if in.Shortcut(ui.Shift, ui.KeyEnter) {
-				a.termFindStep(s, -1)
-			} else if in.Submitted() {
+			if in.Submitted() {
 				if none {
 					s.findShook = c.Now()
 				}
-				a.termFindStep(s, 1)
+				a.termFindStep(s, enterStep(in))
 			}
 		})
 		col := p.muted

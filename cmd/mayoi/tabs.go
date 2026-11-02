@@ -10,10 +10,6 @@ import (
 	"mayoi/locales"
 )
 
-// tabLine is the identity of the line along the top of a column's tab
-// shown, which slides from tab to tab as another shows.
-type tabLine struct{ col int }
-
 // crossFade is how a tab's cross comes and goes with the pointer.
 var crossFade = ui.ElementTransition{Duration: 100 * time.Millisecond, Enter: &ui.Motion{}, Exit: &ui.Motion{}}
 
@@ -47,7 +43,7 @@ func (a *app) tabStrip(c *ui.Context, col *column) {
 			})
 		}
 	}
-	ui.Row(c).Height(tabStripH).Background(p.chrome).AlignItems(ui.Center).
+	ui.Row(c).Height(tabStripH).Background(p.strip).AlignItems(ui.Center).
 		ContextMenu(func(m *ui.Menu) { a.columnLockMenu(m, col) }).Children(func() {
 		// The strip's edge along the bottom, which the tab shown breaks to
 		// join the text below it.
@@ -78,13 +74,17 @@ func (a *app) tabStrip(c *ui.Context, col *column) {
 					_, over := ui.DragOver[dragItem](tab)
 					over = over || tab.FileDragOver()
 					hovered := tab.Hovered()
-					under := p.chrome
+					under := p.strip
 					switch {
 					case active:
 						under = p.editor
 						tab.Background(under)
+					case hovered && p.card > 0:
+						// In a card, the strip is the editor's color already.
+						under = p.hover.Over(p.strip)
+						tab.Background(under)
 					case hovered:
-						under = mix(p.chrome, p.editor, 0.5)
+						under = mix(p.strip, p.editor, 0.5)
 						tab.Background(under)
 					}
 					if tab.Pressed() && a.middle != t && (!active || !focused) {
@@ -109,14 +109,12 @@ func (a *app) tabStrip(c *ui.Context, col *column) {
 							ui.Box(c).Absolute().Top(0).Bottom(0).Left(0).Width(2).Background(p.accent)
 						case active:
 							// The line along the top of the tab shown, in the accent
-							// while its column has the keyboard. It slides from the
-							// tab shown before.
+							// while its column has the keyboard.
 							line := p.faint
 							if focused {
 								line = p.accent
 							}
-							l := ui.Box(c.Key("line")).Absolute().Top(0).Left(0).Right(0).Height(2).Background(line).
-								Transition(ui.ElementTransition{Animation: &ui.Snappy, Match: tabLine{col.id}})
+							l := ui.Box(c.Key("line")).Absolute().Top(0).Left(0).Right(0).Height(2).Background(line)
 							if focused && p.gilt.A != 0 {
 								l.Draw(func(pt *ui.Painter, r ui.Rect) { drawGilt(pt, r, p) })
 							}

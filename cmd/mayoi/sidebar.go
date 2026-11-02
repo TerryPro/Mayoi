@@ -54,8 +54,9 @@ func (a *app) sidebar(c *ui.Context) {
 			// The switches, the gaps, the paddings and the actions' buttons
 			// take the rest of the row.
 			room := a.sidebarTitleRoom(actions)
-			title = fitTitle(c, title, short, room)
-			ui.Text(c, title).FontSize(11).FontWeight(600).LetterSpacing(titleSpacing).TextColor(p.muted).Grow(1).
+			size, spacing := p.titleLook(11, titleSpacing)
+			title = fitTitle(c, p.title(title), p.title(short), room, size, spacing)
+			ui.Text(c, title).FontSize(size).FontWeight(600).LetterSpacing(spacing).TextColor(p.muted).Grow(1).
 				Padding(0, 0, 0, 6).SingleLine()
 			if scm {
 				a.scmTitleActions(c)
@@ -66,10 +67,7 @@ func (a *app) sidebar(c *ui.Context) {
 				return
 			}
 		})
-		// The view chosen fades in as the switches change it.
-		pane := ui.Column(c.Key("view:" + view)).Grow(1).MinHeight(0)
-		pane.Opacity(pane.Keyframes("in", []ui.Keyframe{{Value: 0}, {At: 150 * time.Millisecond, Value: 1, Ease: ui.EaseOut}}))
-		pane.Children(func() {
+		ui.Column(c.Key("view:" + view)).Grow(1).MinHeight(0).Children(func() {
 			if outline {
 				a.outlineView(c)
 				return
@@ -123,21 +121,18 @@ const (
 
 // fitTitle returns the sidebar's title, or its short form when the title
 // would not fit in room, as the sidebar is narrow or the buttons beside it
-// are many: cut short, it would read as neither.
-func fitTitle(c *ui.Context, title, short string, room float32) string {
+// are many: cut short, it would read as neither. It is of a size and a
+// letter spacing.
+func fitTitle(c *ui.Context, title, short string, room, size, spacing float32) string {
 	if short == "" {
 		return title
 	}
-	w, _ := c.MeasureText(0, ui.Span{Text: title, Size: 11, Weight: 600})
-	if w+titleSpacing*float32(len(title)) <= room {
+	w, _ := c.MeasureText(0, ui.Span{Text: title, Size: size, Weight: 600})
+	if w+spacing*float32(len(title)) <= room {
 		return title
 	}
 	return short
 }
-
-// switchMark is the identity of the mark under the sidebar's switch of
-// the view shown, which goes from one switch to another.
-type switchMark struct{}
 
 // sidebarSwitch is a button at the top of the sidebar that shows a view
 // of it, with a count of what it has when count is more than 0.
@@ -157,9 +152,8 @@ func (a *app) sidebarSwitch(c *ui.Context, icon *ui.SVG, label string, on bool, 
 	pressPose(b)
 	b.Children(func() {
 		if on {
-			// The mark of the view shown slides from the switch before.
-			ui.Box(c.Key("on")).Absolute().Left(0).Right(0).Top(0).Bottom(0).Radius(5).Background(p.active).
-				Transition(ui.ElementTransition{Animation: &ui.Snappy, Match: switchMark{}})
+			// The mark of the view shown.
+			ui.Box(c.Key("on")).Absolute().Left(0).Right(0).Top(0).Bottom(0).Radius(5).Background(p.active)
 		}
 		ui.Icon(c, icon).FontSize(14).TextColor(col)
 		if count > 0 {
@@ -211,6 +205,10 @@ func (a *app) fileTree(c *ui.Context) {
 	// Follow the document shown: open the folders above it and choose it.
 	if activePath != a.treeSynced {
 		a.treeSynced = activePath
+		// A file outside the folder has no row: none is chosen in its place.
+		if activePath != "" && !strings.HasPrefix(activePath, a.root+string(filepath.Separator)) {
+			a.fileRow, a.selectInTree = -1, ""
+		}
 		a.revealInTree(activePath)
 	}
 	chosen := a.explorerChoice()
@@ -293,6 +291,7 @@ func (a *app) fileTree(c *ui.Context) {
 			row.Background(p.accent.Alpha(0.16)).Radius(4)
 		}
 		row.ContextMenu(func(m *ui.Menu) {
+			a.filesMenuBelow = false
 			dir := path
 			if !isDir {
 				dir = filepath.Dir(path)
@@ -459,10 +458,18 @@ func (a *app) fileTree(c *ui.Context) {
 	if out.Clicked() && clicked == "" && below {
 		a.fileRow = -1
 	}
+	if clicked != "" || out.Clicked() {
+		a.filesMenuBelow = false
+	}
 	out.ContextMenu(func(m *ui.Menu) {
 		// Beside a row, as by its arrow, no menu: an empty one does not
-		// open.
-		if !below {
+		// open. The function runs again for the item chosen, with the
+		// pointer where the item was, over the rows or the editor: the
+		// place the menu opened at decides.
+		if below {
+			a.filesMenuBelow = true
+		}
+		if !a.filesMenuBelow {
 			return
 		}
 		a.fileRow = -1
@@ -742,7 +749,9 @@ func (a *app) renamed(path, to string) {
 			}
 		}
 	}
-	a.tree.Refresh()
+	if a.tree != nil {
+		a.tree.Refresh()
+	}
 	a.indexStale, a.indexed = true, time.Time{}
 	a.rememberTabs()
 }

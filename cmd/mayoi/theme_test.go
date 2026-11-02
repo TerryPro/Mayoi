@@ -42,6 +42,17 @@ func TestMatrixTheme(t *testing.T) {
 	if th := termTheme(matrixPal); th.Background != matrixPal.panel || th.Palette != matrixPal.ansi {
 		t.Error("the terminal's colors are not the palette's")
 	}
+	if themeMascotOf(themeMatrix) != rabbit {
+		t.Error("The Matrix has not the White Rabbit")
+	}
+	// The chrome is the real world's steel, the code the Matrix's green,
+	// and comments the steel of people's notes.
+	if matrixPal.chrome.G > matrixPal.chrome.B || matrixPal.editor.G <= matrixPal.editor.B {
+		t.Error("the chrome is not steel, or the editor not green")
+	}
+	if matrixPal.syntax[highlight.Comment] != matrixPal.muted {
+		t.Error("comments are not in the steel of the chrome")
+	}
 	// The icons of files are greens, not their languages' colors.
 	if _, c := fileIcon(a.pal, "main.go"); c != langColor(matrixPal, "#00add8", "") || c.G < c.R || c.G < c.B {
 		t.Errorf("a Go file's icon is %v, not a green", c)
@@ -244,6 +255,79 @@ func TestClaudeTheme(t *testing.T) {
 	}
 }
 
+// Qoder lays the window out as Qoder's workbench: the editors and the
+// panel in a card of one color in a grained shell, with no lines between
+// the shell's parts, titles in sentence case, and code in Qoder's chart
+// series, each read at 4.5:1. No other theme does.
+func TestQoderTheme(t *testing.T) {
+	for name, p := range map[string]*palette{"light": qoderLightPal, "dark": qoderDarkPal} {
+		if p.card == 0 || p.grain == 0 || !p.sentence {
+			t.Errorf("Qoder %s is not laid out as Qoder's workbench", name)
+		}
+		if p.hairline().A != 0 || p.seam().A != 0 || p.strip != p.editor || p.panel != p.editor {
+			t.Errorf("Qoder %s: lines part the shell, or its card is not of one color", name)
+		}
+		for _, k := range []highlight.Kind{highlight.Keyword, highlight.Function, highlight.Type, highlight.String, highlight.Number} {
+			if r := contrast(p.syntax[k], p.editor); r < 4.5 {
+				t.Errorf("Qoder %s: code of kind %d reads at %.2f:1", name, k, r)
+			}
+		}
+	}
+	for name, p := range map[string]*palette{"Mayoi": lightPal, "Matrix": matrixPal, "Claude": claudeDarkPal, "Cursor": cursorLightPal, "Purple Gold": purpleGoldPal} {
+		if p.card != 0 || p.sentence || p.strip != p.chrome || p.hairline().A == 0 {
+			t.Errorf("%s is laid out as Qoder", name)
+		}
+	}
+	if got := qoderLightPal.title("SOURCE CONTROL"); got != "Source control" {
+		t.Errorf("Qoder titles Source Control %q", got)
+	}
+	if got := lightPal.title("Terminal"); got != "TERMINAL" {
+		t.Errorf("Mayoi titles the panel %q", got)
+	}
+
+	for _, theme := range []string{themeQoder, ""} {
+		hs := themeHarness(t, theme, false)
+		// The panel without a terminal: a shell started in the folder
+		// holds it on Windows, which then cannot remove it.
+		hs.a.window.PanelOpen = true
+		hs.settle()
+		capitals := hs.tt.HasText("EXPLORER") && hs.tt.HasText("TERMINAL")
+		if capitals != (theme == "") {
+			t.Errorf("titles in capitals in theme %q: %v", theme, capitals)
+		}
+	}
+}
+
+// In Qoder, Qoduck holds up a prop in the status bar for the work going
+// on, and its megaphone for a while after a toast.
+func TestQoduckProps(t *testing.T) {
+	hs := themeHarness(t, themeQoder, false)
+	a := hs.a
+	for _, tc := range []struct {
+		work string
+		set  func()
+		want mascotProp
+	}{
+		{"nothing", func() {}, propNone},
+		{"a search", func() { a.inFiles.running = true }, propSearch},
+		{"AI writing", func() { a.inFiles.running, a.git.writing = false, &aiWriting{} }, propAI},
+		{"Git", func() { a.git.writing, a.git.busy = nil, "Pushing…" }, propGit},
+		{"a toast", func() { a.git.busy = ""; a.tell(note{message: "Pushed"}) }, propNews},
+	} {
+		a.post(tc.set)
+		hs.settle()
+		if a.mascot.prop != tc.want {
+			t.Errorf("for %s Qoduck holds up %d, not %d", tc.work, a.mascot.prop, tc.want)
+		}
+	}
+	if p, left := a.mascotPropAt(a.toldAt.Add(mascotNews / 2)); p != propNews || left != mascotNews/2 {
+		t.Errorf("halfway, Qoduck holds up %d for %v more", p, left)
+	}
+	if p, _ := a.mascotPropAt(a.toldAt.Add(mascotNews)); p != propNone {
+		t.Errorf("Qoduck does not put its megaphone down: %d", p)
+	}
+}
+
 // Claude's spinner turns through Claude Code's glyphs a step at a time,
 // names the work, and after a while now and then says one of the CLI's
 // own words instead, as the light runs across it.
@@ -346,7 +430,7 @@ func TestMascotMoves(t *testing.T) {
 		name  string
 	}{{themeClaude, clawd, "Claude"}, {themeQoder, qoduck, "Qoder"}, {themeGrokBot, grokBot, "Grok Bot"},
 		{themePumpkin, jack, "Jack-o'-Lantern"}, {themeWitchsBrew, cauldron, "Witch's Brew"}, {themeBloodMoon, bat, "Blood Moon"},
-		{themePurpleGold, corona, "Corona"}} {
+		{themePurpleGold, corona, "Corona"}, {themeMatrix, rabbit, "The White Rabbit"}} {
 		hs := themeHarness(t, tc.theme, true)
 		a := hs.a
 		if a.themeMascot() != tc.m {
