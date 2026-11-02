@@ -391,6 +391,10 @@ type Layout struct {
 	SidebarWidth  float32 `json:"sidebarWidth,omitempty"`
 	PanelHeight   float32 `json:"panelHeight,omitempty"`
 	PanelWidth    float32 `json:"panelWidth,omitempty"`
+
+	// TermListWidth is how wide the panel's list of terminals shows, 0 for
+	// the width of a first launch.
+	TermListWidth float32 `json:"termListWidth,omitempty"`
 	// CommitFilesOpen shows the panel of the files of a commit's tab, hidden
 	// at first, and CommitFilesWidth is how wide it is.
 	CommitFilesOpen  bool    `json:"commitFilesOpen,omitempty"`
@@ -411,7 +415,7 @@ type Layout struct {
 }
 
 // DefaultLayout is the layout of a first launch.
-var DefaultLayout = Layout{SidebarWidth: 248, PanelHeight: 260, PanelWidth: 400, CommitFilesWidth: 240, OutlineHeight: 220, TimelineHeight: 190}
+var DefaultLayout = Layout{SidebarWidth: 248, PanelHeight: 260, PanelWidth: 400, TermListWidth: 140, CommitFilesWidth: 240, OutlineHeight: 220, TimelineHeight: 190}
 
 // Normalize keeps the layout in its bounds, as base has it where it has
 // none, as a session an older version kept.
@@ -431,12 +435,16 @@ func (l *Layout) Normalize(base Layout) {
 	if l.TimelineHeight == 0 {
 		l.TimelineHeight = base.TimelineHeight
 	}
+	if l.TermListWidth == 0 {
+		l.TermListWidth = base.TermListWidth
+	}
 	l.SidebarWidth = clamp(l.SidebarWidth, 160, 600)
 	l.PanelWidth = clamp(l.PanelWidth, 160, 2000)
 	l.CommitFilesWidth = clamp(l.CommitFilesWidth, 140, 800)
 	l.PanelHeight = clamp(l.PanelHeight, 100, 2000)
 	l.OutlineHeight = clamp(l.OutlineHeight, 80, 2000)
 	l.TimelineHeight = clamp(l.TimelineHeight, 80, 2000)
+	l.TermListWidth = clamp(l.TermListWidth, 46, 420)
 }
 
 // Column is a column of the editor area, as the settings keep it.

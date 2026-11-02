@@ -59,6 +59,10 @@ type session struct {
 	findInput ui.Handle
 	findShook time.Time
 	findBack  bool
+
+	// name is what the user renamed the terminal, "" while its title is
+	// the one its shell gives.
+	name string
 }
 
 type panelHeaderLayout struct {
@@ -485,13 +489,6 @@ func (a *app) panelTab(c *ui.Context, key, label string, on bool, count int, fn 
 func (a *app) panel(c *ui.Context) {
 	p := a.pal
 	terms := a.panelTerms()
-	// MyGo's scroll bar takes the thumb's width plus six DIPs for its
-	// track. Keep that whole hit area below overflowing chips; a strip
-	// that fits needs no extra space.
-	scrollbarH := float32(0)
-	if a.panelScroll.MaxX > 0.5 {
-		scrollbarH = c.Theme().ScrollbarWidth + 6
-	}
 	box := ui.Column(c).Fill().Background(p.panel)
 	if it, ok := ui.Drop[dragItem](box); ok {
 		switch s := a.panelTerm; {
@@ -508,7 +505,7 @@ func (a *app) panel(c *ui.Context) {
 	width := box.Bounds().W
 	var titles strings.Builder
 	for _, s := range terms {
-		titles.WriteString(s.title)
+		titles.WriteString(termLabel(s))
 		titles.WriteByte(0)
 	}
 	windowWidth, _ := c.Size()
@@ -519,7 +516,7 @@ func (a *app) panel(c *ui.Context) {
 	}
 	titled := a.panelSide() == "bottom" || width == 0 || width >= panelTitleW
 	box.Children(func() {
-		head := ui.Row(c).Height(panelHeadH+scrollbarH).Padding(0, 8, 0, 14).Gap(4).AlignItems(ui.Center)
+		head := ui.Row(c).Height(panelHeadH).Padding(0, 8, 0, 14).Gap(4).AlignItems(ui.Center)
 		head.ContextMenu(a.panelMenu)
 		head.Children(func() {
 			if titled {
@@ -532,54 +529,8 @@ func (a *app) panel(c *ui.Context) {
 				})
 				ui.Box(c).Width(10)
 			}
-			// The terminals, as chips: a click shows one, and dragging one
-			// to a column makes a tab of it.
-			ui.ScrollHorizontal(c.Key("terms")).TrackScroll(&a.panelScroll).Grow(1).Height(panelHeadH+scrollbarH).Padding(0, 0, scrollbarH, 0).Children(func() {
-				ui.Row(c).Gap(2).AlignItems(ui.Center).Children(func() {
-					for i, s := range terms {
-						chip := ui.ButtonBase(c.Key(s.id)).Padding(3, 8).Gap(6).Radius(5).AlignItems(ui.Center).Label(s.title).
-							Drag(dragItem{term: s}).Transition(tabMotion)
-						if chip.Dragging() {
-							a.dragNow = true
-						}
-						on := s == a.panelTerm
-						under := p.panel
-						if on {
-							chip.Background(p.active)
-							under = p.active.Over(p.panel)
-						} else if chip.Hovered() {
-							chip.Background(p.hover)
-							under = p.hover.Over(p.panel)
-						}
-						chip.Children(func() {
-							a.termIcon(c, s, 12, p.muted, under)
-							col := p.muted
-							if on {
-								col = p.text
-							}
-							ui.Text(c, fmt.Sprintf("%d: %s", i+1, s.title)).FontSize(12).TextColor(col).SingleLine().MaxWidth(180)
-						})
-						if chip.Clicked() {
-							a.panelProblems = false
-							a.panelTerm = s
-							a.focusTerminal()
-						}
-						chip.ContextMenu(func(m *ui.Menu) {
-							if m.Item(locales.TermMoveLockedRight()).Chosen() {
-								a.post(func() { a.terminalToLockedRight(s) })
-							}
-							if m.Item(locales.TermMoveEditorArea()).Chosen() {
-								a.post(func() { a.terminalToColumn(s, a.column(), a.column().active+1) })
-							}
-							a.hcMenu(m, s)
-							if m.Item(locales.TermKill()).Chosen() {
-								a.post(func() { a.killTerminal(s) })
-							}
-						})
-					}
-				})
-			})
-			ui.Row(c).Gap(4).AlignItems(ui.Center).Margin(0, 0, scrollbarH, 0).Children(func() {
+			ui.Box(c).Grow(1)
+			ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
 				if !a.panelProblems {
 					if a.iconButton(c, iconPlus, a.withKey(locales.CmdViewNewTerminal(), "view.newTerminal"), false).Clicked() {
 						a.newTerminal()
@@ -605,33 +556,39 @@ func (a *app) panel(c *ui.Context) {
 				}
 			})
 		})
-		term := ui.Box(c).Grow(1)
-		// Files from another app type their paths into the terminal shown.
-		filesOver := false
-		if s := a.panelTerm; s != nil && !a.panelProblems {
-			if paths := term.DroppedFiles(); paths != nil {
-				paths = slices.Clone(paths)
-				a.post(func() { a.pastePaths(s, paths) })
+		body := ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch)
+		body.Children(func() {
+			term := ui.Box(c).Grow(1).MinHeight(0)
+			// Files from another app type their paths into the terminal shown.
+			filesOver := false
+			if s := a.panelTerm; s != nil && !a.panelProblems {
+				if paths := term.DroppedFiles(); paths != nil {
+					paths = slices.Clone(paths)
+					a.post(func() { a.pastePaths(s, paths) })
+				}
+				filesOver = term.FileDragOver()
 			}
-			filesOver = term.FileDragOver()
-		}
-		term.Children(func() {
-			if a.panelProblems {
-				a.problemsView(c)
-				return
-			}
-			s := a.panelTerm
-			if s == nil {
-				ui.Column(c).Fill().Center().Children(func() {
-					if ui.Button(c, locales.CmdViewNewTerminal()).Clicked() {
-						a.newTerminal()
-					}
-				})
-			} else {
-				a.terminalView(c, s)
-			}
-			if over.tab != nil && over.tab.term != nil || filesOver {
-				a.dropMark(c)
+			term.Children(func() {
+				if a.panelProblems {
+					a.problemsView(c)
+					return
+				}
+				s := a.panelTerm
+				if s == nil {
+					ui.Column(c).Fill().Center().Children(func() {
+						if ui.Button(c, locales.CmdViewNewTerminal()).Clicked() {
+							a.newTerminal()
+						}
+					})
+				} else {
+					a.terminalView(c, s)
+				}
+				if over.tab != nil && over.tab.term != nil || filesOver {
+					a.dropMark(c)
+				}
+			})
+			if !a.panelProblems && len(terms) > 0 {
+				a.termListView(c, terms, a.termListWidth(width), width)
 			}
 		})
 	})

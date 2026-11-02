@@ -56,4 +56,4 @@ resolved as it was last time.
 
 The fork's own files: `folding.go`, `outline.go`, `timeline.go`, `lsp.go`,
 `complete.go`, `quickfix.go`, `problems.go`, `menubar.go`, `editorfork.go`,
-`diffcommitfile.go`, `explorerpane.go`.
+`diffcommitfile.go`, `explorerpane.go`, `termlist.go`, `termtab.go`.

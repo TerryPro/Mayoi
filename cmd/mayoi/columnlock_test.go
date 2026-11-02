@@ -419,7 +419,7 @@ func TestTerminalMovesToLockedRightColumn(t *testing.T) {
 	hs.settle()
 	s := a.panelTerm
 	process := s.term
-	if err := tt.RightClick("1: " + s.title); err != nil {
+	if err := tt.RightClick("1: " + termTabLabel(s)); err != nil {
 		t.Fatal(err)
 	}
 	if err := tt.ChooseMenuItem("Move to Locked Right Column"); err != nil {

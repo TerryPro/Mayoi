@@ -3,6 +3,15 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
+## Unreleased
+
+- Terminal tabs show the shell's name, as PowerShell, not the path in its title.
+- Hovering a terminal in the list shows the title its shell gave and the folder it started in.
+- The terminal panel lists every terminal on its right, as VS Code does, each with a menu to rename, move or close it.
+- Drag the splitter on the list's left edge to widen or narrow it; a narrow one shows its icons alone.
+- The panel no longer repeats its terminals as tabs above them; the list on its right is the switcher.
+- A terminal renamed from its list row goes by that name in the list and in its tab.
+
 ## 0.16.2
 
 - Mermaid diagrams copy as an image from their hover buttons or the opened diagram's header.

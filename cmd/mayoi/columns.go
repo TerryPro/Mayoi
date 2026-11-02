@@ -68,7 +68,7 @@ func (t *colTab) closeLabel() string {
 func (t *colTab) name() string {
 	switch {
 	case t.term != nil:
-		return t.term.title
+		return termLabel(t.term)
 	case t.view != nil:
 		return t.view.name()
 	case t.diff != nil:

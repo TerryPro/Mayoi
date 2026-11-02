@@ -666,7 +666,7 @@ func TestDraggingTerminals(t *testing.T) {
 	first, second := a.terms[0], a.terms[1]
 	// A terminal of the panel, dropped on the side of the editor, shows in
 	// a column of its own, and the panel shows the other.
-	chip, ok := tt.Find("2: " + second.title)
+	chip, ok := tt.Find("2: " + termTabLabel(second))
 	body, ok2 := tt.Find("Editor main.go")
 	if !ok || !ok2 {
 		t.Fatalf("no chip or no editor: %q", tt.Texts())
@@ -677,7 +677,7 @@ func TestDraggingTerminals(t *testing.T) {
 	}
 	hs.shot("14-terminal-dragged")
 	// And its tab, dropped on the panel, goes back.
-	x, y := hs.tabCenter(second.title)
+	x, y := hs.tabCenter(termLabel(second))
 	panel, ok := tt.Find("TERMINAL")
 	if !ok {
 		t.Fatal("no panel")
