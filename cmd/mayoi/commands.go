@@ -246,6 +246,11 @@ func (a *app) commandsIn(t locales.Messages) []command {
 	if !hcInstallable() {
 		cmds = slices.DeleteFunc(cmds, func(c command) bool { return c.id == "view.installHC" })
 	}
+	// The palette starts a terminal with each shell this machine has.
+	for _, p := range a.termProfiles() {
+		p := p
+		cmds = append(cmds, command{"view.newTerminal." + p.id, t.TermNewWith(p.label), "", func() { a.openTerminalWith(a.workDir(), p) }})
+	}
 	return cmds
 }
 

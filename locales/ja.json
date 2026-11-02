@@ -280,6 +280,8 @@
   "cmdViewMoveTabNext": "タブを次の列へ移動",
   "cmdViewMoveTabPrev": "タブを前の列へ移動",
   "cmdViewNewTerminal": "新しいターミナル",
+  "termNewWith": "新しいターミナル: {profile}",
+  "termSetDefault": "既定に設定",
   "cmdViewNextColumn": "次の列にフォーカス",
   "cmdViewPanelBottom": "パネルを下へ移動",
   "cmdViewPanelLeft": "パネルを左へ移動",

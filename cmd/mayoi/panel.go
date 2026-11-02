@@ -64,6 +64,9 @@ type session struct {
 	// the one its shell gives.
 	name string
 
+	// profile is the shell it starts, and the command that starts it.
+	profile termProfile
+
 	// status is what its programs say they do (OSC 7501), statusSince
 	// when the record most in need of the user last changed, and
 	// statusFrom the state that record was in before.
@@ -120,9 +123,19 @@ func (a *app) workDir() string {
 	return dir
 }
 
-// startTerminal starts a terminal in dir, nil when it cannot.
+// startTerminal starts a terminal in dir with the default profile, nil
+// when it cannot.
 func (a *app) startTerminal(dir string) *session {
-	s := &session{dir: dir, title: shellName()}
+	return a.startTerminalWith(dir, a.defaultTermProfile())
+}
+
+// startTerminalWith starts a terminal in dir with profile p, nil when it
+// cannot.
+func (a *app) startTerminalWith(dir string, p termProfile) *session {
+	s := &session{dir: dir, title: p.label, profile: p}
+	if s.title == "" {
+		s.title = shellName()
+	}
 	a.offerHC()
 	if c := sessionConn(s); c != nil {
 		s.title = c.Host
@@ -160,6 +173,9 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 	light, dark := a.termThemes()
 	// In a remote folder, a shell of its host, over the connection.
 	var command []string
+	if len(s.profile.command) > 0 {
+		command = slices.Clone(s.profile.command)
+	}
 	if c, rdir, ok := remote.Lookup(dir); ok {
 		command = c.TerminalCommand(rdir)
 		dir, _ = os.UserHomeDir()
@@ -269,8 +285,12 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 func (a *app) newTerminal() { a.newTerminalIn(a.workDir()) }
 
 // newTerminalIn starts a terminal of the panel in dir and shows it.
-func (a *app) newTerminalIn(dir string) {
-	s := a.startTerminal(dir)
+func (a *app) newTerminalIn(dir string) { a.newTerminalInProfile(dir, a.defaultTermProfile()) }
+
+// newTerminalInProfile starts a terminal of the panel in dir with profile
+// p and shows it.
+func (a *app) newTerminalInProfile(dir string, p termProfile) {
+	s := a.startTerminalWith(dir, p)
 	if s == nil {
 		return
 	}
@@ -555,9 +575,7 @@ func (a *app) panel(c *ui.Context) {
 			ui.Box(c).Grow(1)
 			ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
 				if !a.panelProblems {
-					if a.iconButton(c, iconPlus, a.withKey(locales.CmdViewNewTerminal(), "view.newTerminal"), false).Clicked() {
-						a.newTerminal()
-					}
+					a.termNewButton(c)
 					if s := a.panelTerm; s != nil {
 						if a.iconButton(c, iconToEditor, locales.TermMoveToEditor(), false).Clicked() {
 							a.post(func() { a.terminalToColumn(s, a.column(), a.column().active+1) })

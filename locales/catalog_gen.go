@@ -3226,6 +3226,26 @@ func (msgs Messages) CmdViewNewTerminal() string {
 	return Catalog.Format(msgs.locale, "cmdViewNewTerminal", nil)
 }
 
+// TermNewWith says "New Terminal: {profile}"
+// in the language the app shows.
+func TermNewWith(profile string) string { return In(i18n.Locale()).TermNewWith(profile) }
+
+// TermNewWith says "New Terminal: {profile}"
+// in the language of msgs.
+func (msgs Messages) TermNewWith(profile string) string {
+	return Catalog.Format(msgs.locale, "termNewWith", map[string]any{"profile": profile})
+}
+
+// TermSetDefault says "Set as Default"
+// in the language the app shows.
+func TermSetDefault() string { return In(i18n.Locale()).TermSetDefault() }
+
+// TermSetDefault says "Set as Default"
+// in the language of msgs.
+func (msgs Messages) TermSetDefault() string {
+	return Catalog.Format(msgs.locale, "termSetDefault", nil)
+}
+
 // CmdViewNextColumn says "Focus Next Column"
 // in the language the app shows.
 func CmdViewNextColumn() string { return In(i18n.Locale()).CmdViewNextColumn() }

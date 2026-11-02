@@ -279,6 +279,8 @@
   "cmdViewMoveTabNext": "将标签页移到下一栏",
   "cmdViewMoveTabPrev": "将标签页移到上一栏",
   "cmdViewNewTerminal": "新建终端",
+  "termNewWith": "新建终端：{profile}",
+  "termSetDefault": "设为默认",
   "cmdViewNextColumn": "聚焦下一栏",
   "cmdViewPanelBottom": "将面板移到底部",
   "cmdViewPanelLeft": "将面板移到左侧",

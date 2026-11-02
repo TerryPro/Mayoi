@@ -117,6 +117,9 @@ type Prefs struct {
 	// TerminalCopyOnSelect copies what is selected in a terminal to the
 	// clipboard as the selection ends.
 	TerminalCopyOnSelect bool `json:"terminalCopyOnSelect"`
+	// TerminalProfile is the shell new terminals start, as "pwsh" or
+	// "bash", and "" for the first this machine has.
+	TerminalProfile string `json:"terminalProfile,omitempty"`
 	// AutoSave saves changed files a moment after an edit, and as the
 	// keyboard leaves them.
 	AutoSave bool `json:"autoSave"`

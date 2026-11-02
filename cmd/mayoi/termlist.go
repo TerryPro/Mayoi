@@ -114,6 +114,8 @@ func (a *app) termListRow(c *ui.Context, s *session, n int, iconOnly bool) {
 		a.focusTerminal()
 	}
 	row.ContextMenu(func(m *ui.Menu) {
+		m.Submenu(locales.CmdViewNewTerminal(), a.termProfileMenu)
+		m.Separator()
 		if m.Item(locales.RenameTitle()).Chosen() {
 			a.post(func() { a.askRenameTerminal(s) })
 		}

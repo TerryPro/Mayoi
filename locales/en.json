@@ -553,6 +553,8 @@
   "cmdViewMoveTabNext": "Move Tab to Next Column",
   "cmdViewMoveTabPrev": "Move Tab to Previous Column",
   "cmdViewNewTerminal": "New Terminal",
+  "termNewWith": "New Terminal: {profile}",
+  "termSetDefault": "Set as Default",
   "cmdViewNextColumn": "Focus Next Column",
   "cmdViewPanelBottom": "Move Panel to Bottom",
   "cmdViewPanelLeft": "Move Panel to Left",
