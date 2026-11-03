@@ -172,7 +172,7 @@ func (a *app) addTerminal(s *session) *session {
 func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) {
 	light, dark := a.termThemes()
 	// In a remote folder, a shell of its host, over the connection.
-	var command []string
+	var command, env []string
 	if len(s.profile.command) > 0 {
 		command = slices.Clone(s.profile.command)
 	}
@@ -183,6 +183,7 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 	// In herdr-core, its terminal there.
 	if s.hc != "" {
 		command = hcAttach(s.hc, !s.hcNew)
+		env = hcEnv()
 		s.attached, s.hcNew = time.Now(), false
 	}
 	// Its shell still starting in herdr-core, nothing yet.
@@ -198,6 +199,7 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 	var in statusIn
 	term, err := terminal.New(terminal.Options{
 		Command:   command,
+		Env:       env,
 		Conn:      conn,
 		Dir:       dir,
 		Font:      termFont(a.settings),

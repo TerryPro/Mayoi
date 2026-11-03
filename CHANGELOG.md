@@ -8,6 +8,9 @@ needs a `## <version>` section here, or its build fails.
 - **About Mayoi…** in the Help menu, or the app menu on macOS, shows the version this build runs.
 - New terminals can start PowerShell, Command Prompt, Git Bash or WSL, and the shells Linux and macOS have.
 - Choose a shell from the panel's **+** or a terminal's menu, and set the one new terminals start by default.
+- With the `"hc"` backend, `terminalBackendHcPath` finds hc before `PATH` and `~/.local/bin`.
+- With the `"hc"` backend, `terminalBackendHcEnv` passes `KEY=value` variables to hc's commands.
+- With `terminalBackendHcPath` set, Mayoi no longer offers to install hc.
 
 ## 0.17.0
 
