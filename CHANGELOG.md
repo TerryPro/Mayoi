@@ -5,6 +5,7 @@ needs a `## <version>` section here, or its build fails.
 
 ## Unreleased
 
+- AI commit messages no longer send the contents of new secret files like `.env` or keys, only their names.
 - **About Mayoi…** in the Help menu, or the app menu on macOS, shows the version this build runs.
 - New terminals can start PowerShell, Command Prompt, Git Bash or WSL, and the shells Linux and macOS have.
 - Choose a shell from the panel's **+** or a terminal's menu, and set the one new terminals start by default.
