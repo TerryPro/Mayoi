@@ -9,6 +9,12 @@ import (
 // name they show and the tip under the pointer. It is kept out of panel.go,
 // which upstream also changes.
 
+// label is what the terminal is called: the name the user gave it, or
+// the name of its shell.
+func (s *session) label() string {
+	return termLabel(s)
+}
+
 // termLabel is the name a terminal shows in its chip, its list row and its
 // tab: the name it was given, or the name of its shell.
 func termLabel(s *session) string {

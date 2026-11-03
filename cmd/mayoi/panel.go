@@ -259,13 +259,13 @@ func (a *app) spawnTerminal(s *session, dir string) (*terminal.Terminal, error) 
 		// A program done in a project out of sight, as a build or an
 		// agent, has the rail mark the project's square.
 		OnBell: func() {
-			a.post(func() { a.alert = locales.BellFrom(s.title) })
+			a.post(func() { a.alert = locales.BellFrom(s.label()) })
 		},
 		OnNotify: func(title, body string) {
 			a.post(func() {
 				a.alert = strings.TrimSpace(title + " " + body)
 				if a.alert == "" {
-					a.alert = locales.NotificationFrom(s.title)
+					a.alert = locales.NotificationFrom(s.label())
 				}
 			})
 		},
@@ -550,7 +550,7 @@ func (a *app) panel(c *ui.Context) {
 	width := box.Bounds().W
 	var titles strings.Builder
 	for _, s := range terms {
-		titles.WriteString(termLabel(s))
+		titles.WriteString(s.label())
 		titles.WriteByte(0)
 	}
 	windowWidth, _ := c.Size()

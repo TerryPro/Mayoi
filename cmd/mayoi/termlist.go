@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/egoist/mygo/ui"
 
@@ -116,7 +115,7 @@ func (a *app) termListRow(c *ui.Context, s *session, n int, iconOnly bool) {
 	row.ContextMenu(func(m *ui.Menu) {
 		m.Submenu(locales.CmdViewNewTerminal(), a.termProfileMenu)
 		m.Separator()
-		if m.Item(locales.RenameTitle()).Chosen() {
+		if m.Item(locales.TermRename()).Chosen() {
 			a.post(func() { a.askRenameTerminal(s) })
 		}
 		if m.Item(locales.TermMoveLockedRight()).Chosen() {
@@ -130,14 +129,4 @@ func (a *app) termListRow(c *ui.Context, s *session, n int, iconOnly bool) {
 			a.post(func() { a.killTerminal(s) })
 		}
 	})
-}
-
-// askRenameTerminal asks for a name for a terminal, which its shell's title
-// changes no longer replace; an empty name restores the shell's.
-func (a *app) askRenameTerminal(s *session) {
-	a.prompt = &prompt{title: locales.RenameTitle(), hint: termTabTip(s), value: termLabel(s), optional: true, done: func(v string) string {
-		s.name = strings.TrimSpace(v)
-		a.invalidate()
-		return ""
-	}}
 }
