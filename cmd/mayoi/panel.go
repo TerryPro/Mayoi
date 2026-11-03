@@ -58,8 +58,6 @@ type session struct {
 	found     terminal.SearchStatus
 	findInput ui.Handle
 	findShook time.Time
-	findBack  bool
-
 	// name is what the user renamed the terminal, "" while its title is
 	// the one its shell gives.
 	name string
