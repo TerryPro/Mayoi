@@ -3,7 +3,7 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
-## Unreleased
+## 0.18.0
 
 - AI commit messages no longer send the contents of new secret files like `.env` or keys, only their names.
 - **About Mayoi…** in the Help menu, or the app menu on macOS, shows the version this build runs.
