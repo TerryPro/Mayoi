@@ -1914,6 +1914,16 @@ func (msgs Messages) CliInstalledDetail() string {
 	return Catalog.Format(msgs.locale, "cliInstalledDetail", nil)
 }
 
+// CliInstalledDetailWindows says "In a new terminal, mayoi . opens the folder you are in, and mayoi <file> a file."
+// in the language the app shows.
+func CliInstalledDetailWindows() string { return In(i18n.Locale()).CliInstalledDetailWindows() }
+
+// CliInstalledDetailWindows says "In a new terminal, mayoi . opens the folder you are in, and mayoi <file> a file."
+// in the language of msgs.
+func (msgs Messages) CliInstalledDetailWindows() string {
+	return Catalog.Format(msgs.locale, "cliInstalledDetailWindows", nil)
+}
+
 // CliNotInstalled says "The 'mayoi' command is not installed."
 // in the language the app shows.
 func CliNotInstalled() string { return In(i18n.Locale()).CliNotInstalled() }
