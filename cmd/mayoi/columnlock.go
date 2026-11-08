@@ -80,3 +80,60 @@ func (a *app) moveTerminalToLockedRight() {
 		a.terminalToLockedRight(a.panelTerm)
 	}
 }
+
+// terminalLocked is the locked rightmost column the terminal is in, if it
+// is in one: the focused terminal's, or the panel's once it moved there.
+// Terminal locks always sit in the rightmost column.
+func (a *app) terminalLocked() *column {
+	var s *session
+	switch t := a.activeTab(); {
+	case a.focus == paneTerminal && a.panelTerm != nil:
+		s = a.panelTerm
+	case t != nil && t.term != nil:
+		s = t.term
+	case a.panelTerm != nil:
+		s = a.panelTerm
+	}
+	if s != nil && s.tab != nil {
+		if col, _ := a.locate(s.tab); col != nil && col.locked && col == a.rightmostLockedColumn() {
+			return col
+		}
+	}
+	return a.lockedTerminalColumn()
+}
+
+// rightmostLockedColumn is the locked column furthest to the right, which
+// is the only place the terminal lock keeps terminals.
+func (a *app) rightmostLockedColumn() *column {
+	for i := len(a.cols) - 1; i >= 0; i-- {
+		if a.cols[i].locked {
+			return a.cols[i]
+		}
+	}
+	return nil
+}
+
+// lockedTerminalColumn is the rightmost locked column when it holds a
+// terminal, for the layout menu when no terminal has the keyboard.
+func (a *app) lockedTerminalColumn() *column {
+	col := a.rightmostLockedColumn()
+	if col == nil {
+		return nil
+	}
+	for _, t := range col.tabs {
+		if t.term != nil {
+			return col
+		}
+	}
+	return nil
+}
+
+// toggleTerminalLockRight locks the right column to the terminal, or lets
+// the column go when the terminal is locked there already.
+func (a *app) toggleTerminalLockRight() {
+	if col := a.terminalLocked(); col != nil {
+		a.toggleColumnLock(col)
+		return
+	}
+	a.moveTerminalToLockedRight()
+}

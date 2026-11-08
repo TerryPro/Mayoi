@@ -7,6 +7,7 @@ import (
 	"mayoi/internal/bg"
 	"mayoi/internal/mon"
 	"mayoi/internal/settings"
+	"mayoi/locales"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -936,33 +937,23 @@ func TestTerminalPanelAtASide(t *testing.T) {
 		}
 		return box
 	}
-	// The title bar's buttons: the terminal's follows the panel's side,
-	// past the sidebar's button when the sidebar is on that side too.
-	termBtn, sideBtn := a.withKey("Toggle Terminal", "view.terminal"), a.withKey("Toggle Sidebar", "view.sidebar")
-	buttons := func() (term, side ui.Rect) { return at(termBtn), at(sideBtn) }
+	// The title bar's buttons stay at the right whichever side the
+	// sidebar and the panel are on.
 	width := float32(1200)
 	a.openFile(hs.path("main.go"), true)
 	a.run("view.terminal")
 	hs.settle()
-	// At the bottom, the panel is under the editors, right of the sidebar,
-	// and its button is at the right of the bar, the sidebar's at the left.
+	// At the bottom, the panel is under the editors, right of the sidebar.
 	if panel, explorer := at("TERMINAL"), at("EXPLORER"); panel.Y < explorer.Y || panel.X < explorer.X {
 		t.Errorf("the panel at the bottom: %v, the sidebar %v", panel, explorer)
 	}
-	if term, side := buttons(); term.X < width/2 || side.X > width/2 {
-		t.Errorf("the buttons at the bottom: the terminal's %v, the sidebar's %v", term, side)
-	}
-	// On the left, past the sidebar, at the window's own edge, its button
-	// left of the sidebar's.
+	// On the left, past the sidebar, at the window's own edge.
 	a.run("view.panelPosition.left")
 	hs.settle()
 	// The panel's left edge is its problems tab, the first of its tabs, as
 	// the terminal's tab follows it.
 	if panel, explorer := at("PROBLEMS"), at("EXPLORER"); panel.X > explorer.X || panel.X > 40 {
 		t.Errorf("the panel on the left: %v, the sidebar %v", panel, explorer)
-	}
-	if term, side := buttons(); term.X > side.X {
-		t.Errorf("the buttons with the panel on the left: the terminal's %v, the sidebar's %v", term, side)
 	}
 	// Its splitter is on its right, and dragging it right widens it.
 	size := a.window.PanelWidth
@@ -976,22 +967,16 @@ func TestTerminalPanelAtASide(t *testing.T) {
 		t.Errorf("the panel %v after dragging 60 from %v", got, size)
 	}
 	// With the sidebar on the right, the panel on the left keeps the left
-	// of the bar, and its button with it.
+	// of the bar.
 	a.run("view.sidebarRight")
 	hs.settle()
-	if term, side := buttons(); term.X > width/2 || side.X < width/2 {
-		t.Errorf("the buttons with the panel left, the sidebar right: the terminal's %v, the sidebar's %v", term, side)
-	}
 	// The panel on the right, with the sidebar there too, is still the
-	// outer one, at the window's own edge, and its button is at the right.
+	// outer one, at the window's own edge.
 	a.run("view.panelPosition.right")
 	hs.settle()
 	panel, explorer := at("PROBLEMS"), at("EXPLORER")
 	if panel.X < explorer.X || panel.X < width-a.window.PanelWidth || panel.X > width-a.window.PanelWidth+40 {
 		t.Errorf("the panel on the right: %v, the sidebar %v, width %v", panel, explorer, a.window.PanelWidth)
-	}
-	if term, _ := buttons(); term.X < width/2 {
-		t.Errorf("the terminal's button with the panel on the right: %v", term)
 	}
 	// In a narrow window it gives way, so the editors keep 320 points
 	// beside the sidebar, and takes its width back as the window widens.
@@ -1287,29 +1272,152 @@ func TestTerminalPanelHeaderMenu(t *testing.T) {
 	}
 }
 
-// Off macOS the title bar's menu has the menu bar's menus, without the
-// edit roles it cannot send to the focused element, and runs their items.
+// Off macOS the title bar shows the menu bar's menus by default, without
+// the edit roles it cannot send to the focused element, and runs their
+// items.
 func TestTitleBarMenu(t *testing.T) {
+	if runtime.GOOS == "darwin" {
+		t.Skip("macOS has the system's menu bar")
+	}
 	onOS(t, "linux")
 	hs := newHarness(t, true)
 	a, tt := hs.a, hs.tt
-	if err := tt.Click("Menu"); err != nil {
+	if !a.menuBarShown() {
+		t.Fatal("the menu bar is not shown by default")
+	}
+	if err := tt.Click("Edit"); err != nil {
 		t.Fatal(err)
 	}
-	if menu := tt.Menu(); !slices.Contains(menu, "File") || !slices.Contains(menu, "View") {
-		t.Fatalf("the title bar's menu: %q", menu)
-	}
-	if err := tt.ChooseMenuItem("Edit", "Copy"); err == nil {
+	if err := tt.ChooseMenuItem("Copy"); err == nil {
 		t.Error("Copy is in the Edit menu")
 	}
-	if err := tt.Click("Menu"); err != nil {
+	if err := tt.Click("View"); err != nil {
 		t.Fatal(err)
 	}
-	if err := tt.ChooseMenuItem("View", "Word Wrap"); err != nil {
+	if err := tt.ChooseMenuItem("Word Wrap"); err != nil {
 		t.Fatal(err)
 	}
 	hs.settle()
 	if !a.settings.WordWrap {
 		t.Error("Word Wrap is not on")
+	}
+}
+
+// The layout controls sit at the right of the title bar, in VS Code's
+// order: the layout menu, the sidebar, the panel and the sidebar's side.
+func TestTitleBarLayoutButtons(t *testing.T) {
+	hs := newHarness(t, true)
+	a, tt := hs.a, hs.tt
+	names := []string{
+		locales.CmdViewCustomizeLayout(),
+		a.withKey(locales.CmdViewSidebar(), "view.sidebar"),
+		a.withKey(locales.CmdViewTerminal(), "view.terminal"),
+		a.withKey(locales.CmdViewSidebarRight(), "view.sidebarRight"),
+	}
+	var last ui.Rect
+	for i, name := range names {
+		box, ok := tt.Find(name)
+		if !ok {
+			t.Fatalf("%s is not shown", name)
+		}
+		if box.X < 600 {
+			t.Errorf("%s is at %v, not at the right", name, box)
+		}
+		if i > 0 && box.X < last.X {
+			t.Errorf("%s is at %v, left of the one before at %v", name, box, last)
+		}
+		last = box
+	}
+	if err := tt.Click(names[1]); err != nil {
+		t.Fatal(err)
+	}
+	hs.settle()
+	if !a.window.SidebarClosed {
+		t.Error("the sidebar did not close")
+	}
+	if err := tt.Click(names[1]); err != nil {
+		t.Fatal(err)
+	}
+	hs.settle()
+	if a.window.SidebarClosed {
+		t.Error("the sidebar did not show")
+	}
+	if err := tt.Click(names[3]); err != nil {
+		t.Fatal(err)
+	}
+	hs.settle()
+	if !a.settings.SidebarRight {
+		t.Error("the sidebar did not move right")
+	}
+}
+
+// The layout menu changes where the panel and terminals are, which view
+// the sidebar shows, and puts the default layout back.
+func TestLayoutMenu(t *testing.T) {
+	hs := newHarness(t, true)
+	a, tt := hs.a, hs.tt
+	if err := tt.Click(locales.CmdViewCustomizeLayout()); err != nil {
+		t.Fatal(err)
+	}
+	menu := tt.Menu()
+	for _, want := range []string{
+		locales.CmdViewPanelBottom(), locales.CmdViewPanelLeft(), locales.CmdViewPanelRight(),
+		locales.CmdViewTerminalLocation(), locales.CmdViewTerminalLockRight(),
+		locales.SidebarExplorer(), locales.SidebarSearch(), locales.SidebarScm(), locales.SidebarOutline(),
+		locales.CmdViewResetLayout(),
+	} {
+		if !slices.Contains(menu, want) {
+			t.Errorf("the layout menu has no %q: %q", want, menu)
+		}
+	}
+	if err := tt.ChooseMenuItem(locales.SidebarOutline()); err != nil {
+		t.Fatal(err)
+	}
+	hs.settle()
+	if a.window.SidebarView != "outline" || a.window.SidebarClosed {
+		t.Errorf("the sidebar shows %q, closed %v", a.window.SidebarView, a.window.SidebarClosed)
+	}
+	a.run("view.sidebarRight")
+	a.run("view.terminalLocation")
+	hs.settle()
+	if err := tt.Click(locales.CmdViewCustomizeLayout()); err != nil {
+		t.Fatal(err)
+	}
+	if err := tt.ChooseMenuItem(locales.CmdViewResetLayout()); err != nil {
+		t.Fatal(err)
+	}
+	hs.settle()
+	if a.settings.SidebarRight || a.settings.TerminalLocation != "" || !a.settings.MenuBarShown() {
+		t.Errorf("after the reset: right %v, terminal %q, menu bar %v", a.settings.SidebarRight, a.settings.TerminalLocation, a.settings.MenuBarShown())
+	}
+}
+
+// The reset puts every part of the layout back as a first launch has it.
+func TestResetLayout(t *testing.T) {
+	hs := newHarness(t, true)
+	a := hs.a
+	a.run("view.sidebarRight")
+	a.run("view.terminalLocation")
+	a.settings.PanelPosition = "left"
+	a.window.SidebarClosed = true
+	shown := false
+	a.settings.MenuBarExpanded = &shown
+	right := a.splitColumn(a.cols[len(a.cols)-1], true)
+	a.toggleColumnLock(right)
+	a.run("view.resetLayout")
+	if a.settings.SidebarRight || a.window.SidebarClosed {
+		t.Errorf("the sidebar is right %v, closed %v", a.settings.SidebarRight, a.window.SidebarClosed)
+	}
+	if a.window.PanelOpen || a.settings.PanelPosition != "" || a.panelMax {
+		t.Errorf("the panel is open %v, at %q, maximized %v", a.window.PanelOpen, a.settings.PanelPosition, a.panelMax)
+	}
+	if a.settings.TerminalLocation != "" {
+		t.Errorf("terminals open at %q", a.settings.TerminalLocation)
+	}
+	if !a.settings.MenuBarShown() {
+		t.Error("the menu bar is hidden")
+	}
+	if slices.ContainsFunc(a.cols, func(c *column) bool { return c.locked }) {
+		t.Error("a column is still locked")
 	}
 }

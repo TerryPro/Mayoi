@@ -3166,6 +3166,16 @@ func (msgs Messages) CmdViewCompactFolders() string {
 	return Catalog.Format(msgs.locale, "cmdViewCompactFolders", nil)
 }
 
+// CmdViewCustomizeLayout says "Customize Layout"
+// in the language the app shows.
+func CmdViewCustomizeLayout() string { return In(i18n.Locale()).CmdViewCustomizeLayout() }
+
+// CmdViewCustomizeLayout says "Customize Layout"
+// in the language of msgs.
+func (msgs Messages) CmdViewCustomizeLayout() string {
+	return Catalog.Format(msgs.locale, "cmdViewCustomizeLayout", nil)
+}
+
 // CmdViewExplorer says "Explorer"
 // in the language the app shows.
 func CmdViewExplorer() string { return In(i18n.Locale()).CmdViewExplorer() }
@@ -3344,6 +3354,16 @@ func CmdViewProjectTabs() string { return In(i18n.Locale()).CmdViewProjectTabs()
 // in the language of msgs.
 func (msgs Messages) CmdViewProjectTabs() string {
 	return Catalog.Format(msgs.locale, "cmdViewProjectTabs", nil)
+}
+
+// CmdViewResetLayout says "Reset Layout"
+// in the language the app shows.
+func CmdViewResetLayout() string { return In(i18n.Locale()).CmdViewResetLayout() }
+
+// CmdViewResetLayout says "Reset Layout"
+// in the language of msgs.
+func (msgs Messages) CmdViewResetLayout() string {
+	return Catalog.Format(msgs.locale, "cmdViewResetLayout", nil)
 }
 
 // CmdViewScm says "Source Control"

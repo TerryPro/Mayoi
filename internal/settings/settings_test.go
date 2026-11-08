@@ -631,3 +631,32 @@ func TestEdited(t *testing.T) {
 		t.Error("an edit taken is an edit again")
 	}
 }
+
+// TestMenuBarShown: the menus show until a person closes them, and stay
+// closed across a reload.
+func TestMenuBarShown(t *testing.T) {
+	if !Default().MenuBarShown() {
+		t.Error("the menu bar is hidden on a first launch")
+	}
+	var p Prefs
+	if err := json.Unmarshal([]byte(`{"menuBarExpanded": false}`), &p); err != nil {
+		t.Fatal(err)
+	}
+	if p.MenuBarShown() {
+		t.Error("a closed menu bar shows")
+	}
+	var q Prefs
+	if err := json.Unmarshal([]byte(`{}`), &q); err != nil {
+		t.Fatal(err)
+	}
+	if !q.MenuBarShown() {
+		t.Error("a menu bar without a choice is hidden")
+	}
+	var r Prefs
+	if err := json.Unmarshal([]byte(`{"menuBarExpanded": true}`), &r); err != nil {
+		t.Fatal(err)
+	}
+	if !r.MenuBarShown() {
+		t.Error("a shown menu bar is hidden")
+	}
+}

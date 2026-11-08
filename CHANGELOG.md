@@ -3,6 +3,13 @@
 The update window shows the section of the version it offers. Every release
 needs a `## <version>` section here, or its build fails.
 
+## Unreleased
+
+- On Windows and Linux, Mayoi shows the menu bar on first launch.
+- The title bar's layout controls sit together at the right, as in VS Code.
+- The new **Customize Layout** menu sets the panel's side, where terminals open and the sidebar's view.
+- The `Reset Layout` command restores the menu bar, sidebar, panel and terminal to their defaults.
+
 ## 0.18.2
 
 - On Windows, right-click menus no longer cut off the end of their labels, as in Chinese.

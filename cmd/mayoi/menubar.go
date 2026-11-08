@@ -13,7 +13,7 @@ import (
 // title bar, as VS Code does, rather than behind the menu button beside
 // it. macOS has the system's menu bar, which it always shows.
 func (a *app) menuBarShown() bool {
-	return runtime.GOOS != "darwin" && a.settings.MenuBarExpanded
+	return runtime.GOOS != "darwin" && a.settings.MenuBarShown()
 }
 
 // menuBar is the menus of the window, File through Help, side by side at
@@ -98,7 +98,7 @@ func (a *app) menuBarItems() []*mygo.MenuItem {
 		{
 			Label:   locales.CmdViewMenuBar(),
 			Type:    mygo.MenuItemCheckbox,
-			Checked: a.settings.MenuBarExpanded,
+			Checked: a.settings.MenuBarShown(),
 			Click: func(_ *mygo.MenuItem, _ *mygo.Window) {
 				a.post(a.toggleMenuBar)
 			},
@@ -113,7 +113,7 @@ func (a *app) toggleMenuBar() {
 	if runtime.GOOS == "darwin" {
 		return
 	}
-	a.settings.MenuBarExpanded = !a.settings.MenuBarExpanded
+	a.settings.SetMenuBarShown(!a.settings.MenuBarShown())
 	a.settings.Changed()
 	a.host.menuChanged()
 	a.invalidate()

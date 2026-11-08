@@ -211,7 +211,8 @@ type Prefs struct {
 	SidebarRight bool `json:"sidebarRight,omitempty"`
 	// MenuBarExpanded shows the menus of the window across the title bar,
 	// rather than behind the menu button beside it, on Windows and Linux.
-	MenuBarExpanded bool `json:"menuBarExpanded,omitempty"`
+	// It shows them until a person closes them: nil is a first launch.
+	MenuBarExpanded *bool `json:"menuBarExpanded,omitempty"`
 	// ExplorerCompactFolders shows a chain of single-child folders on one
 	// row in the Explorer, with its names separated by slashes.
 	ExplorerCompactFolders bool `json:"explorerCompactFolders,omitempty"`
@@ -531,13 +532,27 @@ const MaxDiffContext = 100
 
 // Default is the settings of a first launch.
 func Default() *Settings {
+	menuBarExpanded := true
 	return &Settings{
 		Prefs: Prefs{
 			FontSize: 13, TabSize: 4, FontFamily: "monospace", FontWeight: 400, LineHeight: 1.55,
 			AutoSave: true, Blame: true, TerminalCopyOnSelect: true, PreviewMermaid: true, PreviewMath: true,
 			DiffAlignedRows: true, DiffContext: 3, DiffSyncScroll: true, MergeAutoApply: true,
+			MenuBarExpanded: &menuBarExpanded,
 		},
 	}
+}
+
+// MenuBarShown reports whether the menus show across the title bar: a
+// person who never closed them sees them there.
+func (p Prefs) MenuBarShown() bool {
+	return p.MenuBarExpanded == nil || *p.MenuBarExpanded
+}
+
+// SetMenuBarShown remembers whether the menus show across the title bar,
+// clearing the "first launch" state so the choice persists.
+func (p *Prefs) SetMenuBarShown(shown bool) {
+	p.MenuBarExpanded = &shown
 }
 
 // Load reads the settings at path, and the state in state.json beside

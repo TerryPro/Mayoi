@@ -386,31 +386,6 @@ func (a *app) titleBar(c *ui.Context) {
 		BorderWidth(0, 0, 1, 0).BorderColor(p.hairline()).DragWindow()
 	a.grained(row)
 	row.Children(func() {
-		// The sidebar's button is on its side. The terminal's is on the
-		// panel's: at the left of the bar when the panel is at the
-		// window's left, past the sidebar's button when the sidebar is
-		// there too, as the panel lies past the sidebar; at the right
-		// otherwise.
-		right := a.settings.SidebarRight
-		panelLeft := a.panelSide() == "left"
-		sidebarButton := func() {
-			icon := iconSidebar
-			if right {
-				icon = iconSidebarRight
-			}
-			if a.iconButton(c, icon, a.withKey(locales.CmdViewSidebar(), "view.sidebar"), !a.window.SidebarClosed).Clicked() {
-				a.toggleSidebar()
-			}
-		}
-		terminalButton := func() {
-			btn := a.iconButton(c, iconTerminal, a.withKey(locales.CmdViewTerminal(), "view.terminal"), a.window.PanelOpen)
-			if runtime.GOOS == "linux" {
-				btn.Padding(1, 0, 0, 0)
-			}
-			if btn.Clicked() {
-				a.togglePanel()
-			}
-		}
 		ui.Row(c).Basis(0).Grow(1).MinWidth(56).Gap(2).Children(func() {
 			if hostOS != "darwin" {
 				if a.menuBarShown() {
@@ -419,25 +394,107 @@ func (a *app) titleBar(c *ui.Context) {
 					a.iconButton(c, iconMenu, locales.Menu(), false).Menu(a.appUIMenu)
 				}
 			}
-			if panelLeft {
-				terminalButton()
-			}
-			if !right {
-				sidebarButton()
-			}
 		})
 		ui.Row(c).Width(420).MaxWidthPercent(68).Shrink(1).MinWidth(140).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
 			a.commandCenter(c)
 		})
-		ui.Row(c).Basis(0).Grow(1).MinWidth(56).Justify(ui.End).Gap(2).Children(func() {
-			if !panelLeft {
-				terminalButton()
-			}
-			if right {
-				sidebarButton()
-			}
+		ui.Row(c).Basis(0).Grow(1).MinWidth(112).Justify(ui.End).Gap(2).Children(func() {
+			a.layoutButtons(c)
 		})
 	})
+}
+
+// layoutButtons are the controls at the right of the title bar, as VS
+// Code's: the layout menu, the sidebar, the panel and the side the
+// sidebar is on. They stay at the right whichever side the sidebar and
+// the panel are on.
+func (a *app) layoutButtons(c *ui.Context) {
+	customize := a.iconButton(c, iconLayout, locales.CmdViewCustomizeLayout(), false)
+	customize.Menu(a.layoutMenu)
+	if a.iconButton(c, iconSidebar, a.withKey(locales.CmdViewSidebar(), "view.sidebar"), !a.window.SidebarClosed).Clicked() {
+		a.toggleSidebar()
+	}
+	panel := a.iconButton(c, iconTerminal, a.withKey(locales.CmdViewTerminal(), "view.terminal"), a.window.PanelOpen)
+	if runtime.GOOS == "linux" {
+		panel.Padding(1, 0, 0, 0)
+	}
+	if panel.Clicked() {
+		a.togglePanel()
+	}
+	icon := iconSidebar
+	if a.settings.SidebarRight {
+		icon = iconSidebarRight
+	}
+	if a.iconButton(c, icon, a.withKey(locales.CmdViewSidebarRight(), "view.sidebarRight"), false).Clicked() {
+		a.toggleSidebarRight()
+	}
+}
+
+// layoutMenu fills the menu of the title bar's layout button: where the
+// panel is, where terminals open, the sidebar's view, and the default
+// layout again.
+func (a *app) layoutMenu(m *ui.Menu) {
+	for _, it := range []struct{ pos, label string }{
+		{"bottom", locales.CmdViewPanelBottom()},
+		{"left", locales.CmdViewPanelLeft()},
+		{"right", locales.CmdViewPanelRight()},
+	} {
+		if m.Item(it.label).Checked(a.panelSide() == it.pos).Chosen() {
+			pos := it.pos
+			if pos == "bottom" {
+				pos = ""
+			}
+			a.post(func() { a.setPanelPosition(pos) })
+		}
+	}
+	m.Separator()
+	if m.Item(locales.CmdViewTerminalLocation()).Checked(a.settings.TerminalLocation == "editor").Chosen() {
+		a.post(a.toggleTerminalLocation)
+	}
+	if m.Item(locales.CmdViewTerminalLockRight()).Checked(a.terminalLocked() != nil).Chosen() {
+		a.post(a.toggleTerminalLockRight)
+	}
+	m.Separator()
+	view := a.window.SidebarView
+	for _, it := range []struct {
+		view, label string
+		show        func()
+	}{
+		{"", locales.SidebarExplorer(), a.showExplorer},
+		{"search", locales.SidebarSearch(), func() { a.showSearch(false) }},
+		{"git", locales.SidebarScm(), a.showSourceControl},
+		{"outline", locales.SidebarOutline(), a.showOutline},
+	} {
+		if m.Item(it.label).Checked(view == it.view).Chosen() {
+			a.post(it.show)
+		}
+	}
+	m.Separator()
+	if m.Item(locales.CmdViewResetLayout()).Chosen() {
+		a.post(a.resetLayout)
+	}
+}
+
+// resetLayout puts the window back as a first launch has it: the menu
+// bar shown, the sidebar at the left and open, the panel closed at the
+// bottom with its terminal, and the terminal lock cleared.
+func (a *app) resetLayout() {
+	s, w := a.settings, a.window
+	s.SetMenuBarShown(true)
+	s.SidebarRight = false
+	s.PanelPosition = ""
+	s.TerminalLocation = ""
+	w.SidebarClosed = false
+	w.PanelOpen = false
+	a.panelProblems = false
+	a.panelMax = false
+	// The terminal lock lives in the rightmost column; leave editor locks
+	// alone.
+	if col := a.rightmostLockedColumn(); col != nil {
+		a.toggleColumnLock(col)
+	}
+	s.Changed()
+	a.host.menuChanged()
 }
 
 // commandCenter is the box in the middle of the title bar: it names the
@@ -1730,14 +1787,19 @@ func (a *app) togglePanel() {
 		return
 	}
 	w.PanelOpen = !w.PanelOpen
-	if w.PanelOpen {
-		a.panelProblems = false
+	switch {
+	case !w.PanelOpen:
+		a.focusColumn()
+	case a.panelProblems:
+		// Back to what the panel showed when it was hidden, as problems
+		// are one of its contents.
+		a.problemsUI.focusList = true
+		a.focus = paneProblems
+	default:
 		if a.panelTerm == nil {
 			a.newTerminal()
 		}
 		a.focusTerminal()
-	} else {
-		a.focusColumn()
 	}
 	a.settings.Changed()
 }
