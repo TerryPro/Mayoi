@@ -1,5 +1,19 @@
 # AGENTS.md
 
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as markdown files under `.scratch/<feature-slug>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical roles, each Status value equal to its name. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` at the repo root plus `docs/adr/`. See `docs/agents/domain.md`.
+
 ## Commits
 
 - One imperative subject line of 72 characters or fewer, for one change: `Add mayoi run and mayoi commands`.
