@@ -1,6 +1,7 @@
 /build/
 /.mygo/
 mygo_windows_*.syso
+/resources/icon.ico
 /mayoi
 /cmd/mayoi/mayoi
 *.test
