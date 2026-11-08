@@ -603,7 +603,14 @@ features GTK 4 lacks become X11-only code beside it.
   window for trays), each into a bitmap with its highlight's rounded
   corners antialiased, then copied, and excluded from the DC after, which
   keeps Windows from drawing the submenus' arrows over the chevrons;
-  `WM_INITMENUPOPUP` gives the menu the background of the items. The items
+  `WM_INITMENUPOPUP` gives the menu the background of the items. Windows
+  widens every owner-drawn item past the width it asks for, by as much as
+  it doesn't tell (not `SM_CXMENUCHECK`, #922): items ask for all they need
+  until one draws, whose width less the widest asked for in its menu is
+  that widening at the DPI, and for that much less after. Labels are
+  measured by their advance and drawn unclipped (`DT_NOCLIP`), into the
+  item's padding where their ink reaches past it (Microsoft YaHei UI,
+  Chinese Windows' menu font, by a pixel, #1028). The items
   keep their strings, which mnemonics, screen readers and the tests read.
   A menu with owner-drawn items loses Windows 11's frame, its window square
   under its class's drop shadow (`CS_DROPSHADOW`) along two sides: while

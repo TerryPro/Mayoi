@@ -157,6 +157,10 @@ type Font struct {
 	Ascent, Descent, LineGap float32
 
 	native uintptr // the engine's font
+	// released fonts are ones the engine let go of (forgetFonts): their
+	// native font is gone, and they draw nothing, though what kept them,
+	// as a terminal's shaped rows, may still ask.
+	released bool
 	// shaded fonts' glyphs differ by the shade of the text; thin ones are
 	// too thin for antialiasing (GlyphImage.Thin). The engine draws the
 	// glyphs of fonts that thicken thicker for Thick.

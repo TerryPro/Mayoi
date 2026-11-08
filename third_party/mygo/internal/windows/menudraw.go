@@ -33,8 +33,8 @@ const (
 	mimBackground          = 0x0002
 	dtCalcRect             = 0x400
 	dtRight                = 0x002
+	dtNoClip               = 0x100
 	srcCopy                = 0x00CC0020
-	smCxMenuCheck          = 71
 	spiGetNonClientMetrics = 0x0029
 	layoutRTL              = 0x1
 )
@@ -97,6 +97,10 @@ type menuLook struct {
 	// menu and pos are the menu holding the item and its position there.
 	menu uintptr
 	pos  int
+	// width is the width the item asked for when Windows measured it last,
+	// at dpi, 0 before.
+	width int32
+	dpi   int
 }
 
 // ftype returns the type the item has besides MFT_OWNERDRAW.
@@ -284,13 +288,14 @@ func (b *Backend) menuFace(dpi int) menuFonts {
 }
 
 // dropMenuFonts forgets the fonts of popup items, for the next menus to
-// follow a change of the system's.
+// follow a change of the system's, and how much Windows widens the items,
+// which follows its menu font.
 func (b *Backend) dropMenuFonts() {
 	for _, f := range b.menuFonts {
 		procDeleteObject.Call(f.text)
 		procDeleteObject.Call(f.glyphs)
 	}
-	b.menuFonts = nil
+	b.menuFonts, b.menuExtra = nil, nil
 }
 
 // The glyphs of Segoe Fluent Icons, also in Segoe MDL2 Assets.
@@ -372,10 +377,30 @@ func textWidth(dc, font uintptr, text string) int32 {
 func (b *Backend) measureItem(hwnd uintptr, l *menuLook, mis *measureItemStruct) {
 	dpi := dpiOf(hwnd)
 	top, bottom := l.padding(dpi)
+	l.dpi = dpi
 	if l.separator {
+		l.width = 0
 		mis.ItemWidth, mis.ItemHeight = 0, uint32(toPx(menuSeparatorHeight, dpi)+top+bottom)
 		return
 	}
+	// Windows widens every item past the width it asks for, by as much as
+	// it doesn't tell, which isn't a check's width (SM_CXMENUCHECK): 26
+	// pixels at 192 DPI on Windows 11, where a check is 31 (#922). Items
+	// ask for what they need less what Windows widened those of the menus
+	// shown at the DPI by, as they drew (learnMenuExtra), and for all they
+	// need before one showed: the first menu is wider than it needs, none
+	// narrower.
+	w := b.itemWidth(l, dpi)
+	if extra, ok := b.menuExtra[dpi]; ok {
+		w = max(w-extra, 0)
+	}
+	l.width = w
+	mis.ItemWidth, mis.ItemHeight = uint32(w), uint32(toPx(menuItemHeight, dpi)+top+bottom)
+}
+
+// itemWidth returns the width an item that isn't a separator needs at dpi:
+// its text and marks, past the highlight's inset and padding.
+func (b *Backend) itemWidth(l *menuLook, dpi int) int32 {
 	f := b.menuFace(dpi)
 	dc, _, _ := procGetDC.Call(0)
 	defer procReleaseDC.Call(0, dc)
@@ -392,16 +417,38 @@ func (b *Backend) measureItem(hwnd uintptr, l *menuLook, mis *measureItemStruct)
 	if l.submenu {
 		w += toPx(menuAccelGap/2+menuChevron, dpi)
 	}
-	// Windows adds the width of its checks to that of every item.
-	check, _, _ := procGetSystemMetricsForDpi.Call(smCxMenuCheck, uintptr(dpi))
-	w = max(w-int32(check)+1, 0)
-	mis.ItemWidth, mis.ItemHeight = uint32(w), uint32(toPx(menuItemHeight, dpi)+top+bottom)
+	return w
+}
+
+// learnMenuExtra learns how much Windows widened the items of a menu at
+// dpi from one of them drawn w wide: all are as wide as the widest asked
+// for, and that. It keeps the least it saw at the DPI.
+func (b *Backend) learnMenuExtra(l *menuLook, dpi int, w int32) {
+	widest := int32(0)
+	for _, o := range b.menus.looks {
+		if o.menu != l.menu {
+			continue
+		}
+		if o.dpi != dpi { // measured at another DPI, or not yet
+			return
+		}
+		widest = max(widest, o.width)
+	}
+	extra := w - widest
+	if old, ok := b.menuExtra[dpi]; extra < 0 || ok && old <= extra {
+		return
+	}
+	if b.menuExtra == nil {
+		b.menuExtra = map[int]int32{}
+	}
+	b.menuExtra[dpi] = extra
 }
 
 func (b *Backend) drawItem(hwnd uintptr, l *menuLook, d *drawItemStruct) {
 	dpi := dpiOf(hwnd)
 	p := b.menuPalette()
 	r := d.Item
+	b.learnMenuExtra(l, dpi, r.Right-r.Left)
 	state := d.ItemState
 	selected := state&odsSelected != 0 && !l.separator
 	inset := toPx(menuInset, dpi)
@@ -481,7 +528,12 @@ func (b *Backend) drawItem(hwnd uintptr, l *menuLook, d *drawItemStruct) {
 		}
 		old, _, _ := procSelectObject.Call(dc, f.text)
 		defer procSelectObject.Call(dc, old)
-		flags := uintptr(dtSingleLine | dtVCenter)
+		// The text goes as far as its advance, which the item is measured
+		// by, but some glyphs' ink reaches past it: Microsoft YaHei UI's,
+		// the menu font of Chinese Windows, by a pixel (#1028). DrawText
+		// would cut that off at the end of the text's rectangle; the
+		// padding past it has room for it.
+		flags := uintptr(dtSingleLine | dtVCenter | dtNoClip)
 		if state&odsNoAccel != 0 {
 			flags |= dtHidePrefix
 		}
@@ -492,7 +544,7 @@ func (b *Backend) drawItem(hwnd uintptr, l *menuLook, d *drawItemStruct) {
 		if l.accel != "" {
 			procSetTextColor.Call(dc, uintptr(secondary))
 			s := u16(l.accel)
-			procDrawTextW.Call(dc, uintptr(unsafe.Pointer(s)), ^uintptr(0), uintptr(unsafe.Pointer(&text)), dtSingleLine|dtVCenter|dtRight|dtNoPrefix)
+			procDrawTextW.Call(dc, uintptr(unsafe.Pointer(s)), ^uintptr(0), uintptr(unsafe.Pointer(&text)), dtSingleLine|dtVCenter|dtRight|dtNoPrefix|dtNoClip)
 		}
 	})
 	// Windows draws the arrow of a submenu after the item, in its colors:

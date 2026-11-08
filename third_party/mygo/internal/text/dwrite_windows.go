@@ -3,6 +3,7 @@
 package text
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"log"
@@ -129,7 +130,8 @@ const (
 	// IDWriteFont1
 	font1IsMonospacedFont = 17
 	// IDWriteFontFace
-	faceGetMetrics = 8
+	faceGetMetrics      = 8
+	faceGetGlyphIndices = 11
 	// IDWriteFontFace2
 	face2IsColorFont                 = 30
 	face2GetRecommendedRenderingMode = 34
@@ -539,8 +541,38 @@ func (e *dwrite) format(style Style) uintptr {
 			release(f1)
 		}
 	}
+	// Tabs stop every four spaces, as on the other systems, not every
+	// four ems.
+	if f := e.font(style); f != nil {
+		if stop := tabStops * spaceAdvance(f); stop > 0 {
+			method[func(this uintptr, stop float32) uintptr](format, formatSetIncrementalTabStop)(format, stop)
+		}
+	}
 	e.formats[key] = format
 	return format
+}
+
+const (
+	// tabStops is how many spaces apart tabs stop.
+	tabStops = 4
+
+	faceGetDesignGlyphMetrics   = 10 // IDWriteFontFace
+	formatSetIncrementalTabStop = 8  // IDWriteTextFormat
+)
+
+// spaceAdvance is the width of a font's space.
+func spaceAdvance(f *Font) float32 {
+	sp, glyph := uint32(' '), uint16(0)
+	if failed(call(f.native, faceGetGlyphIndices, uintptr(unsafe.Pointer(&sp)), 1, uintptr(unsafe.Pointer(&glyph)))) || glyph == 0 {
+		return 0
+	}
+	var gm [7]int32 // DWRITE_GLYPH_METRICS, advanceWidth second
+	if failed(call(f.native, faceGetDesignGlyphMetrics, uintptr(unsafe.Pointer(&glyph)), 1, uintptr(unsafe.Pointer(&gm[0])), 0)) {
+		return 0
+	}
+	var m dwFontMetrics
+	call(f.native, faceGetMetrics, uintptr(unsafe.Pointer(&m)))
+	return float32(uint32(gm[1])) * f.Size / float32(max(m.designUnitsPerEm, 1))
 }
 
 // fallback returns a font fallback trying the families of a list after the
@@ -832,6 +864,7 @@ func (e *dwrite) shape(text []rune, style Style, spans []Span, width float32, rt
 		call(layout, layoutHitTestTextPosition, uintptr(r.pos), 0, uintptr(unsafe.Pointer(&x)), uintptr(unsafe.Pointer(&y)), uintptr(unsafe.Pointer(&hit)))
 		lines[li].runs = append(lines[li].runs, e.run(r, x, index))
 	}
+	e.tabs(layout, style, u16, index, runs, lines, ends)
 	if len(layoutObjects.objects) > 0 {
 		units := make([]uint32, len(text)+1)
 		for i, r := range text {
@@ -843,6 +876,64 @@ func (e *dwrite) shape(text []rune, style Style, spans []Span, width float32, rt
 		objectRuns(layout, lines, ends, spans, units, index)
 	}
 	return lines
+}
+
+// tabs gives the tabs of a text layout their glyphs. DirectWrite shapes a
+// tab as a control, with nothing to draw, and draws a run of it with no
+// glyphs, or none: its lines would have no glyphs for their tabs, and
+// those starting with tabs would lose their indent. Each tab no run draws
+// a glyph of becomes an empty glyph, the font's space, as wide as the
+// layout makes it, to its stop.
+func (e *dwrite) tabs(layout uintptr, style Style, u16 []uint16, index []int, runs []dwRun, lines []shapedLine, ends []uint32) {
+	drawn := make([]bool, len(u16))
+	for _, r := range runs {
+		if len(r.glyphs) == 0 {
+			continue
+		}
+		for i := r.pos; i < r.pos+r.n && int(i) < len(drawn); i++ {
+			drawn[i] = true
+		}
+	}
+	var f *Font
+	var space uint16
+	added := make([]bool, len(lines))
+	for i, c := range u16 {
+		if c != '\t' || drawn[i] {
+			continue
+		}
+		li, _ := slices.BinarySearch(ends, uint32(i)+1)
+		if li >= len(lines) {
+			continue
+		}
+		if f == nil {
+			if f = e.font(style); f == nil {
+				return
+			}
+			sp := uint32(' ')
+			call(f.native, faceGetGlyphIndices, uintptr(unsafe.Pointer(&sp)), 1, uintptr(unsafe.Pointer(&space)))
+		}
+		var x, y float32
+		var hit dwHitTestMetrics
+		call(layout, layoutHitTestTextPosition, uintptr(i), 0, uintptr(unsafe.Pointer(&x)), uintptr(unsafe.Pointer(&y)), uintptr(unsafe.Pointer(&hit)))
+		g := Glyph{Font: f, ID: uint32(space), X: hit.left, Advance: hit.width, Cluster: index[i], RTL: hit.bidiLevel&1 != 0}
+		lines[li].runs = append(lines[li].runs, shapedRun{font: f, start: index[i], end: index[i+1], glyphs: []Glyph{g}})
+		added[li] = true
+	}
+	// The runs of a line are in visual order.
+	for li, ok := range added {
+		if ok {
+			slices.SortStableFunc(lines[li].runs, func(a, b shapedRun) int { return cmp.Compare(runLeft(a), runLeft(b)) })
+		}
+	}
+}
+
+// runLeft is where the leftmost glyph of a run starts.
+func runLeft(r shapedRun) float32 {
+	x := float32(math.MaxFloat32)
+	for _, g := range r.glyphs {
+		x = min(x, g.X)
+	}
+	return x
 }
 
 // typeset applies a style's letter spacing and OpenType features to a text
@@ -1556,6 +1647,7 @@ func (e *dwrite) fontCount() int { return len(e.fonts) }
 func (e *dwrite) forgetFonts() {
 	for _, f := range e.fonts {
 		release(f.native)
+		f.native, f.released = 0, true
 	}
 	clear(e.fonts)
 }

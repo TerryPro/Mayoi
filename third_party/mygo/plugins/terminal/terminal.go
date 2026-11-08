@@ -531,7 +531,11 @@ type Terminal struct {
 	held      bool
 	heldSince time.Time
 
-	draw     atomic.Pointer[func()] // asks for a frame of the view
+	draw atomic.Pointer[func()] // asks for a frame of the view
+	// shown is set by each frame that builds the view, and taken by the
+	// redraw that asks for the next: a terminal no frame shows since, as
+	// one in a tab behind another, asks for no frames as it writes.
+	shown    atomic.Bool
 	done     chan struct{}
 	doneOnce sync.Once
 	code     atomic.Int64
@@ -1295,8 +1299,12 @@ func (t *Terminal) renderHold(held bool) {
 	t.rmu.Unlock()
 }
 
-// redraw asks the view for a frame.
+// redraw asks the view for a frame, unless no frame built it since the
+// last it asked for: the frame showing it again draws it as it is then.
 func (t *Terminal) redraw() {
+	if !t.shown.Swap(false) {
+		return
+	}
 	if f := t.draw.Load(); f != nil {
 		(*f)()
 	}

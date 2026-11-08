@@ -78,7 +78,7 @@ type Glyph struct {
 // system's text engine finds the font, falls back to others for what it
 // lacks, and applies ligatures and kerning. Unlike the text of elements,
 // which ui caches by content, it caches nothing: keep the glyphs of text
-// drawn in several frames.
+// drawn in several frames, until TextGeneration changes.
 func Shape(s string, f Font) []Glyph {
 	l := text.Shared().Shape(text.Params{Text: s, Style: f.style(), NoWrap: true, KeepSpaces: true})
 	var out []Glyph
@@ -89,6 +89,11 @@ func Shape(s string, f Font) []Glyph {
 	}
 	return out
 }
+
+// TextGeneration returns a number that changes whenever the text system
+// lets go of its fonts: the glyphs Shape made before then draw nothing,
+// and those kept must be shaped anew.
+func TextGeneration() uint64 { return text.Shared().Generation() }
 
 // Glyphs draws glyphs that Shape made, from x, on the baseline at y, in
 // color c.

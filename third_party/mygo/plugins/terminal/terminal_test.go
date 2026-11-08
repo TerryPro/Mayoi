@@ -2820,3 +2820,44 @@ func TestDropFiles(t *testing.T) {
 		t.Errorf("dropping in bracketed paste pasted %q, want %q", got, want)
 	}
 }
+
+// A terminal no frame shows, as one in a tab behind another, asks for no
+// frames as its program writes, and draws what it wrote once shown again.
+func TestHiddenTerminalAsksNoFrames(t *testing.T) {
+	loadLib(t)
+	term, err := New(Options{Conn: newPipe(), Theme: LightTheme()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer term.Close()
+	shown := true
+	tt := ui.NewTester(func(c *ui.Context) {
+		if shown {
+			View(c, term).Fill()
+		}
+	}, 400, 200)
+	tt.Frame()
+	term.Feed([]byte("a"))
+	if !tt.FramePending() {
+		t.Fatal("a terminal shown asked for no frame as it wrote")
+	}
+	tt.Frame()
+	shown = false
+	tt.Frame()
+	// The first write after it went may ask for one frame, which shows
+	// it no longer.
+	term.Feed([]byte("b"))
+	tt.Frame()
+	for range 3 {
+		term.Feed([]byte("c"))
+		if tt.FramePending() {
+			t.Fatal("a terminal no frame shows asked for a frame as it wrote")
+		}
+	}
+	shown = true
+	tt.Frame()
+	term.Feed([]byte("d"))
+	if !tt.FramePending() {
+		t.Fatal("a terminal shown again asked for no frame as it wrote")
+	}
+}
